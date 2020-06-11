@@ -1,0 +1,182 @@
+Visualize .dot files using GVEdit (GUI callable via command line)
+
+Gradoop-HBase:
+	Hat unter 
+	<dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-java</artifactId>
+      <version>1.10.0</version>
+	</dependency>
+	funktioniert.
+	
+Flink-HBase:
+	Verwende "_2.12" Scala targets unter Version 1.10.0
+	
+Gradoop funktioniert wohl momentan nur mit Flink 1.7.2
+
+Logging muss programmatisch über BasicConfigurator.configure() oder über log4j.properties im class path aktiviert werden.
+
+Je nachdem ob über Gradoop oder Flink Table nach HBase geschrieben wird müssen die jeweiligen Environments ausgeführt (.execute()) werden.
+
+Environment Variable HADOOP_HOME muss in IDE gesetzt werden. Dadurch werden "core-site.xml" und "hdfs-site.xml" von
+org.apache.flink.api.java.hadoop.mapred.utils.HadoopUtils eingelesen. In den Dateien kann "mapred.output.dir" gesetzt werden.
+HBaseConfiguration.addResource() hat nicht funktioniert...
+
+Transformieren eines Gradoop-Vertex-DataSets in eine Flink Table mit der passenden Struktur fü den HBase Connector erfordert.
+dass jede Zeile der Tabelle als Flink Row definiert ist und die Tabelleneinträge Elemente einer darin geschachtelten Row sind
+...Row.of(<SomeType>, Row.of(<aCommaSeperatedListOfTypes>))...
+Nur dann ist eine Weitergabe der Type Informationen möglich.
+Sollte auch mit anderen Generic Types gehen, aber nicht geprüft.
+
+Beim Sinken von Flink Tables nach HBase über eine BatchTableEnvironment gibt es immer den Fehler:
+"BatchTableSink or OutputFormatTableSink required to emit batch Table."
+Kann nicht durch downgrading gelöst werden, weil es in Flink 1.7.2 noch keinen HBase Connector gibt (müsste selbst implementiert werden...).
+--> Vorübergehende Lösung: Da DataSets nicht Flink-intern in DataStreams transformiert werden können, muss dies über den Umweg einer Java-Standard-
+	Datenstruktur gemacht werden, die dann als Stream wieder eingelesen wird.
+	
+Tables müssen in HBase initial manuell über "create" erstellt werden, bevor sie mit Flink Table HBase Connector befüllt werden können.
+
+Sortierung:
+	Tables werden in HBase lexikografisch nach rowkey gespeichert...
+		-	Es gibt wohl die Möglichkeit einen sekundären rowkey zu erstellen, aber das ist sehr kompliziert und funktioniert höchstwahrscheinlich nicht
+			über den Flink Table API HBase Connector...
+		-	Keine Möglichkeit gefunden Tabellen in HBase in absteigender lexikografischer Ordnung zu speichern.
+		-	Keine Möglichkeit gefunden Flink Tables rückwärts in den Stream zu füttern (dann wäre auch die Datenbankanfrage nicht optimiert)
+	--> Lösung über die Verwendung eines anderen Speicherortes als HBase, z.B. einfach csv-Dateien auf einem FileSystem??
+
+Großer Sample Graph:
+	Aufruf bricht einfach nach einiger Zeit ohne Fehlermeldung ab beim Versuch, den großen sample graphen zu laden und eine degree matrix zu sinken...
+	Möglicherweise ein HBase-Problem. 
+	-	Überlegung anderes Sink zu verwenden, auch aus Sortierungsgründen (s.o.), allerdings macht gibt es bereits beim Laden über Gradoop HBase Source
+		Probleme...
+		--> Mit Sampling-operatoren versuchen, den Graphen zu verkleinern.
+
+Sampling von 2000 Knoten aus 330000 Knoten dauert 30 Minuten und verbraucht temporär ca. 5 Gb Speicher...
+
+Knotengrad berechnen und (vorerst) als Knoten-Property in das EPGM-Modell einfügen:
+	-	Zugriff auf Row-Attribute über HBase Connector Source Flink Table ist unbekannt, keine SQL query darauf möglich
+		--> Auf eigenes, reduziertes Graph-Format umsteigen, zunächst als HBase Tabelle implementieren. Jedoch: Sortierung in HBase nicht möglich
+
+Überlegung:
+	-	Ohne Sortierung kann die Datenbankanfrage für die Top-Ansicht nicht eindeutig formuliert werden, da unbekannt ist, bei welchem Knotengrad-
+		Cutoff (WHERE degree >=)in der Anfrage die vom Viewport definierte Anzahl an Knoten erreicht ist.
+		--> Vorerst Order By verwenden (OrderBy erfordert RetractStream!!!, AppendStream nur mit vorheriger Sortierung)
+		
+HBase Connector lässt nur eine begrenzte Auswahl an Datentypen für Felder zu. Es ist daher nicht möglich z.B. die VertexIDs (hexadezimal) einfach 
+korrekt einzulesen (über den HBase Connector).
+
+ORDER BY in SQL-Anfrage erfordert Blink Planner
+
+mit DataTypes wäre es möglich, binary abzufragen und anschließend umzuwandeln
+	--> DataTypes in Typeinfo zum Laufen kriegen ODER CSV verwenden, da können Tuple-Datastreams verwendet werden.
+		--> mit LegacyTypeInfoDataTypeConverter.toLegacyTypeInfo() können DataTypes in TypeInformation konvertiert werden, welche Argument
+			von new TypeInformation[]{...} sein können. So kann z.B. eine Ausgabe in Byte-Arrays (SQL: BYTES, FLINK API: DataTypes.BYTES())
+			gemacht werden, welche keinen Informationsverlust hat. Die Bytes werden als Ganzzahlen mit Vorzeichen angezeigt. Eine Übersetzung
+			in Binary Strings zeigt, dass nur die hinteren 8 Bits die Information tragen, z.B.:
+				Alle Binaries hintereinander: 5C006AFFB3FFFB001AFFB2FFCAFFB7FFC3FFAAFFD20050
+				Nur der zweite Teil der Binaries: 010111000110101010110011111110110001101010110010110010101011011111000011101010101101001001010000
+				ergibt: 5C6AB3FB1AB2CAB7C3AAD250
+				ist VERTEXID!!!
+
+	--> Eigenes Dateiformat verwenden (geht erstmal schneller die Corefunktionen aufzubauen), z.B. CSV
+		-	checken inwieweit FLINK Table API mit CSV klarkommt
+		
+Unterschied zwischen den Operatoren max und maxBy ist wichtig!!
+
+Wenn das Layout vor der Visualisierung steht, dann können beim Zoom alle Knoten mit größtem Grad, die einerseits ihre Koordinaten im Bereich haben und
+andererseits die Bedingungen des Viewports ausfüllen angezeigt werden. Visualisierung von isolierten Knoten ist kein Problem.
+
+Anscheinend kann man einen Stream nicht an seinem Ende triggern. D.h. beim Erstellen der Top-Ansicht durch Hbase-Anfrage und Order BY (SQL) kommt es
+zu temporären Befüllen der Tabelle mit falschen Knoten (!?)
+
+Man kann anscheinend nicht über ein DataSet iterieren, daher die Konversion in Java-List für die Visualisierung mit Cytoscape
+ 
+Konversion von Row zu Tuple notwendig, weil join nicht auf komplexen Datentypen geht
+
+Logging wurde mit log4j.properties im class path eingerichtet
+
+Sehr seltsames Verhalten im Zusammenhang mit HBaseTableUpsertSink: Wenn man aus der Aggregation sich die Booleans mit in der Tabelle für jeden unique rowkey speichern will, dann wird automatisch
+nach '= true' gefiltert, es sei denn man filtert explizit nach false. Ausgabe ohne Filterung geht nicht, sobald man Booleans als Tabellenwerte hat...
+	Scheinbare Regeln:
+		Wenn in der Aggregatefunktion kein boolean gesammelt wird, dann wird nicht gefiltert
+		Wenn in der Aggregatefunktion der boolean des retract stream direkt als String gesammelt wird, wird automatisch nach 'true' gefiltert.
+		Vergleich mit "==" auf "true" oder "false" ergibt "false" obwohl die Werte des .toString() konvertierten Objekts genau das sind. Wenn dann alle gesammelten
+			booleans "false" sind, wird nicht automatisch gefiltert.
+			--> muss mit .equals() verglichen werden. 
+		Vergleich mit .equals() und entsprechendes befüllen mit "true" oder "false" und sammeln in der Aggregatefunktion führt zu automatischem Filtering
+			--> Wenn unterschiedliche (nicht alle "false"/"true") Werte gesammelt werden, wird danach automatisch gefiltert.
+		Wenn in dem Join keine Felder aus der Tabelle, welche aus einer Aggregation entstanden ist selektiert werden ("select"), dann wird nicht mehr
+			automatisch gefiltert, auch wenn unterschiedliche booleans aggregiert wurden...
+		Wenn unterschiedliche booleans aggregiert werden und Felder aus der Aggregat-Tabelle im join selektiert werden, dann scheint HBase nach true zu filtern
+			während der RetractStream (wie letztlich ohne Filterung erwartet) jeder Tabelleneintrag am Ende "true" ist (mit möglichen update-operationen zwischendurch)
+
+writeAsCSV hat keine exactly-once semantik... --> StreamingFileSink
+writeAsCSV funktioniert nur an bestimmten Stellen im Code
+StreamingFileSink funktioniert nicht...
+	--> 2 Varianten, bei beiden muss das zwischenergebnis kontrolliert werden!!!
+		- stdout nach file redirecten und daraus Cyto files konvertieren
+		- HBaseUpsertSink verwenden und dann wieder aus HBase laden (TODO: Implementieren!)
+		
+TODOOOOOOO:	Web Client Server Architektur aufsetzen und Flink Daten mit REST in dem Browser bekommen (und dort mit Cytoscape visualisieren) ohne Dateien vorher zu materialisieren
+
+
+
+TODO: Dynamic Tables in Upsert Mode sind nicht nativ unterstützt, zumindest nicht gefunden. 
+		Workaround wie https://stackoverflow.com/questions/48554999/apache-flink-how-to-enable-upsert-mode-for-dynamic-tables
+		beschrieben ausprobieren ODER gleich auf andere, vorsortierbare Source wechseln
+		 --> CsvTableSink kann nicht mehr verwendet werden, da nur für AppendOnlyTables --> HBase Connector
+			--> HBase Connector gibt unique key error
+				--> Add-on HBaseTableUpsertSink verwenden
+				
+
+Inwiefern Batch oder Stream an welcher Stelle der Verarbeitung sinnvoll/performant sind, ist Teil dieser Masterarbeit,
+daher sollten alle Ideen gesammelt und in sinnvoller Reihenfolge ausprobiert werden, hier erstmal ungeordnet:
+	-	Wie oben formuliert ist eine Batchverarbeitung nur dann sinnvoll, wenn für die jeweilige Operation das ganze Datenset
+		betrachtet werden muss ODER das Datenset ungeordnet vorliegt. Da das nicht für gegeben angenommen werden muss, wird vorerst 
+		der Streaming-Ansatz verfolgt
+	-	Graph-Daten als Stream: Die Graphdaten werden als Stream dargestellt und die Datenquelle ist optimalerweise bereits geordnet.
+		Hier gibt es verschiedene Ansätze/Überlegungen:
+		-	Die Knoten der Top-Ansicht sollten vorne im Stream liegen, um nicht den ganzen Stream einlesen zu müssen. Mit einem Count-based Window
+			kann auf einer vorsortierten Knotenmenge eine von den Viewport-Constraints definierte Anzahl an Knoten ausgewählt und visualisiert werden.
+		-	Man unterscheidet zwischen Zoom- und Panning-Operationen. Der Panning-Operation (Bewegung in gleicher Vergößerungsebene) sollte mehr 
+			Bedeutung zugeordnet werden, weil eine Verzögerung hier die Interaktivität stärker behindert als in der Zoom-Operation. Dafür könnte ein 
+			Vorladen der 8 Nachbarquadranten der jeweiligen Zoom-Ebene hilfreich sein. Da unbekannt ist, in welchen Quadranten der Anwender als Erstes 
+			zoomen wird, ist auch unbekannt, welche die Nachbarquadranten sein werden und können daher nicht im Vorhinein in die Ordnung des Streams 
+			integriert werden.
+		-	Je nach Anzahl der Knoten im Graphen kann man eine unterschiedliche Anzahl an Zoom-Ebenen definieren und daraus die Reihenfolge der 
+			Knoten im Stream konstruieren. Nachbarknoten der Knoten der Top-Ansicht sollten vorrangig visualisiert werden. 
+			Da allerdings unbekannt ist, welche Anzahl an Knoten der Viewport in der Top-Ansicht abbilden wird, ist auch unbekannt welches die 
+			Nachbarknoten sein werden. In der Annahme das immer eine definierte Anzahl an Knoten in der Top-Ansicht dargestellt wird, wäre diese 
+			Ordnung möglich, allerdings ist die Darstellung dann weniger flexibel gegenüber verschiedenen Viewports.
+		-	Flink-intern gilt es herauszufinden, welche Datenstrukturen und Operationen performant sind. Folgende Ideen dazu:
+			-	Ungeordnet, Top-Ansicht: Darstellung der Knoten des Graphen u.a. als Degree-Matrix (oder andere Metrik)auf der nach einer bestimmten 
+				Anzahl Knoten mit definiertem Grad-Bereich abgefragt werden kann.
+			- 	Geordnet, Top-Ansicht: Darstellung der Knoten als geordnete Objektfolge
+				-	Flink Table: Nach Knotengrad (oder anderer Metrik) sortierte Tabelle. SQL-Anfragen möglich.
+				-	Flink Streaming: In Verbindung mit bspw. Apache Kafka (Knoten als geordnete Events in eine Topic) ein geordneter Stream von 
+					Knotenobjekten.
+			- 	Ungeordnet, Zoom-Ebene mit Nachbarknoten: 
+				- 	Flink Table: Adjazenzmatrix
+				- 	Flink Streaming: Verkettung von Knotenobjekten (im Prinzip EPGM-Modell), realisierbar z.B. über Verweis auf anderes Topic
+			-	Geordnet, Zoom-Ebene mit Nachbarknoten:
+				- 	Flink Table: Adjazenzmatrix, in welcher die Knoteneinträge nach gegebener Metrik geordnet sind.
+				-	Flink Streaming: Einträge der Adjazenzmatrix als geordnetes Topic nach gegebener Metrik, Stream kann ab dem letzten Knoten der	
+					Top-Ansicht eingelesen werden. 
+		-	Super-Knoten und Edge-Bundling. Wenn das Graph-Layout diese Eigenschaften haben soll, ist eine vorheriges Erstellen des Layouts notwendig,
+			da diese Elemente nicht ohne Betrachtung des gesamten Datensets erstellt werden können. Ein Betrachtung des gesamten Datensets in der 
+			Visualisierung ist nicht performant.
+		-	Layout vor der Visualisierung gegeben.
+			-	Streaming-Windows befüllen, Ideen:
+				- 	Jeweils Einteilung der Zoom-Ebenen in Quadranten, mit welchen die Windows befüllt werden (der Viewport muss dann nicht mehr 
+					zwangsweise ausgeschöpft werden). Bei einer Zoom- oder Panning-Operation werden dann die entsprechenden Windows getriggert. 
+					Wenn ein Quadrant der Größe des Viewports entspricht, dann werden maximal 4 Windows neu getriggert, bei horizontalem/vertikalem 
+					Panning nur zwei.
+		-	Layout ad hoc bei der Visualisierung (Super-Knoten und Edge-Bundling nicht performant, siehe oben): 
+			-	Mehr Raum für Knoten mit hohem Grad.
+			-	Zur Übersichtlichkeit sollte die Platzierung von Knoten im Layout nicht mehr verändert werden, sobald sie das erste Mal visualisiert
+				wurden. Dadurch wird das Layout nicht optimal, die Erstellung jedoch performanter.
+			- 	Streaming-Windows befüllen, Ideen:
+				-	Für jeden Knoten der Top-Ansicht wird ein Window mit Nachbarknoten befüllt. Bei Zoom in die erste Unterebene werden alle Windows
+					mit Knoten aus der Top-Ansicht getriggert, welche noch im Viewport enthalten sind. Der Viewport bestimmt die Anzahl der zu 
+					visualisierenden Knoten. Wenn Knoten mehrmals getriggert werden, werden diese bevorzugt visualisiert (Stream-Reihenfolge).
+			
