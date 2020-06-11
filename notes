@@ -1,0 +1,19 @@
+Install java 8 open JDK
+Install java 11 open JDK
+Install eclipse IDE
+Install openssh-server
+
+Download Hadoop 2.7.7 and follow instructions on https://hadoop.apache.org/docs/r2.7.7/hadoop-project-dist/hadoop-common/SingleCluster.html 
+
+Download HBase 1.4.3 and follow instructions on https://hbase.apache.org/book.html#quickstart to "Pseudo-Distributed for Local Testing"
+
+Install git
+git clone graph-vis project
+git clone apache/flink project
+
+
+
+
+TODO:graph-sample Dateien holen (siehe slack) --> Passwort vergessen, nach mehrmaligen Versuchen Connection refused
+
+TODO: Expose und Zeitplan transferieren, Literatur transferieren
