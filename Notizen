@@ -128,6 +128,11 @@ TODO: Dynamic Tables in Upsert Mode sind nicht nativ unterstützt, zumindest nic
 			--> HBase Connector gibt unique key error
 				--> Add-on HBaseTableUpsertSink verwenden
 				
+Streaming from FrontEnd to BackEnd and back:
+	-	Glassfish/Comet beinhaltet ein HTTP Streaming. Es hört sich allerdings so an, also würde nur vom BackEnd zum FrontEnd gestreamt und nicht andersherum
+				
+				
+Express.js: Async und Await verwenden, damit man nicht in einer "Callback hell" landet, Feathers.js ist möglicherweise eine Alternative, greift aber anscheinend teils auf Express.js 	zurück, weshalb man erstmal mit Express.js gehen kann
 
 Inwiefern Batch oder Stream an welcher Stelle der Verarbeitung sinnvoll/performant sind, ist Teil dieser Masterarbeit,
 daher sollten alle Ideen gesammelt und in sinnvoller Reihenfolge ausprobiert werden, hier erstmal ungeordnet:

@@ -2,6 +2,10 @@ Install java 8 open JDK
 Install java 11 open JDK
 Install eclipse IDE
 Install openssh-server
+Install Notepad++
+(Install glassfish)
+Install curl
+(Install Node.js)
 
 Download Hadoop 2.7.7 and follow instructions on https://hadoop.apache.org/docs/r2.7.7/hadoop-project-dist/hadoop-common/SingleCluster.html 
 
@@ -10,10 +14,11 @@ Download HBase 1.4.3 and follow instructions on https://hbase.apache.org/book.ht
 Install git
 git clone graph-vis project
 git clone apache/flink project
+git clone graph-viewport-driven project
 
 
 
 
-TODO:graph-sample Dateien holen (siehe slack) --> Passwort vergessen, nach mehrmaligen Versuchen Connection refused
+TODO:graph-sample Dateien von VM holen --> übrigens ScaDs github Passwort vergessen, nach mehrmaligen Versuchen Connection refused
 
 TODO: Expose und Zeitplan transferieren, Literatur transferieren
