@@ -1,0 +1,17 @@
+g;;
+e;hasCreator;
+e;hasType;
+e;likes;creationDate:localdatetime
+e;replyOf;
+e;containerOf;
+e;hasMember;joinDate:localdatetime
+e;hasModerator;
+e;hasTag;
+e;isLocatedIn;
+v;comment;X:int,Y:int,browserUsed:string,content:string,creationDate:localdatetime,degree:long,inDegree:long,length:int,locationIP:string,outDegree:long
+v;tag;X:int,Y:int,degree:long,inDegree:long,name:string,outDegree:long,url:string
+v;tagclass;X:int,Y:int,degree:long,inDegree:long,name:string,outDegree:long,url:string
+v;country;X:int,Y:int,degree:long,inDegree:long,name:string,outDegree:long,url:string
+v;forum;X:int,Y:int,creationDate:localdatetime,degree:long,inDegree:long,outDegree:long,title:string
+v;person;X:int,Y:int,birthday:localdate,browserUsed:string,creationDate:localdatetime,degree:long,email:list:string,firstName:string,gender:string,inDegree:long,lastName:string,locationIP:string,outDegree:long,speaks:list:string
+v;post;X:int,Y:int,browserUsed:string,content:string,creationDate:localdatetime,degree:long,imageFile:string,inDegree:long,language:string,length:int,locationIP:string,outDegree:long
