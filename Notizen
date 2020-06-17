@@ -116,6 +116,9 @@ StreamingFileSink funktioniert nicht...
 	--> 2 Varianten, bei beiden muss das zwischenergebnis kontrolliert werden!!!
 		- stdout nach file redirecten und daraus Cyto files konvertieren
 		- HBaseUpsertSink verwenden und dann wieder aus HBase laden (TODO: Implementieren!)
+
+
+Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert)
 		
 TODOOOOOOO:	Web Client Server Architektur aufsetzen und Flink Daten mit REST in dem Browser bekommen (und dort mit Cytoscape visualisieren) ohne Dateien vorher zu materialisieren
 

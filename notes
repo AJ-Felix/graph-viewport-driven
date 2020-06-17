@@ -5,7 +5,8 @@ Install openssh-server
 Install Notepad++
 (Install glassfish)
 Install curl
-(Install Node.js)
+(Install Node.js, express.js, socket-io, socket-io.client)
+(Install netty-socketIO and netty-socketIO-demo)
 
 Download Hadoop 2.7.7 and follow instructions on https://hadoop.apache.org/docs/r2.7.7/hadoop-project-dist/hadoop-common/SingleCluster.html 
 
