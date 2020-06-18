@@ -3,7 +3,10 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 import java.util.List;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.types.Row;
@@ -33,6 +36,8 @@ public class Server_SocketIO {
 				List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = flinkCore.buildTopView();
 				DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
 				DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
+				RowTypeInfo vertices_rowTypeInfo = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.ROW(Types.STRING, Types.STRING, Types.STRING, Types.STRING)}, 
+						new String[] {"rowkey", "row"});
 				stream_vertices.process(new ProcessFunction<Tuple2<Boolean, Row>, Tuple2<Boolean, Row>>() {
 
 					private static final long serialVersionUID = 1L;
@@ -41,6 +46,7 @@ public class Server_SocketIO {
 					public void processElement(Tuple2<Boolean, Row> element,
 							ProcessFunction<Tuple2<Boolean, Row>, Tuple2<Boolean, Row>>.Context context,
 							Collector<Tuple2<Boolean, Row>> collector) throws Exception {
+						System.out.println(element);
 						if (element.f0) {
 							server.getBroadcastOperations().sendEvent("addVertex", new VertexObject(element.f0.toString(), element.f1.getField(0).toString(), 
 									element.f1.getField(1).toString(), element.f1.getField(2).toString(), element.f1.getField(3).toString()));
@@ -71,8 +77,8 @@ public class Server_SocketIO {
         });
 
         server.start();
-
-        Thread.sleep(Integer.MAX_VALUE);
+        System.out.println("Hit enter to stop:...");
+        System.in.read();
 
         server.stop();
     }

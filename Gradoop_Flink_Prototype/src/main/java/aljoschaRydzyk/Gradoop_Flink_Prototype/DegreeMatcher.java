@@ -93,7 +93,7 @@ public class DegreeMatcher {
 		Map<String, String> map = new HashMap<String, String>();
 		
 			//convert EPGMVertex Object to Flink Tuple and build table from stream
-			List<Tuple5<String, String, Integer, String, String>> list_converted_vertices = new ArrayList<Tuple5<String, String, Integer, String, String>>();
+			List<Tuple5<String, String, String, String, String>> list_converted_vertices = new ArrayList<Tuple5<String, String, String, String, String>>();
 			for (int i = 0; i < list_vertices.size(); i++) {
 				String vertex_id = list_vertices.get(i).getId().toString();
 				map.put(vertex_id, ((Integer) i).toString());
@@ -102,16 +102,16 @@ public class DegreeMatcher {
 				Integer y = list_vertices.get(i).getPropertyValue("Y").getInt();
 				String y_str = y.toString();
 				String label = list_vertices.get(i).getLabel();
-				list_converted_vertices.add(new Tuple5<String, String, Integer, String, String>(vertex_id, label, i, x_str, y_str));
+				list_converted_vertices.add(new Tuple5<String, String, String, String, String>(vertex_id, label, ((Integer) i).toString(), x_str, y_str));
 			}	
-			DataStreamSource<Tuple5<String, String, Integer, String, String>> datastream_converted_vertices = fsEnv.fromCollection(list_converted_vertices);
+			DataStreamSource<Tuple5<String, String, String, String, String>> datastream_converted_vertices = fsEnv.fromCollection(list_converted_vertices);
 			Table vertex_table = fsTableEnv.fromDataStream(datastream_converted_vertices).as("v_id_2, v_label, v_id_layout, X, Y");
 		
 		//table joins for vertex table
-		Table vertex_result_table = degree_table_filtered_aggregate.join(vertex_table).where("v_id = v_id_2").select("v_label, X, Y, v_id_layout, degree, v_id");
+		Table vertex_result_table = degree_table_filtered_aggregate.join(vertex_table).where("v_id = v_id_2").select("v_id_layout, X, Y, degree");
 		
 		//convert joined vertex table to data stream
-		RowTypeInfo rowTypeInfo_vertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING, Types.STRING, Types.STRING}, 
+		RowTypeInfo rowTypeInfo_vertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING, Types.STRING}, 
 				new String[] {"v_id", "X", "Y", "degree"});
 		DataStream<Tuple2<Boolean, Row>> stream_vertices = fsTableEnv.toRetractStream(vertex_result_table, rowTypeInfo_vertices);
 		
