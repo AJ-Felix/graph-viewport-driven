@@ -212,7 +212,7 @@ public class MatchDegreeChoice {
 //		HBaseUpsertTableSink hbaseUpsertTableSink = new HBaseUpsertTableSink(hbaseTableSchema, hbaseOptions, hbaseWriteOptions);	
 //		hbaseUpsertTableSink.emitDataStream(ds_stream_nested_vertices);
 		
-		//convert joined vertex table stream to HBase-compatible data stream			CAUTION: Apparently also does not have exactly-once semantics
+		//convert joined edges table stream to HBase-compatible data stream			CAUTION: Apparently also does not have exactly-once semantics
 		RowTypeInfo edges_nested_rowTypeInfo = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.ROW(Types.STRING, Types.STRING)});
 		TupleTypeInfo<Tuple2<Boolean, Row>> edges_nested_tuple_typeInfo = new TupleTypeInfo<Tuple2<Boolean, Row>>(Types.BOOLEAN, edges_nested_rowTypeInfo);
 		DataStream<Tuple2<Boolean, Row>> ds_stream_nested_edges = ds_stream_edges.map(new MapFunction<Tuple2<Boolean,Row>, Tuple2<Boolean,Row>>() {

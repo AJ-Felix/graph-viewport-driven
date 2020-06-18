@@ -95,6 +95,21 @@
 	    <artifactId>flink-optimizer_2.11</artifactId>
 	    <version>1.10.0</version>
 	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.apache.flink/flink-streaming-java -->
+<!-- 	<dependency>
+	    <groupId>org.apache.flink</groupId>
+	    <artifactId>flink-streaming-java_2.11</artifactId>
+	    <version>1.10.0</version>
+	    <scope>provided</scope>
+	</dependency> -->
+	<!-- https://mvnrepository.com/artifact/org.apache.flink/flink-formats -->
+<dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-formats</artifactId>
+    <version>1.10.0</version>
+    <type>pom</type>
+</dependency>
+	
 	<dependency>
       <groupId>org.gradoop</groupId>
       <artifactId>gradoop-flink</artifactId>
@@ -152,6 +167,12 @@
 	    <groupId>org.glassfish.jersey.inject</groupId>
 	    <artifactId>jersey-hk2</artifactId>
 	    <version>2.31</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/com.corundumstudio.socketio/netty-socketio -->
+	<dependency>
+	    <groupId>com.corundumstudio.socketio</groupId>
+	    <artifactId>netty-socketio</artifactId>
+	    <version>1.7.18</version>
 	</dependency>
   </dependencies>
 
