@@ -4,8 +4,8 @@ public class VertexObject {
 	
 		private String bool;
 		private String id;
-		private String x;
-		private String y;
+		private Integer x;
+		private Integer y;
 		private String degree;
 		
 		public VertexObject() {
@@ -15,8 +15,8 @@ public class VertexObject {
 			super();
 			this.bool = bool;
 			this.id = id;
-			this.x = x;
-			this.y = y;
+			this.x = Integer.parseInt(x);
+			this.y = Integer.parseInt(y);
 			this.degree = degree;
 		}
 		
@@ -36,19 +36,19 @@ public class VertexObject {
 			this.id = id;
 		}
 		
-		public String getX() {
+		public Integer getX() {
 			return this.x;
 		}
 		
-		public void setX(String x) {
+		public void setX(Integer x) {
 			this.x = x;
 		}
 		
-		public String getY() {
+		public Integer getY() {
 			return this.y;
 		}
 		
-		public void setY(String y) {
+		public void setY(Integer y) {
 			this.y = y;
 		}
 		

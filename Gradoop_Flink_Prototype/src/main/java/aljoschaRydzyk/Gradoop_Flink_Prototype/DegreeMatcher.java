@@ -112,7 +112,7 @@ public class DegreeMatcher {
 		
 		//convert joined vertex table to data stream
 		RowTypeInfo rowTypeInfo_vertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING, Types.STRING}, 
-				new String[] {"v_id", "X", "Y", "degree"});
+				new String[] {"v_id_layout", "X", "Y", "degree"});
 		DataStream<Tuple2<Boolean, Row>> stream_vertices = fsTableEnv.toRetractStream(vertex_result_table, rowTypeInfo_vertices);
 		
 		//create flink edge table from LogicalGraph
@@ -141,10 +141,6 @@ public class DegreeMatcher {
 		RowTypeInfo rowTypeInfo_edges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
 				new String[] {"edge_id", "v_id_source", "v_id_target"});
 		DataStream<Tuple2<Boolean, Row>> stream_edges = fsTableEnv.toRetractStream(edge_result_table, rowTypeInfo_edges);
-		
-		//process vertex stream for future use
-		datastream_converted_vertices.countWindowAll(50);
-		
 		
 		ArrayList<DataStream<Tuple2<Boolean, Row>>> result_list = new ArrayList<DataStream<Tuple2<Boolean, Row>>>();
 		result_list.add(stream_vertices);

@@ -17,7 +17,7 @@ public class Server_SocketIO {
 
     public static void main(String[] args) throws Exception {
     	
-    	BasicConfigurator.configure();
+//    	BasicConfigurator.configure();
 		
 		com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
         config.setHostname("localhost");
@@ -34,8 +34,14 @@ public class Server_SocketIO {
 				DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
 				DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
 				Iterator<Tuple2<Boolean,Row>> iterator_vertices = DataStreamUtils.collect(stream_vertices);
-				Iterator<Tuple2<Boolean,Row>> iterator_edges = DataStreamUtils.collect(stream_edges);
-				iterator_vertices.forEachRemaining(vertex -> {
+//				Iterator<Tuple2<Boolean,Row>> iterator_edges = DataStreamUtils.collect(stream_edges);
+				System.out.println("bla");
+//				System.out.println(iterator_vertices.next().f1.getField(0));
+//				System.out.println(iterator_vertices.next().f1.getField(0));
+//				System.out.println(iterator_vertices.next().f1.getField(0));
+
+				while (iterator_vertices.hasNext()) {
+					Tuple2<Boolean, Row> vertex = iterator_vertices.next();
 					System.out.println(vertex);
 					if (vertex.f0) {
 						server.getBroadcastOperations().sendEvent("addVertex", new VertexObject(vertex.f0.toString(), vertex.f1.getField(0).toString(), 
@@ -44,17 +50,28 @@ public class Server_SocketIO {
 						server.getBroadcastOperations().sendEvent("removeVertex", new VertexObject(vertex.f0.toString(), vertex.f1.getField(0).toString(), 
 								vertex.f1.getField(1).toString(), vertex.f1.getField(2).toString(), vertex.f1.getField(3).toString()));
 					}
-				});
-				iterator_edges.forEachRemaining(edge -> {
-					System.out.println(edge);
-					if (edge.f0) {
-					server.getBroadcastOperations().sendEvent("addEdge", new VertexObject(edge.f0.toString(), edge.f1.getField(0).toString(), 
-							edge.f1.getField(1).toString(), edge.f1.getField(2).toString(), edge.f1.getField(3).toString()));
-					} else if (edge.f0) {
-					server.getBroadcastOperations().sendEvent("removeEdge", new VertexObject(edge.f0.toString(), edge.f1.getField(0).toString(), 
-							edge.f1.getField(1).toString(), edge.f1.getField(2).toString(), edge.f1.getField(3).toString()));
-					}
-				});
+				}
+//				iterator_vertices.forEachRemaining(vertex -> {
+//					System.out.println(vertex);
+//					if (vertex.f0) {
+//						server.getBroadcastOperations().sendEvent("addVertex", new VertexObject(vertex.f0.toString(), vertex.f1.getField(0).toString(), 
+//								vertex.f1.getField(1).toString(), vertex.f1.getField(2).toString(), vertex.f1.getField(3).toString()));
+//					} else if (vertex.f0) {
+//						server.getBroadcastOperations().sendEvent("removeVertex", new VertexObject(vertex.f0.toString(), vertex.f1.getField(0).toString(), 
+//								vertex.f1.getField(1).toString(), vertex.f1.getField(2).toString(), vertex.f1.getField(3).toString()));
+//					}
+//				});
+//				iterator_edges.forEachRemaining(edge -> {
+//					System.out.println(edge);
+//					if (edge.f0) {
+//					server.getBroadcastOperations().sendEvent("addEdge", new VertexObject(edge.f0.toString(), edge.f1.getField(0).toString(), 
+//							edge.f1.getField(1).toString(), edge.f1.getField(2).toString(), edge.f1.getField(3).toString()));
+//					} else if (edge.f0) {
+//					server.getBroadcastOperations().sendEvent("removeEdge", new VertexObject(edge.f0.toString(), edge.f1.getField(0).toString(), 
+//							edge.f1.getField(1).toString(), edge.f1.getField(2).toString(), edge.f1.getField(3).toString()));
+//					}
+//				});
+				flinkCore.getFsEnv().execute();
 			}
         });
 				
@@ -100,7 +117,6 @@ public class Server_SocketIO {
         server.start();
         System.out.println("Hit enter to stop:...");
         System.in.read();
-
         server.stop();
          
     }

@@ -1,15 +1,15 @@
 var cy = cytoscape({
   container: $('#cy'),
   elements: [ 
-    { 
-      data: { id: 'a' }
-    },
-    { 
-      data: { id: 'b' }
-    },
-    { 
-      data: { id: 'ab', source: 'a', target: 'b' }
-    }
+    // { 
+      // data: { id: 'a' }
+    // },
+    // { 
+      // data: { id: 'b' }
+    // },
+    // { 
+      // data: { id: 'ab', source: 'a', target: 'b' }
+    // }
   ],
 
   style: [ 
@@ -76,6 +76,11 @@ function sendSignal() {
 
 socket.on('connect', function() {
 	output('<span class="connect-msg">Client has connected to the server!</span>');
+	cy.add({
+		group: 'nodes',
+		data: { weight: 75 },
+		position: { x: 200, y: 200 }
+	});
 });
 
 socket.on('disconnect', function() {
@@ -89,5 +94,10 @@ function output(message) {
 }
 
 socket.on('addVertex', function(vertexObject) {
-	console.log('vertex id is' + vertexObject.id);	
+	console.log('vertex id is' + vertexObject.id);
+	cy.add({
+	    group: 'nodes',
+	    data: { id: vertexObject.id },
+	    position: { x: vertexObject.x, y: vertexObject.y }
+	});
 });

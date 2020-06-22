@@ -38,13 +38,18 @@ public class FlinkCore {
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 	}
 	
+	public StreamExecutionEnvironment getFsEnv() {
+		return this.fsEnv;
+	}
+	
 	public List<DataStream<Tuple2<Boolean, Row>>> buildTopView (){
 		DataStream<Tuple2<Boolean, Row>> ds_degree = DegreeMatrix_Loader.load(this.fsTableEnv, "degree_vertices_10_third", 10);
 		GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(this.graflink_cfg, this.gra_hbase_cfg, this.hbase_cfg);
 		List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = null;
 		try {
 			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			graph_data_streams = DegreeMatcher.match(fsEnv, fsTableEnv, ds_degree, log);
+//			log.getVertices().print();
+			graph_data_streams = DegreeMatcher.match(this.fsEnv, this.fsTableEnv, ds_degree, log);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

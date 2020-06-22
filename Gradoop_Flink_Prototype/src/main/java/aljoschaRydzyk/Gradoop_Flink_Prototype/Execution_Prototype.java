@@ -140,8 +140,7 @@ public class Execution_Prototype {
 			GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
 			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");
 			log.getGraphHead().print();
-			DegMatrix_Builder degMatrix_builder = new DegMatrix_Builder(gra_flink_cfg, gra_hbase_cfg, hbase_cfg, fsEnv, fsTableEnv);
-			degMatrix_builder.build(log, "degree_vertices_10_third");
+
 
 //			PrintStream fileOut = new PrintStream("/home/aljoscha/out.txt");
 //			System.setOut(fileOut);
@@ -182,7 +181,7 @@ public class Execution_Prototype {
 		// execute
 		try {
 			fsTableEnv.execute("test");
-//			env.execute("test");
+			env.execute("test");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
