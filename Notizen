@@ -117,10 +117,18 @@ StreamingFileSink funktioniert nicht...
 		- stdout nach file redirecten und daraus Cyto files konvertieren
 		- HBaseUpsertSink verwenden und dann wieder aus HBase laden (TODO: Implementieren!)
 
+KDEVTMPFSI:
+	To get rid of it:
+	-	remove /tmp/kdevtmpfsi and replace with dummy file
+	-	remove executables in /var/tmp/ and replace with dumy files
+	-	remove cronjob with "crontab -e"
+	- 	kill kdevtmpfsi and kinsing processes (possibly search with "pidof [process name]")
+	---> Does not work... maybe restart after
+
 
 Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert)
 
-TODO:Socket.IO macht Probleme (Serialization), versuche andere java server implementierung (EngineIO)
+TODO: Es wird nicht über den Iterator iteriert, die Lösung von Abd ausprobieren...
 		
 
 

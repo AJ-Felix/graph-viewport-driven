@@ -94,10 +94,33 @@ function output(message) {
 }
 
 socket.on('addVertex', function(vertexObject) {
-	console.log('vertex id is' + vertexObject.id);
+	console.log('add: vertex id is' + vertexObject.id);
 	cy.add({
 	    group: 'nodes',
 	    data: { id: vertexObject.id },
 	    position: { x: vertexObject.x, y: vertexObject.y }
 	});
 });
+
+socket.on('removeVertex', function(vertexObject) {
+	console.log('remove: vertex id is' + vertexObject.id);
+	cy.remove(cy.$id(vertexObject.id));
+});
+
+socket.on('addEdge', function(edgeObject) {
+	console.log('add: edge id is' + edgeObject.id);
+	cy.add({
+	    group: 'edges',
+	    data: { id: edgeObject.id, source: edgeObject.source, target: edgeObject.target }
+	});
+});
+
+socket.on('removeEdge', function(edgeObject) {
+	console.log('remove edge id is' + edgeObject.id);
+	cy.remove({
+	    group: 'edges',
+		data: { id: edgeObject.id, source: edgeObject.source, target: edgeObject.target }
+	});
+});
+
+

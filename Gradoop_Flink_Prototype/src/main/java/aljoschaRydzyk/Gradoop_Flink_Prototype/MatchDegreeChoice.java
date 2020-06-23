@@ -99,14 +99,29 @@ public class MatchDegreeChoice {
 				// TODO Auto-generated method stub
 				return new Tuple3<String, String, String>(b, i, d);
 			}
-		}).returns(ds_tuple_typeInfo);
+		}).returns(ds_tuple_typeInfo).setParallelism(1);				//parallelism must be set to 1, else the order of true/false statements is wrong and aggregation wont work
 		Table table = fsTableEnv.fromDataStream(ds_tuple).as("bool, v_id, degree");
+		//debugging: convert table to stream and print
+		RowTypeInfo rowTypeInfo_debug_vertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
+				new String[] {"bool", "v_id", "degree"});
+		DataStream<Row> ds_stream_debug_vertices = fsTableEnv.toAppendStream(table, rowTypeInfo_debug_vertices);
+//		ds_stream_debug_vertices.print().setParallelism(1);
+		
+		
 		fsTableEnv.registerFunction("currentVertex", new CurrentVertex());
 		AggregatedTable table7 = table.groupBy("v_id").aggregate("currentVertex(bool, v_id, degree) as (bool, degree)");		//sammeln von bool verändert Verhalten kritisch!
 		Table table8 = table7.select("v_id, degree, bool").filter("bool = 'true'");
 		
+		//debugging: convert table to stream and print
+		RowTypeInfo rowTypeInfo_debug2_vertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
+				new String[] {"v_id", "degree", "bool"});
+		DataStream<Tuple2<Boolean, Row>> ds_stream_debug2_vertices = fsTableEnv.toRetractStream(table8, rowTypeInfo_debug2_vertices);
+//		ds_stream_debug2_vertices.print().setParallelism(1);
+
+		
 		//create flink table of vertices from LogicalGraph
 		DataSet<EPGMVertex> dset_vertices = log.getVertices();
+		System.out.println("Initial vertices count: " + ((Long) dset_vertices.count()).toString());
 		List<EPGMVertex> list_vertices = dset_vertices.collect();
 		Map<String, String> map = new HashMap<String, String>();
 		List<Tuple5<String, String, Integer, String, String>> list_tuple_vertices = new ArrayList<Tuple5<String, String, Integer, String, String>>();
@@ -124,27 +139,33 @@ public class MatchDegreeChoice {
 		Table table3 = fsTableEnv.fromDataStream(ds_tuple_vertices).as("v_id_2, v_label, v_id_layout, X, Y");
 		
 		//create flink table of edges from LogicalGraph
-		DataSet<EPGMEdge> ds_edges = log.getEdges();
-		List<EPGMEdge> list_edges = ds_edges.collect();
-		List<Tuple5<String, String, String, String, String>> list_tuple_edges = new ArrayList<Tuple5<String, String, String, String, String>>();
-		for (int i = 0; i < list_edges.size(); i++) {
-			String id = list_edges.get(i).getId().toString();
-			String node_1 = list_edges.get(i).getSourceId().toString();
-			String i_1 = map.get(node_1);
-			String node_2 = list_edges.get(i).getTargetId().toString();		
-			String i_2 = map.get(node_2);
-			Tuple5<String, String, String, String, String> tuple = Tuple5.of(id, node_1, node_2, i_1, i_2);
-			list_tuple_edges.add(tuple);
-		}
-		DataStreamSource<Tuple5<String, String, String, String, String>> ds_tuple_edges = fsEnv.fromCollection(list_tuple_edges);
-		Table table5 = fsTableEnv.fromDataStream(ds_tuple_edges).as("edge_id, v_id_source, v_id_target, v_id_source_new, v_id_target_new");
+//		DataSet<EPGMEdge> ds_edges = log.getEdges();
+//		List<EPGMEdge> list_edges = ds_edges.collect();
+//		List<Tuple5<String, String, String, String, String>> list_tuple_edges = new ArrayList<Tuple5<String, String, String, String, String>>();
+//		for (int i = 0; i < list_edges.size(); i++) {
+//			String id = list_edges.get(i).getId().toString();
+//			String node_1 = list_edges.get(i).getSourceId().toString();
+//			String i_1 = map.get(node_1);
+//			String node_2 = list_edges.get(i).getTargetId().toString();		
+//			String i_2 = map.get(node_2);
+//			Tuple5<String, String, String, String, String> tuple = Tuple5.of(id, node_1, node_2, i_1, i_2);
+//			list_tuple_edges.add(tuple);
+//		}
+//		DataStreamSource<Tuple5<String, String, String, String, String>> ds_tuple_edges = fsEnv.fromCollection(list_tuple_edges);
+//		Table table5 = fsTableEnv.fromDataStream(ds_tuple_edges).as("edge_id, v_id_source, v_id_target, v_id_source_new, v_id_target_new");
 		
 		//table joins for vertex table
 		Table table6 = table8.join(table3).where("v_id = v_id_2").select("v_label, X, Y, v_id_layout, degree, v_id");
 		
+		//debugging: convert table to stream and print
+		RowTypeInfo rowTypeInfo_debug3_vertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING, Types.INT, Types.STRING, Types.STRING}, 
+				new String[] {"v_label", "X", "Y", "v_id_layout", "degree", "v_id"});
+		DataStream<Tuple2<Boolean, Row>> ds_stream_debug3_vertices = fsTableEnv.toRetractStream(table6, rowTypeInfo_debug3_vertices);
+//		ds_stream_debug3_vertices.print().setParallelism(1);
+		
 		//table joins for edges table
-		Table table9 = table8.join(table5).where("v_id = v_id_source").select("edge_id, v_id_source, v_id_target, v_id_source_new, v_id_target_new");
-		Table table10 = table8.join(table9).where("v_id = v_id_target").select("edge_id, v_id_source_new, v_id_target_new");
+//		Table table9 = table8.join(table5).where("v_id = v_id_source").select("edge_id, v_id_source, v_id_target, v_id_source_new, v_id_target_new");
+//		Table table10 = table8.join(table9).where("v_id = v_id_target").select("edge_id, v_id_source_new, v_id_target_new");
 		
 		//convert joined vertex table to sinkable data stream
 		RowTypeInfo rowTypeInfo_vertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING, Types.INT, Types.STRING, Types.STRING}, 
@@ -181,9 +202,9 @@ public class MatchDegreeChoice {
 //		string_stream_vertices.addSink(sink);
 	
 		//convert joined edge table to sinkable data stream
-		RowTypeInfo rowTypeInfo_edges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
-				new String[] {"edge_id", "v_id_source", "v_id_target"});
-		DataStream<Tuple2<Boolean, Row>> ds_stream_edges = fsTableEnv.toRetractStream(table10, rowTypeInfo_edges);
+//		RowTypeInfo rowTypeInfo_edges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
+//				new String[] {"edge_id", "v_id_source", "v_id_target"});
+//		DataStream<Tuple2<Boolean, Row>> ds_stream_edges = fsTableEnv.toRetractStream(table10, rowTypeInfo_edges);
 		
 		//convert joined vertex table stream to HBase-compatible data stream			CAUTION: Apparently also does not have exactly-once semantics
 		RowTypeInfo vertices_nested_rowTypeInfo = new RowTypeInfo(new TypeInformation[]{Types.INT, Types.ROW(Types.STRING, Types.INT, Types.STRING, Types.STRING)});
@@ -201,40 +222,40 @@ public class MatchDegreeChoice {
 		}).returns(vertices_nested_tuple_typeInfo);
 		//declare HBaseTableUpsertSink and sink data to HBase
 		// order is important!!
-//		HBaseTableSchema hbaseTableSchema = new HBaseTableSchema();
-//		hbaseTableSchema.setRowKey("v_id_layout", Integer.class);
-//		hbaseTableSchema.addColumn("cf", "v_label", String.class);
-//		hbaseTableSchema.addColumn("cf", "group_id", Integer.class);
-//		hbaseTableSchema.addColumn("cf", "X", String.class);
-//		hbaseTableSchema.addColumn("cf", "Y", String.class);
-//		HBaseOptions hbaseOptions = new HBaseOptions.Builder().setZkQuorum("localhost:2181").setTableName("test_vertices_cyto2").build();
-//		HBaseWriteOptions hbaseWriteOptions = new HBaseWriteOptions.Builder().build();
-//		HBaseUpsertTableSink hbaseUpsertTableSink = new HBaseUpsertTableSink(hbaseTableSchema, hbaseOptions, hbaseWriteOptions);	
-//		hbaseUpsertTableSink.emitDataStream(ds_stream_nested_vertices);
+		HBaseTableSchema hbaseTableSchema = new HBaseTableSchema();
+		hbaseTableSchema.setRowKey("v_id_layout", Integer.class);
+		hbaseTableSchema.addColumn("cf", "v_label", String.class);
+		hbaseTableSchema.addColumn("cf", "group_id", Integer.class);
+		hbaseTableSchema.addColumn("cf", "X", String.class);
+		hbaseTableSchema.addColumn("cf", "Y", String.class);
+		HBaseOptions hbaseOptions = new HBaseOptions.Builder().setZkQuorum("localhost:2181").setTableName("test_vertices_cyto4").build();
+		HBaseWriteOptions hbaseWriteOptions = new HBaseWriteOptions.Builder().build();
+		HBaseUpsertTableSink hbaseUpsertTableSink = new HBaseUpsertTableSink(hbaseTableSchema, hbaseOptions, hbaseWriteOptions);	
+		hbaseUpsertTableSink.emitDataStream(ds_stream_nested_vertices);
 		
 		//convert joined edges table stream to HBase-compatible data stream			CAUTION: Apparently also does not have exactly-once semantics
-		RowTypeInfo edges_nested_rowTypeInfo = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.ROW(Types.STRING, Types.STRING)});
-		TupleTypeInfo<Tuple2<Boolean, Row>> edges_nested_tuple_typeInfo = new TupleTypeInfo<Tuple2<Boolean, Row>>(Types.BOOLEAN, edges_nested_rowTypeInfo);
-		DataStream<Tuple2<Boolean, Row>> ds_stream_nested_edges = ds_stream_edges.map(new MapFunction<Tuple2<Boolean,Row>, Tuple2<Boolean,Row>>() {
-			private static final long serialVersionUID = -7026515741345426370L;
-			@Override
-			public Tuple2<Boolean, Row> map(Tuple2<Boolean, Row> value) throws Exception {
-				String rowkey = value.f1.getField(0).toString();
-				return new Tuple2<Boolean, Row>(value.f0, Row.of(rowkey, Row.of(value.f1.getField(1), value.f1.getField(2))));
-			}
-		}).returns(edges_nested_tuple_typeInfo);
+//		RowTypeInfo edges_nested_rowTypeInfo = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.ROW(Types.STRING, Types.STRING)});
+//		TupleTypeInfo<Tuple2<Boolean, Row>> edges_nested_tuple_typeInfo = new TupleTypeInfo<Tuple2<Boolean, Row>>(Types.BOOLEAN, edges_nested_rowTypeInfo);
+//		DataStream<Tuple2<Boolean, Row>> ds_stream_nested_edges = ds_stream_edges.map(new MapFunction<Tuple2<Boolean,Row>, Tuple2<Boolean,Row>>() {
+//			private static final long serialVersionUID = -7026515741345426370L;
+//			@Override
+//			public Tuple2<Boolean, Row> map(Tuple2<Boolean, Row> value) throws Exception {
+//				String rowkey = value.f1.getField(0).toString();
+//				return new Tuple2<Boolean, Row>(value.f0, Row.of(rowkey, Row.of(value.f1.getField(1), value.f1.getField(2))));
+//			}
+//		}).returns(edges_nested_tuple_typeInfo);
 		//declare HBaseTableUpsertSink and sink data to HBase
 		// order is important!!
 		
-		ds_stream_nested_edges.print().setParallelism(1);
-		
-		HBaseTableSchema hbaseTableSchema = new HBaseTableSchema();
-		hbaseTableSchema.setRowKey("edge_id", String.class);
-		hbaseTableSchema.addColumn("cf", "v_id_source", String.class);
-		hbaseTableSchema.addColumn("cf", "v_id_target", String.class);
-		HBaseOptions hbaseOptions = new HBaseOptions.Builder().setZkQuorum("localhost:2181").setTableName("test_edges_cyto6").build();
-		HBaseWriteOptions hbaseWriteOptions = new HBaseWriteOptions.Builder().build();
-		HBaseUpsertTableSink hbaseUpsertTableSink = new HBaseUpsertTableSink(hbaseTableSchema, hbaseOptions, hbaseWriteOptions);	
-		hbaseUpsertTableSink.emitDataStream(ds_stream_nested_edges);
+//		ds_stream_nested_edges.print().setParallelism(1);
+//		
+//		HBaseTableSchema hbaseTableSchema = new HBaseTableSchema();
+//		hbaseTableSchema.setRowKey("edge_id", String.class);
+//		hbaseTableSchema.addColumn("cf", "v_id_source", String.class);
+//		hbaseTableSchema.addColumn("cf", "v_id_target", String.class);
+//		HBaseOptions hbaseOptions = new HBaseOptions.Builder().setZkQuorum("localhost:2181").setTableName("test_edges_cyto6").build();
+//		HBaseWriteOptions hbaseWriteOptions = new HBaseWriteOptions.Builder().build();
+//		HBaseUpsertTableSink hbaseUpsertTableSink = new HBaseUpsertTableSink(hbaseTableSchema, hbaseOptions, hbaseWriteOptions);	
+//		hbaseUpsertTableSink.emitDataStream(ds_stream_nested_edges);
 	}
 }

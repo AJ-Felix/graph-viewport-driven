@@ -80,7 +80,7 @@ public class DegreeMatcher {
 					String d = ((Row) value.f1.getField(1)).getField(0).toString();
 					return new Tuple3<String, String, String>(b, i, d);
 				}
-			}).returns(datastream_degree_converted_info);
+			}).returns(datastream_degree_converted_info).setParallelism(1);
 			Table degree_table = fsTableEnv.fromDataStream(datastream_degree_converted).as("bool, v_id, degree");
 			fsTableEnv.registerFunction("currentVertex", new CurrentVertex());
 			AggregatedTable degree_table_aggregated = degree_table.groupBy("v_id").aggregate("currentVertex(bool, v_id, degree) as (bool, degree)");		
@@ -131,16 +131,30 @@ public class DegreeMatcher {
 		DataStreamSource<Tuple5<String, String, String, String, String>> datastream_converted_edges = fsEnv.fromCollection(list_converted_edges);
 		Table edge_table = fsTableEnv.fromDataStream(datastream_converted_edges).as("edge_id, v_id_source, v_id_target, v_id_source_new, v_id_target_new");
 		
+		//debugging: convert table to stream and print
+		RowTypeInfo rowTypeInfo_debug_edges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING, Types.STRING, Types.STRING}, 
+				new String[] {"edge_id", "v_id_source", "v_id_target", "v_id_source_new", "v_id_target_new"});
+		DataStream<Row> ds_stream_debug_edges= fsTableEnv.toAppendStream(edge_table, rowTypeInfo_debug_edges);
+//		ds_stream_debug_edges.print().setParallelism(1);
+		
+		
 		//table joins for edges table
 		Table edge_table_first_join = degree_table_filtered_aggregate.join(edge_table).where("v_id = v_id_source")
 				.select("edge_id, v_id_source, v_id_target, v_id_source_new, v_id_target_new");
 		Table edge_result_table = degree_table_filtered_aggregate.join(edge_table_first_join).where("v_id = v_id_target")
 				.select("edge_id, v_id_source_new, v_id_target_new");
 		
+		//debugging: convert table to stream and print
+		RowTypeInfo rowTypeInfo_debug2_edges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
+				new String[] {"edge_id", "v_id_source_new", "v_id_target_new"});
+		DataStream<Tuple2<Boolean, Row>> ds_stream_debug2_edges= fsTableEnv.toRetractStream(edge_result_table, rowTypeInfo_debug2_edges);
+//		ds_stream_debug2_edges.print().setParallelism(1);
+		
 		//convert joined edge table to data stream
 		RowTypeInfo rowTypeInfo_edges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
 				new String[] {"edge_id", "v_id_source", "v_id_target"});
 		DataStream<Tuple2<Boolean, Row>> stream_edges = fsTableEnv.toRetractStream(edge_result_table, rowTypeInfo_edges);
+//		stream_edges.print().setParallelism(1);
 		
 		ArrayList<DataStream<Tuple2<Boolean, Row>>> result_list = new ArrayList<DataStream<Tuple2<Boolean, Row>>>();
 		result_list.add(stream_vertices);

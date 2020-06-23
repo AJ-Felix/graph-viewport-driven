@@ -29,6 +29,7 @@ public class DegreeMatrix_Loader {
 		RowTypeInfo adjListInfo = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.ROW(Types.INT)}, 
 				new String[] {"rowkey", "row"});
 		DataStream<Tuple2<Boolean,Row>> ds_tuple_row = fsTableEnv.toRetractStream(table, adjListInfo);
+//		ds_tuple_row.print().setParallelism(1);
 //		DataStream<Row> dsRow = fsTableEnv.toAppendStream(table, adjListInfo);		//only works without ORDER BY
 		return ds_tuple_row;
 		

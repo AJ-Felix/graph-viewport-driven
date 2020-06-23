@@ -34,21 +34,30 @@ public class Server_SocketIO {
 				DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
 				DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
 				Iterator<Tuple2<Boolean,Row>> iterator_vertices = DataStreamUtils.collect(stream_vertices);
-//				Iterator<Tuple2<Boolean,Row>> iterator_edges = DataStreamUtils.collect(stream_edges);
+				Iterator<Tuple2<Boolean,Row>> iterator_edges = DataStreamUtils.collect(stream_edges);
 				System.out.println("bla");
-//				System.out.println(iterator_vertices.next().f1.getField(0));
-//				System.out.println(iterator_vertices.next().f1.getField(0));
-//				System.out.println(iterator_vertices.next().f1.getField(0));
-
+				
 				while (iterator_vertices.hasNext()) {
 					Tuple2<Boolean, Row> vertex = iterator_vertices.next();
-					System.out.println(vertex);
+//					System.out.println(vertex);
 					if (vertex.f0) {
 						server.getBroadcastOperations().sendEvent("addVertex", new VertexObject(vertex.f0.toString(), vertex.f1.getField(0).toString(), 
 								vertex.f1.getField(1).toString(), vertex.f1.getField(2).toString(), vertex.f1.getField(3).toString()));
-					} else if (vertex.f0) {
+					} else if (!vertex.f0) {
 						server.getBroadcastOperations().sendEvent("removeVertex", new VertexObject(vertex.f0.toString(), vertex.f1.getField(0).toString(), 
 								vertex.f1.getField(1).toString(), vertex.f1.getField(2).toString(), vertex.f1.getField(3).toString()));
+					}
+				}
+				System.out.println("Vertex iteration done");
+				while (iterator_edges.hasNext()) {
+					Tuple2<Boolean, Row> edge = iterator_edges.next();
+					System.out.println(edge);
+					if (edge.f0) {
+						server.getBroadcastOperations().sendEvent("addEdge", new EdgeObject(edge.f0.toString(), edge.f1.getField(0).toString(), 
+								edge.f1.getField(1).toString(), edge.f1.getField(2).toString()));
+					} else if (!edge.f0) {
+						server.getBroadcastOperations().sendEvent("removeEdge", new EdgeObject(edge.f0.toString(), edge.f1.getField(0).toString(), 
+								edge.f1.getField(1).toString(), edge.f1.getField(2).toString()));
 					}
 				}
 //				iterator_vertices.forEachRemaining(vertex -> {
