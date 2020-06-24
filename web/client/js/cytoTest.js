@@ -109,10 +109,10 @@ socket.on('removeVertex', function(vertexObject) {
 
 socket.on('addEdge', function(edgeObject) {
 	console.log('add: edge id is' + edgeObject.id);
-	cy.add({
-	    group: 'edges',
-	    data: { id: edgeObject.id, source: edgeObject.source, target: edgeObject.target }
-	});
+	// cy.add({
+	    // group: 'edges',
+	    // data: { id: edgeObject.id, source: edgeObject.source, target: edgeObject.target }
+	// });
 });
 
 socket.on('removeEdge', function(edgeObject) {
