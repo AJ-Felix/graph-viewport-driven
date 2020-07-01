@@ -130,7 +130,13 @@ Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-O
 
 TODO: Es wird nicht über den Iterator iteriert, die Lösung von Abd ausprobieren...
 		
+WebSockets: 
+	Server in pure Java while Client in pure Javascript, thats the challenge...
+	https://stackoverflow.com/questions/25777279/call-specific-functions-with-websockets
+	https://www.npmjs.com/package/websocket
+	https://github.com/TooTallNate/Java-WebSocket/blob/master/src/main/example/ChatServer.java
 
+	Funktioniert mit anderem Server: https://jansipke.nl/websocket-tutorial-with-java-server-jetty-and-javascript-client/
 
 
 TODO: Dynamic Tables in Upsert Mode sind nicht nativ unterstützt, zumindest nicht gefunden. 

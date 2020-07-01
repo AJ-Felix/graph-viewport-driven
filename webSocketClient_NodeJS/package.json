@@ -1,0 +1,16 @@
+{
+  "name": "websocketclient_nodejs",
+  "version": "1.0.0",
+  "description": "prototypes client for websocket",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Aljoscha Rydzyk",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "jquery": "^3.5.1",
+    "jsdom": "^16.2.2",
+    "websocket": "^1.0.31"
+  }
+}
