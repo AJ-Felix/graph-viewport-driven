@@ -9,6 +9,14 @@ ws.onmessage = function (evt) {
 	var dataArray = evt.data.split(";");
     console.log("Message: " + evt.data);
 	switch (dataArray[0]){
+		case 'clearGraph':
+			console.log('clearing graph');
+			cy.elements().remove();
+		break;
+		case 'fitGraph':
+			console.log('fitting graph');
+			cy.fit();
+		break;
 		case 'addVertex':
 			console.log("add Vertex!!!");
 			console.log(dataArray[1]);
@@ -38,4 +46,8 @@ ws.onerror = function(err) {
 
 function sendSignal(){
 	ws.send("buildTopView");
+}
+
+function zoomIn(){
+	ws.send("zoomTopLeftCorner");
 }

@@ -39,12 +39,12 @@ var cy = cytoscape({
   },
   
     // initial viewport state:
-  zoom: 1,
-  pan: { x: 0, y: 0 },
+  zoom: 0.2,
+  pan: { x: -150, y: -150 },
 
   // interaction options:
-  minZoom: 1e-50,
-  maxZoom: 1e50,
+  minZoom: 1e-1,
+  maxZoom: 1e1,
   zoomingEnabled: true,
   userZoomingEnabled: true,
   panningEnabled: true,
@@ -68,8 +68,8 @@ var cy = cytoscape({
  */  pixelRatio: 'auto'
 });
 
-cy.add({
-		group: 'nodes',
-		data: { weight: 75 },
-		position: { x: 200, y: 200 }
-	});
+// cy.add({
+		// group: 'nodes',
+		// data: { weight: 75 },
+		// position: { x: 200, y: 200 }
+	// });

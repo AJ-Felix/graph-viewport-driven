@@ -19,17 +19,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction.Context;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.BasicConfigurator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class undertowTest {
+public class UndertowServer {
+	
+	private static FlinkCore flinkCore;
+	private static ArrayList<DataStream> graph_data_streams;
 	
 	private static transient CytoGraph cytograph = new CytoGraph();
 	private static transient CytoVertex cytovertex;
@@ -40,27 +45,9 @@ public class undertowTest {
     private static String webSocketHost = "localhost";
 	
     public static void main(final String[] args) {
-        // Demonstrates how to use Websocket Protocol Handshake to enable Per-message deflate
-//        Undertow server = Undertow.builder()
-//                .addHttpListener(8080, "localhost")
-//                .setHandler(path()
-//                        .addPrefixPath("/myapp",
-//                            new WebSocketProtocolHandshakeHandler(new WebSocketConnectionCallback() {
-//
-//                              @Override
-//                              public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
-//                                channel.getReceiveSetter().set(new AbstractReceiveListener() {
-//
-//                                  @Override
-//                                  protected void onFullTextMessage(WebSocketChannel channel, BufferedTextMessage message) {
-//                                    WebSockets.sendText(message.getData(), channel, null);
-//                                  }
-//                                });
-//                                channel.resumeReceives();
-//                              }
-//                            }).addExtension(new PerMessageDeflateHandshake(false, 6)))
-//                        .addPrefixPath("/", resource(new ClassPathResourceManager(undertowTest.class.getClassLoader(), undertowTest.class.getPackage())).addWelcomeFiles("index.html")))
-//                .build();
+    	
+//    	BasicConfigurator.configure();
+    	
         Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
                 .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
                     channels.add(channel);
@@ -86,65 +73,35 @@ public class undertowTest {
                     WebSockets.sendText(messageData, session, null);
                 }
                 if (messageData.equals("buildTopView")) {
-        			FlinkCore flinkCore = new FlinkCore();
-        			List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = flinkCore.buildTopView();
+        			flinkCore = new FlinkCore();
+        			graph_data_streams = flinkCore.buildTopView();
         			DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
         			DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
-        			stream_vertices
-//        			.process(new ProcessFunction<Tuple2<Boolean, Row>, CytoVertex>(){
-        //
-//        				@Override
-//        				public void processElement(Tuple2<Boolean, Row> arg0,
-//        						ProcessFunction<Tuple2<Boolean, Row>, CytoVertex>.Context arg1, Collector<CytoVertex> arg2)
-//        						throws Exception {
-//        					// TODO Auto-generated method stub
-//        					
-//        				}
-//        				
-//        			})
-//        			.process(new ProcessFunction<Tuple2<Boolean, Row>, CytoGraph>() {
-//        					@Override
-//        					public void processElement(Tuple2<Boolean, Row> element,
-//        							ProcessFunction<Tuple2<Boolean, Row>, CytoGraph>.Context context,
-//        							Collector<CytoGraph> collector) throws Exception {
-//        						if (element.f0) {
-//        							cytograph.addVertex(element.f1.getField(0).toString(), 
-//        								Integer.parseInt(element.f1.getField(1).toString()),
-//        								Integer.parseInt(element.f1.getField(2).toString()));
-//        							collector.collect(cytograph);
-//        						}
-//        					}
-//        				})
-//        			.addSink(new SinkFunction<CytoGraph>() {
-//
-//        				private static final long serialVersionUID = -8999956705061275432L;
-//        				@Override 
-//        				public void invoke(CytoGraph element, Context context) {
-//        					undertowTest.sendToAll("{ group: 'nodes', data: { id: 'n0' }, position: { x: 100, y: 100 } }");
-//        					undertowTest.sendToAll(element.toString());
-//        				}
-//        			});
-        			.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
-
-        				private static final long serialVersionUID = -8999956705061275432L;
+        			stream_vertices.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
         				@Override 
         				public void invoke(Tuple2<Boolean, Row> element, Context context) {
         					if (element.f0) {
-        						undertowTest.sendToAll("addVertex;" + element.f1.getField(0).toString() + 
+        						UndertowServer.sendToAll("addVertex;" + element.f1.getField(0).toString() + 
         							";" + element.f1.getField(1).toString() + ";" + element.f1.getField(2).toString() );
         					} else if (!element.f0) {
-            					undertowTest.sendToAll("removeVertex;" + element.f1.getField(0).toString() + 
+            					UndertowServer.sendToAll("removeVertex;" + element.f1.getField(0).toString() + 
             							";" + element.f1.getField(1).toString() + ";" + element.f1.getField(2).toString() );
         					}
         				}
         			});
+        			try {
+        				flinkCore.getFsEnv().execute();
+        			} catch (Exception e1) {
+        				// TODO Auto-generated catch block
+        				e1.printStackTrace();
+        			}
         			stream_edges.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
 
         				private static final long serialVersionUID = -8999956705061275432L;
         				@Override 
         				public void invoke(Tuple2<Boolean, Row> element, Context context) {
         					if (element.f0) {
-        						undertowTest.sendToAll("addEdge;" + element.f1.getField(0).toString() + 
+        						UndertowServer.sendToAll("addEdge;" + element.f1.getField(0).toString() + 
         							";" + element.f1.getField(1).toString() + ";" + element.f1.getField(2).toString() );
         					} 
         				}
@@ -155,7 +112,28 @@ public class undertowTest {
         				// TODO Auto-generated catch block
         				e1.printStackTrace();
         			}
+        			UndertowServer.sendToAll("fitGraph");
                 }
+    			if (messageData.equals("zoomTopLeftCorner")) {
+    				UndertowServer.sendToAll("clearGraph");
+    				try {
+						DataStream<Tuple5<String, String, String, String, String>> dstream_vertices = flinkCore.zoomIn(graph_data_streams.get(2),0, 2000, 2000, 0);
+						dstream_vertices.addSink(new SinkFunction<Tuple5<String, String, String, String, String>>() {
+
+		    				private static final long serialVersionUID = -8999956705061275432L;
+		    				@Override 
+		    				public void invoke(Tuple5<String, String, String, String, String> element, Context context) {
+//		    					System.out.println("THis is the sink" + element);
+		    					UndertowServer.sendToAll("addVertex;" + element.f2 + ";" + element.f3 + ";" + element.f4);
+		    				}
+						});
+						flinkCore.getFsEnv().execute();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+    				UndertowServer.sendToAll("fitGraph");
+    			}
             }
         };
     }
