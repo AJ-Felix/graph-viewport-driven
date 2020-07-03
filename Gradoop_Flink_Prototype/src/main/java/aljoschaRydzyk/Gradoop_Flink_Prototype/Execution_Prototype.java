@@ -139,10 +139,11 @@ public class Execution_Prototype {
 //			PrintStream fileOut = new PrintStream("/home/aljoscha/out.txt");
 //			System.setOut(fileOut);
 //
-			DataStream<Tuple2<Boolean, Row>> ds_degree = DegreeMatrix_Loader.load(fsTableEnv, "degree_vertices_10_third", 10);
-			GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
-			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2"); 			//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			MatchDegreeChoice.match(fsEnv, fsTableEnv, ds_degree, log);
+			DataStream<Tuple2<Boolean, Row>> ds_degree = DegreeMatrixLoader.load(fsTableEnv, "degree_vertices_10_third", 10);
+			ds_degree.print();
+//			GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
+//			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2"); 			//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+//			MatchDegreeChoice.match(fsEnv, fsTableEnv, ds_degree, log);
 			
 //			RetractCsvToCytoscapeCsv.convert("/home/aljoscha/debug/tmp/tables/test_run5/3", "/home/aljoscha/debug/tmp/tables/test_run5/cyto");
 			

@@ -128,7 +128,8 @@ KDEVTMPFSI:
 
 Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert)
 
-TODO: Es wird nicht über den Iterator iteriert, die Lösung von Abd ausprobieren...
+TODO: Prüfen, ob Degree Matrix in HBase wirklich notwendig ist. Man könnte vielleicht auch auf GraphID filtern auf Degree attribut sortieren (mit Limit)
+TODO: Prüfen inwiefern der initiale VertexStream für downstream-Operationen verwendet werden muss
 		
 WebSockets: 
 	Server in pure Java while Client in pure Javascript, thats the challenge...

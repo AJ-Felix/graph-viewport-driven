@@ -1,6 +1,5 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
-import java.io.PrintWriter;
 import java.util.List;
 
 import org.apache.flink.api.common.functions.MapFunction;
@@ -11,7 +10,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
