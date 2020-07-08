@@ -13,7 +13,7 @@
 			padding:20px;
 		}
 		#cy {
-			width: 750px;
+			width: 1250px;
 			height: 750px;
 			display: block;
 			background: 777;
@@ -34,20 +34,27 @@
 
 <body>
 
-	<h1>Cytoscape Test</h1>
+	<h1 id="header1">Cytoscape Test</h1>
 	<br/>
 
 	<div id="console" class="well">
 	</div>
 	
 	<div id="cy" style="border:10px solid #cecece;">
-	This is the cytoscape container!
 	</div>
 
 	<form class="well form-inline" onsubmit="return false;">
-	   <input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
-	   <button type="button" onClick="sendSignal()" class="btn" id="send">buildTopView</button>
-	   <button type="button" onClick="zoomIn()" class="btn" id="send">ZoomIn</button>
+		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
+		<button type="submit" onClick="sendSignal()" class="btn" id="send">buildTopView</button>
+	</form>
+	<div id="buttons" >
+		<button type="button" onClick="zoomIn()" class="btn" id="send">zoomIn</button>
+		<button type="button" onClick="panRight()" class="btn" id="send">panRight</button>
+		<button type="button" onClick="displayAll()" class="btn" id="send">diplayAll</button>
+	</div>
+	<form>
+		<input name="name" type="text"/>
+		<button type="submit"> Send </button>
 	</form>
 	
     <script src="js/moment.min.js" type="script"></script>

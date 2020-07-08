@@ -1,4 +1,4 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;

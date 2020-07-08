@@ -52,6 +52,8 @@ import org.gradoop.flink.model.impl.operators.transformation.functions.Transform
 import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
 
+import Temporary.GraFlink_Graph_Loader;
+
 public class Execution_Prototype {
 	
 	public static void main(String[] args) {
@@ -139,10 +141,13 @@ public class Execution_Prototype {
 //			PrintStream fileOut = new PrintStream("/home/aljoscha/out.txt");
 //			System.setOut(fileOut);
 //
-			DataStream<Tuple2<Boolean, Row>> ds_degree = DegreeMatrixLoader.load(fsTableEnv, "degree_vertices_10_third", 10);
-			ds_degree.print();
+			
+			DataStream<Tuple2<Boolean, Row>> ds_degree = FlinkGradoopVerticesLoader.load(fsTableEnv, 10);
+			ds_degree.print().setParallelism(1);
+			
 //			GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
 //			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2"); 			//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+//			log.getVertices().print();
 //			MatchDegreeChoice.match(fsEnv, fsTableEnv, ds_degree, log);
 			
 //			RetractCsvToCytoscapeCsv.convert("/home/aljoscha/debug/tmp/tables/test_run5/3", "/home/aljoscha/debug/tmp/tables/test_run5/cyto");

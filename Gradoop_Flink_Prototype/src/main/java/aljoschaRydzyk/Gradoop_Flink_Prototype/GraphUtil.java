@@ -71,4 +71,8 @@ public class GraphUtil {
 	public DataStreamSource<Tuple5<String, String, String, String, String>> getVertexStream(){
 		return this.vertexStream;
 	}
+	
+	public DataStreamSource<Tuple5<String, String, String, String, String>> getEdgeStream(){
+		return this.edgeStream;
+	}
 }

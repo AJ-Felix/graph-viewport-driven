@@ -33,6 +33,22 @@ ws.onmessage = function (evt) {
 			console.log(dataArray[1] +dataArray[2] + dataArray[3]);
 			cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2] , target: dataArray[3]} });
 		break;
+		case 'removeSpatialSelection':
+			var top = parseInt(dataArray[1]);
+			var right = parseInt(dataArray[2]);
+			var bottom = parseInt(dataArray[3]);
+			var left = parseInt(dataArray[4]);
+			cy.nodes().forEach(
+				function (node){
+				var pos = node.position();
+					// console.log(node.position());
+					// console.log(node.position().x);
+					if ((pos.x > right) || (pos.x < left) || (pos.y > bottom) || (pos.y < top)) {
+						cy.remove(node);
+					}
+				}
+			)
+		break;
 	}
 };
 
@@ -51,3 +67,30 @@ function sendSignal(){
 function zoomIn(){
 	ws.send("zoomTopLeftCorner");
 }
+
+function panRight(){
+	ws.send("panRight");
+}
+
+function displayAll(){
+	ws.send("displayAll");
+}
+
+document.addEventListener("click",
+	function(){
+		console.log("Mouse clicked anywhere in document!");
+	}
+);
+
+var header1 = document.getElementById('header1');
+header1.addEventListener("mousedown", 
+	function(){
+		console.log("Mouse went down on header1");
+	}
+);
+
+document.getElementById('cy').addEventListener('mousedown', 
+	function(){
+		console.log("Mouse went down on cytoscape container");
+	}
+)

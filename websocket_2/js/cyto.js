@@ -39,8 +39,8 @@ var cy = cytoscape({
   },
   
     // initial viewport state:
-  zoom: 0.2,
-  pan: { x: -150, y: -150 },
+  zoom: 1,
+  pan: { x: 0, y: 0 },
 
   // interaction options:
   minZoom: 1e-1,
@@ -73,3 +73,17 @@ var cy = cytoscape({
 		// data: { weight: 75 },
 		// position: { x: 200, y: 200 }
 	// });
+
+var cyto = document.getElementById('cy');
+cyto.addEventListener('mousedown', function(e){
+	console.log("mouse went down in cy (drag)");
+	this.onmousemove = function (e){
+		console.log(e.movementX);
+		console.log(cy.pan());
+		ws.send("pan;" + e.movementX + ";" + e.movementY);
+	}
+});
+
+cyto.addEventListener("mouseup", function(e){
+    this.onmousemove = null
+});

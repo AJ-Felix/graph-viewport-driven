@@ -16,13 +16,13 @@ import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.types.Row;
+import org.apache.log4j.BasicConfigurator;
 
 import Temporary.Server;
 
 public class UndertowServer {
 	
 	private static FlinkCore flinkCore;
-	private static List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams;
 	
 	private static ArrayList<WebSocketChannel> channels = new ArrayList<>();
     private static String webSocketListenPath = "/graphData";
@@ -59,10 +59,10 @@ public class UndertowServer {
                 }
                 if (messageData.equals("buildTopView")) {
         			flinkCore = new FlinkCore();
-        			graph_data_streams = flinkCore.buildTopView();
-        			DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
-        			DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
-        			stream_vertices.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
+        			List<DataStream<Tuple2<Boolean, Row>>> graphStreams = flinkCore.buildTopView();
+        			DataStream<Tuple2<Boolean, Row>> vertexStream = graphStreams.get(0);
+        			DataStream<Tuple2<Boolean, Row>> edgeStream = graphStreams.get(1);
+        			vertexStream.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
         				@Override 
         				public void invoke(Tuple2<Boolean, Row> element, @SuppressWarnings("rawtypes") Context context) {
         					if (element.f0) {
@@ -80,14 +80,14 @@ public class UndertowServer {
         				// TODO Auto-generated catch block
         				e1.printStackTrace();
         			}
-        			stream_edges.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
+        			edgeStream.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
 
         				private static final long serialVersionUID = -8999956705061275432L;
         				@Override 
         				public void invoke(Tuple2<Boolean, Row> element, @SuppressWarnings("rawtypes") Context context) {
         					if (element.f0) {
-        						UndertowServer.sendToAll("addEdge;" + element.f1.getField(0).toString() + 
-        							";" + element.f1.getField(1).toString() + ";" + element.f1.getField(2).toString() );
+        						UndertowServer.sendToAll("addEdge;" + element.f1.getField(0) + 
+        							";" + element.f1.getField(1) + ";" + element.f1.getField(2));
         					} 
         				}
         			});
@@ -100,24 +100,124 @@ public class UndertowServer {
         			UndertowServer.sendToAll("fitGraph");
                 }
     			if (messageData.equals("zoomTopLeftCorner")) {
-    				UndertowServer.sendToAll("clearGraph");
-    				try {
-						DataStream<Tuple5<String, String, String, String, String>> dstream_vertices = flinkCore.zoomIn(0, 2000, 2000, 0);
-						dstream_vertices.addSink(new SinkFunction<Tuple5<String, String, String, String, String>>() {
+//    				UndertowServer.sendToAll("clearGraph");
+    				UndertowServer.sendToAll("removeSpatialSelection;0;2000;2000;0");
+    				
+    					@SuppressWarnings("rawtypes")
+						List<DataStream> graphStreams = flinkCore.zoomIn(0, 2000, 2000, 0);
+						@SuppressWarnings("unchecked")
+						DataStream<Tuple5<String, String, String, String, String>> vertexStream = graphStreams.get(0);
+						vertexStream.addSink(new SinkFunction<Tuple5<String, String, String, String, String>>() {
 
 		    				private static final long serialVersionUID = -8999956705061275432L;
 		    				@Override 
 		    				public void invoke(Tuple5<String, String, String, String, String> element, @SuppressWarnings("rawtypes") Context context) {
-//		    					System.out.println("THis is the sink" + element);
 		    					UndertowServer.sendToAll("addVertex;" + element.f2 + ";" + element.f3 + ";" + element.f4);
 		    				}
 						});
+						try {
+							flinkCore.getFsEnv().execute();
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						@SuppressWarnings("unchecked")
+						DataStream<Tuple2<Boolean, Row>> edgeStream = graphStreams.get(1);
+						edgeStream.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
+
+		    				private static final long serialVersionUID = -8999956705061275432L;
+		    				@Override 
+		    				public void invoke(Tuple2<Boolean, Row> element, @SuppressWarnings("rawtypes") Context context) {
+		    					UndertowServer.sendToAll("addEdge;" + element.f1.getField(0) + ";" + element.f1.getField(1) + ";" + element.f1.getField(2));
+		    				}
+						});
+						try {
+							flinkCore.getFsEnv().execute();
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+	    				UndertowServer.sendToAll("fitGraph");
+    			}
+    			if (messageData.equals("panRight")) {
+    				UndertowServer.sendToAll("removeSpatialSelection;0;2000;2000;500");
+    				@SuppressWarnings("rawtypes")
+					List<DataStream> graphStreams = flinkCore.panRight(0, 2000, 2000, 0, 0, 2500, 2000, 500);
+					@SuppressWarnings("unchecked")
+					DataStream<Tuple5<String, String, String, String, String>> vertexStream = graphStreams.get(0);
+					vertexStream.addSink(new SinkFunction<Tuple5<String, String, String, String, String>>() {
+
+	    				private static final long serialVersionUID = -8999956705061275432L;
+	    				@Override 
+	    				public void invoke(Tuple5<String, String, String, String, String> element, @SuppressWarnings("rawtypes") Context context) {
+	    					UndertowServer.sendToAll("addVertex;" + element.f2 + ";" + element.f3 + ";" + element.f4);
+	    				}
+					});
+					try {
+						flinkCore.getFsEnv().execute();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					@SuppressWarnings("unchecked")
+					DataStream<Tuple2<Boolean, Row>> edgeStream = graphStreams.get(1);
+					edgeStream.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
+
+	    				private static final long serialVersionUID = -8999956705061275432L;
+	    				@Override 
+	    				public void invoke(Tuple2<Boolean, Row> element, @SuppressWarnings("rawtypes") Context context) {
+	    					UndertowServer.sendToAll("addEdge;" + element.f1.getField(0) + ";" + element.f1.getField(1) + ";" + element.f1.getField(2));
+	    				}
+					});
+					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
     				UndertowServer.sendToAll("fitGraph");
+    			}
+    			if (messageData.equals("displayAll")) {
+        			flinkCore = new FlinkCore();
+    				List<DataStream> graphStreams = flinkCore.displayAll();
+    				@SuppressWarnings("unchecked")
+					DataStream<Tuple5<String, String, String, String, String>> vertexStream = graphStreams.get(0);
+					vertexStream.addSink(new SinkFunction<Tuple5<String, String, String, String, String>>() {
+
+	    				private static final long serialVersionUID = -8999956705061275432L;
+	    				@Override 
+	    				public void invoke(Tuple5<String, String, String, String, String> element, @SuppressWarnings("rawtypes") Context context) {
+	    					UndertowServer.sendToAll("addVertex;" + element.f2 + "," + element.f3 + "," + element.f4 + ";" + element.f3 + ";" + element.f4);
+	    				}
+					});
+					try {
+						flinkCore.getFsEnv().execute();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+//					@SuppressWarnings("unchecked")
+//					DataStream<Tuple5<String, String, String, String, String>> edgeStream = graphStreams.get(1);
+//					edgeStream.addSink(new SinkFunction<Tuple5<String, String, String, String, String>>() {
+//
+//	    				private static final long serialVersionUID = -8999956705061275432L;
+//	    				@Override 
+//	    				public void invoke(Tuple5<String, String, String, String, String> element, @SuppressWarnings("rawtypes") Context context) {
+//	    					UndertowServer.sendToAll("addEdge;" + element.f2 + ";" + element.f3 + ";" + element.f4);
+//	    				}
+//					});
+//					try {
+//						flinkCore.getFsEnv().execute();
+//					} catch (Exception e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+    			}
+    			if (messageData.startsWith("pan")){
+    				String[] inputArray = messageData.split(";");
+    				Integer xMouseMovement = Integer.parseInt(inputArray[1]);
+    				Integer yMouseMovement = Integer.parseInt(inputArray[2]);
+    				List<DataStream> graphStreams = flinkCore.pan(xMouseMovement, yMouseMovement);
     			}
             }
         };

@@ -81,6 +81,9 @@ mit DataTypes wäre es möglich, binary abzufragen und anschließend umzuwandeln
 	--> Eigenes Dateiformat verwenden (geht erstmal schneller die Corefunktionen aufzubauen), z.B. CSV
 		-	checken inwieweit FLINK Table API mit CSV klarkommt
 		
+Es kann nicht die ganze 'vertices' Tabelle aus HBase über Flink Table API eingelesen, weil unterschiedliche Knotentypen unterschiedliche Felder haben und man filtern müsste. Die Werte der Felder
+auf denen gefiltert werden müsste, lassen sich allerdings in der SQL-Anfrage nicht in einen Datentyp konvertieren auf dem Vergleiche gängig sind (z.B. String).
+		
 Unterschied zwischen den Operatoren max und maxBy ist wichtig!!
 
 Wenn das Layout vor der Visualisierung steht, dann können beim Zoom alle Knoten mit größtem Grad, die einerseits ihre Koordinaten im Bereich haben und
@@ -128,15 +131,13 @@ KDEVTMPFSI:
 
 Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert)
 
-TODO: Prüfen, ob Degree Matrix in HBase wirklich notwendig ist. Man könnte vielleicht auch auf GraphID filtern auf Degree attribut sortieren (mit Limit)
-TODO: Prüfen inwiefern der initiale VertexStream für downstream-Operationen verwendet werden muss
-		
+TODO: Panning-Operation grob implementieren
+
 WebSockets: 
 	Server in pure Java while Client in pure Javascript, thats the challenge...
 	https://stackoverflow.com/questions/25777279/call-specific-functions-with-websockets
 	https://www.npmjs.com/package/websocket
 	https://github.com/TooTallNate/Java-WebSocket/blob/master/src/main/example/ChatServer.java
-
 	Funktioniert mit anderem Server: https://jansipke.nl/websocket-tutorial-with-java-server-jetty-and-javascript-client/
 
 

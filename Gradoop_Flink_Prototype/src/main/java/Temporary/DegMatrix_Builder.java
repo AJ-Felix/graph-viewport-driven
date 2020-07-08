@@ -1,4 +1,4 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
@@ -7,6 +7,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
+
+import aljoschaRydzyk.Gradoop_Flink_Prototype.EPGMtoDegMatrix;
 
 public class DegMatrix_Builder {
 	GradoopFlinkConfig gra_flink_cfg;
