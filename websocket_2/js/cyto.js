@@ -17,7 +17,9 @@ var cy = cytoscape({
       selector: 'node',
       style: {
         'background-color': '#666',
-        'label': 'data(id)'
+        'label': 'data(id)',
+		'height': '30',
+		'width':'30'
       }
     },
 
@@ -87,3 +89,10 @@ cyto.addEventListener('mousedown', function(e){
 cyto.addEventListener("mouseup", function(e){
     this.onmousemove = null
 });
+
+document.addEventListener("click",
+	function(){
+		console.log("Mouse clicked anywhere in document!");
+		console.log(cy.pan());
+	}
+);

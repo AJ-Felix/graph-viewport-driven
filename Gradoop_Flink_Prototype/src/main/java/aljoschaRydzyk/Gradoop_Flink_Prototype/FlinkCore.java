@@ -37,7 +37,7 @@ public class FlinkCore {
 	  private StreamExecutionEnvironment fsEnv;
 	  private StreamTableEnvironment fsTableEnv;
 	  
-	  private GraphUtil graphUtil;
+	  private GradoopGraphUtil graphUtil;
 	  private Integer topBoundary;
 	  private Integer bottomBoundary;
 	  private Integer leftBoundary;
@@ -68,7 +68,7 @@ public class FlinkCore {
 		List<DataStream<Tuple2<Boolean, Row>>> datastreams = new ArrayList<DataStream<Tuple2<Boolean, Row>>>();
 		try {
 			LogicalGraph graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			this.graphUtil = new GraphUtil(graph, fsEnv, fsTableEnv);
+			this.graphUtil = new GradoopGraphUtil(graph, fsEnv, fsTableEnv);
 			datastreams.addAll(graphUtil.getMaxDegreeSubset(dataStreamDegree));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -184,7 +184,7 @@ public class FlinkCore {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-		this.graphUtil = new GraphUtil(graph, fsEnv, fsTableEnv);
+		this.graphUtil = new GradoopGraphUtil(graph, fsEnv, fsTableEnv);
 		List<DataStream> streams = new ArrayList<DataStream>();
 		DataStream<Tuple2<Boolean, Row>> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
 		try {

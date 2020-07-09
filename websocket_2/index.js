@@ -1,4 +1,4 @@
-var ws = new WebSocket("ws://localhost:8887/graphData")
+var ws = new WebSocket("ws://localhost:8887/graphData");
 
 ws.onopen = function() {
     console.log("Opened!");
@@ -12,6 +12,10 @@ ws.onmessage = function (evt) {
 		case 'clearGraph':
 			console.log('clearing graph');
 			cy.elements().remove();
+		break;
+		case 'layout':
+			// var layout = cy.layout({name: 'fcose', ready: () => {console.log("Layout ready")}, stop: () => {console.log("Layout stopped")}});
+			// layout.run();
 		break;
 		case 'fitGraph':
 			console.log('fitting graph');
@@ -76,11 +80,7 @@ function displayAll(){
 	ws.send("displayAll");
 }
 
-document.addEventListener("click",
-	function(){
-		console.log("Mouse clicked anywhere in document!");
-	}
-);
+
 
 var header1 = document.getElementById('header1');
 header1.addEventListener("mousedown", 

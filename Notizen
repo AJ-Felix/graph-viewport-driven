@@ -131,7 +131,11 @@ KDEVTMPFSI:
 
 Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert)
 
-TODO: Panning-Operation grob implementieren
+
+TODO: Pan/Zoom: Cytoscape-Koordinaten sinnvoll in Gradoop-Layout-Koordinaten übersetzen.
+TODO: Knoten-Kante-Knoten-Objekte streamen statt Knotenstream und Kantenstream
+	-	Versuche vorerst, die Join-Operationen der Tabelle in MaxDegreeSubset mit den Knoten- und Kantenobjekten zu implementieren. Wenn das nicht funktioniert, müssen die Objekte vorher noch auf Flink TUple gemappt werden.
+TODO: Verschiedene Art und Weisen, wie der Graph im BackEnd gehalten und geladen wird implementieren (Hauptziel der Masterarbeit)
 
 WebSockets: 
 	Server in pure Java while Client in pure Javascript, thats the challenge...

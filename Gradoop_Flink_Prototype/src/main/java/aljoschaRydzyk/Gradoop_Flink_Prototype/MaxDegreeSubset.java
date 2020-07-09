@@ -56,6 +56,7 @@ public class MaxDegreeSubset {
 			StreamTableEnvironment fsTableEnv, 
 			DataStreamSource<Tuple5<String, String, String, String, String>> vertexStreamInput,
 			DataStreamSource<Tuple5<String, String, String, String, String>> edgeStreamInput,
+			DataStreamSource<VVEdgeWrapper> wrapperStreamInput,
 			DataStream<Tuple2<Boolean, Row>> datastreamDegree,
 			LogicalGraph log) throws Exception {
 		
