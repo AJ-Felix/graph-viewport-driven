@@ -3,6 +3,8 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -63,33 +65,50 @@ public class FlinkCore {
 		return graph;
 	}
 	
-	public List<DataStream<Tuple2<Boolean, Row>>> buildTopView (){
-		DataStream<Tuple2<Boolean, Row>> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
-		List<DataStream<Tuple2<Boolean, Row>>> datastreams = new ArrayList<DataStream<Tuple2<Boolean, Row>>>();
+	public GraphUtil initializeGraphUtil() {
+		LogicalGraph graph;
 		try {
-			LogicalGraph graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");
 			this.graphUtil = new GradoopGraphUtil(graph, fsEnv, fsTableEnv);
-			datastreams.addAll(graphUtil.getMaxDegreeSubset(dataStreamDegree));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+		return this.graphUtil;
+	}
+	
+	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(){
+		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
+		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
+		try {
+			graphUtil.produceWrapperStream();
+			wrapperStream = graphUtil.getMaxDegreeSubset(dataStreamDegree);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return datastreams;
-		
+		return wrapperStream;
+	}
+	
+	public DataStream<Row> buildTopViewAppend(){
+		DataStream<Row> wrapperStream = CSVGraphUtil.produceWrapperStream(this.fsEnv, 
+				"/home/aljoscha/graph-viewport-driven/csvGraphs/one10thousand_sample_2_third_degrees_layout.csv");
+		return wrapperStream;
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public List<DataStream> zoomIn (Integer top, Integer right, Integer bottom, Integer left){
+	public List<DataStream> zoomIn (Integer top, Integer right, Integer bottom, Integer left) throws Exception{
 		List<DataStream> datastreams = new ArrayList<DataStream>();
-		DataStream<Tuple5<String, String, String, String, String>> vertexStream = this.graphUtil.getVertexStream()
-			.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-			@Override
-			public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-				Integer x = Integer.parseInt(value.f3);
-				Integer y = Integer.parseInt(value.f4);
-				return (left < x) &&  (x < right) && (top < y) && (y < bottom);
-			}
-		});
+		DataStream<VertexCustom> vertexStream = this.graphUtil.getVertexStream()
+//			.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
+//			@Override
+//			public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
+//				Integer x = Integer.parseInt(value.f3);
+//				Integer y = Integer.parseInt(value.f4);
+//				return (left < x) &&  (x < right) && (top < y) && (y < bottom);
+//			}
+//		})
+				;
 		datastreams.add(vertexStream);
 		Table vertexTable = fsTableEnv.fromDataStream(vertexStream).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
 		Table edgeTable = fsTableEnv.fromDataStream(this.graphUtil.getEdgeStream())
@@ -107,35 +126,38 @@ public class FlinkCore {
 	
 	@SuppressWarnings("rawtypes")
 	public List<DataStream> panRight(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer topNew, Integer rightNew, 
-			Integer bottomNew, Integer leftNew){
+			Integer bottomNew, Integer leftNew) throws Exception{
 		List<DataStream> datastreams = new ArrayList<DataStream>();
-		DataStream<Tuple5<String, String, String, String, String>> vertexStreamAll = this.graphUtil.getVertexStream()
-				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-				@Override
-				public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-					Integer x = Integer.parseInt(value.f3);
-					Integer y = Integer.parseInt(value.f4);
-					return (leftNew < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
-				}
-			});
-		DataStream<Tuple5<String, String, String, String, String>> vertexStreamNew = vertexStreamAll
-				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-					@Override
-					public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-						Integer x = Integer.parseInt(value.f3);
-						Integer y = Integer.parseInt(value.f4);
-						return (rightOld < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
-				}
-			});
-		DataStream<Tuple5<String, String, String, String, String>> vertexStreamOld = vertexStreamAll
-				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-					@Override
-					public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-						Integer x = Integer.parseInt(value.f3);
-						Integer y = Integer.parseInt(value.f4);
-						return (leftOld < x) &&  (x < leftNew) && (topNew < y) && (y < bottomNew);
-				}
-			});
+		DataStream<VertexCustom> vertexStreamAll = this.graphUtil.getVertexStream()
+//				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
+//				@Override
+//				public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
+//					Integer x = Integer.parseInt(value.f3);
+//					Integer y = Integer.parseInt(value.f4);
+//					return (leftNew < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
+//				}
+//			})
+				;
+		DataStream<VertexCustom> vertexStreamNew = vertexStreamAll
+//				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
+//					@Override
+//					public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
+//						Integer x = Integer.parseInt(value.f3);
+//						Integer y = Integer.parseInt(value.f4);
+//						return (rightOld < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
+//				}
+//			})
+				;
+		DataStream<VertexCustom> vertexStreamOld = vertexStreamAll
+//				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
+//					@Override
+//					public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
+//						Integer x = Integer.parseInt(value.f3);
+//						Integer y = Integer.parseInt(value.f4);
+//						return (leftOld < x) &&  (x < leftNew) && (topNew < y) && (y < bottomNew);
+//				}
+//			})
+				;
 		
 		//edge stream for all connections within new vertices
 		Table vertexTableNew = fsTableEnv.fromDataStream(vertexStreamNew).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
@@ -176,7 +198,7 @@ public class FlinkCore {
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public List<DataStream> displayAll() {
+	public List<DataStream> displayAll() throws Exception {
 		LogicalGraph graph = null;
 		try {
 			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");
@@ -186,9 +208,9 @@ public class FlinkCore {
 		}	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
 		this.graphUtil = new GradoopGraphUtil(graph, fsEnv, fsTableEnv);
 		List<DataStream> streams = new ArrayList<DataStream>();
-		DataStream<Tuple2<Boolean, Row>> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
+		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
 		try {
-			List<DataStream<Tuple2<Boolean, Row>>> otherStreams = graphUtil.getMaxDegreeSubset(dataStreamDegree);
+			DataStream<Tuple2<Boolean, Row>> otherStreams = graphUtil.getMaxDegreeSubset(dataStreamDegree);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

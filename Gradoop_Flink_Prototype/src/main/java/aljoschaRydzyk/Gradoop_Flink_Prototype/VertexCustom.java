@@ -1,22 +1,24 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 public class VertexCustom {
-	private String idGradoop;
-	private String label;
-	private Integer x;
-	private Integer y;
-	private Integer idNumeric;
+	public String idGradoop;
+	public String label;
+	public Integer x;
+	public Integer y;
+	public Integer idNumeric;
+	public Long degree;
 	
 	public VertexCustom() {
 		
 	}
 	
-	public VertexCustom(String idGradoop, String label, Integer idNumeric, Integer x, Integer y) {
+	public VertexCustom(String idGradoop, String label, Integer idNumeric, Integer x, Integer y, Long degree) {
 		this.idGradoop = idGradoop;
 		this.label = label;
 		this.x = x;
 		this.y = y;
 		this.idNumeric = idNumeric;
+		this.degree = degree;
 	}
 	
 	public String getIdGradoop() {
@@ -57,5 +59,13 @@ public class VertexCustom {
 	
 	public void setIdNumeric(Integer idNumeric) {
 		this.idNumeric = idNumeric;
+	}
+	
+	public void setDegree(Long degree) {
+		this.degree = degree;
+	}
+	
+	public Long getDegree() {
+		return this.degree;
 	}
 }

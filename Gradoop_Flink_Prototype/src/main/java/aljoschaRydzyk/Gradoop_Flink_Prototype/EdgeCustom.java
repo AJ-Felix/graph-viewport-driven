@@ -1,10 +1,10 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 public class EdgeCustom {
-	private String idGradoop;
-	private String label;
-	private String sourceIdGradoop;
-	private String targetIdGradoop;
+	public String idGradoop;
+	public String label;
+	public String sourceIdGradoop;
+	public String targetIdGradoop;
 	
 	public EdgeCustom() {
 		

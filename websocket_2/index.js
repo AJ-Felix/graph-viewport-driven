@@ -1,12 +1,16 @@
 var ws = new WebSocket("ws://localhost:8887/graphData");
 
+var vertexIncidenceMap = new Map();
+
 ws.onopen = function() {
     console.log("Opened!");
     ws.send("Hello Server");
 };
 
 ws.onmessage = function (evt) {
+	console.log("Map size is :" + vertexIncidenceMap.size.toString());
 	var dataArray = evt.data.split(";");
+	var vertexId = dataArray[1];
     console.log("Message: " + evt.data);
 	switch (dataArray[0]){
 		case 'clearGraph':
@@ -22,23 +26,39 @@ ws.onmessage = function (evt) {
 			cy.fit();
 		break;
 		case 'addVertex':
+			if (!vertexIncidenceMap.has(vertexId)){
+				vertexIncidenceMap.set(vertexId, 1);
+			} else {
+				vertexIncidenceMap.set(vertexId, vertexIncidenceMap.get(vertexId) + 1);
+			}
 			console.log("add Vertex!!!");
-			console.log(dataArray[1]);
-			// cy.add(dataArray[1]);
-			console.log("{group : 'nodes', data: {id: '" + dataArray[1] + "'}, position: {x: " + dataArray[2] + ", y: " + dataArray[3] + "} }");
-			cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])} });
+			console.log(vertexId);
+			// cy.add(vertexId);
+			console.log("{group : 'nodes', data: {id: '" + vertexId + "'}, position: {x: " + dataArray[2] + ", y: " + dataArray[3] + "} }");
+			if (vertexIncidenceMap.get(vertexId) == 1) {
+				cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])} });
+			}
 		break;
 		case 'removeVertex':
-			console.log('remove: vertex id is' + dataArray[1]);
-			cy.remove(cy.$id(dataArray[1]));
+			//debug
+			if (!vertexIncidenceMap.has(vertexId)) {
+				alert("cannot remove vertex because not in vertexIncidenceMap");
+			} else {
+				vertexIncidenceMap.set(vertexId, vertexIncidenceMap.get(vertexId) - 1);
+				if (vertexIncidenceMap.get(vertexId) == 0) {
+					vertexIncidenceMap.delete(vertexId);
+					cy.remove(cy.$id(vertexId));
+					console.log('remove: vertex id is' + vertexId);
+				}
+			}
 		break;
 		case 'addEdge':
-			console.log('add edge: id is '+ dataArray[1]);
-			console.log(dataArray[1] +dataArray[2] + dataArray[3]);
-			cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2] , target: dataArray[3]} });
+			console.log('add edge: id is '+ vertexId);
+			console.log(vertexId +dataArray[2] + dataArray[3]);
+			cy.add({group : 'edges', data: {id: vertexId, source: dataArray[2] , target: dataArray[3]} });
 		break;
 		case 'removeSpatialSelection':
-			var top = parseInt(dataArray[1]);
+			var top = parseInt(vertexId);
 			var right = parseInt(dataArray[2]);
 			var bottom = parseInt(dataArray[3]);
 			var left = parseInt(dataArray[4]);

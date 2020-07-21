@@ -1,14 +1,9 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
-import java.util.ArrayList;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
-import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -26,11 +21,11 @@ public class MaxDegreeSubset {
 	public static class VertexAccum {
 		String bool;
 		String v_id;
-		String degree;
+		Long degree;
 	}
 	
 	//define Vertex AggregateFunction Object to make downstream join on single rows possible
-	public static class CurrentVertex extends AggregateFunction<Tuple2<String, String>, VertexAccum>{
+	public static class CurrentVertex extends AggregateFunction<Tuple2<String, Long>, VertexAccum>{
 
 		private static final long serialVersionUID = 1L;
 
@@ -40,79 +35,95 @@ public class MaxDegreeSubset {
 		}
 
 		@Override
-		public Tuple2<String, String> getValue(VertexAccum accumulator) {
-			return new Tuple2<String, String>(accumulator.bool, accumulator.degree);
+		public Tuple2<String, Long> getValue(VertexAccum accumulator) {
+			return new Tuple2<String, Long>(accumulator.bool, accumulator.degree);
 		}
 		
-		public void accumulate(VertexAccum accumulator, String bool,  String v_id, String degree) {
+		public void accumulate(VertexAccum accumulator, String bool,  String v_id, Long degree) {
 			accumulator.bool = bool;
 			accumulator.v_id = v_id;
 			accumulator.degree = degree;
 		}
 	}
 	
-	public static ArrayList<DataStream<Tuple2<Boolean, Row>>> getStreams(
+	public static DataStream<Tuple2<Boolean, Row>> getWrapperStream(
 			StreamExecutionEnvironment fsEnv,
 			StreamTableEnvironment fsTableEnv, 
-			DataStreamSource<Tuple5<String, String, String, String, String>> vertexStreamInput,
-			DataStreamSource<Tuple5<String, String, String, String, String>> edgeStreamInput,
+			DataStreamSource<VertexCustom> vertexStreamInput,
+			DataStreamSource<EdgeCustom> edgeStreamInput,
 			DataStreamSource<VVEdgeWrapper> wrapperStreamInput,
-			DataStream<Tuple2<Boolean, Row>> datastreamDegree,
+			DataStream<Row> vertexStreamDegree,
 			LogicalGraph log) throws Exception {
 		
-		//create flink table from degree hbase table
-		TupleTypeInfo<Tuple3<String, String,String>> datastreamDegreeConvertedInfo = 
-			new TupleTypeInfo<Tuple3<String, String, String>>(new TypeInformation[]{Types.STRING,Types.STRING, Types.STRING});
-		
-			//convert DataStream to enable attribute comparison in table join
-			DataStream<Tuple3<String,String,String>> datastreamDegreeConverted = datastreamDegree.map(new MapFunction<Tuple2<Boolean,Row>, Tuple3<String,String,String>>() {
-				private static final long serialVersionUID = -7026515741245426370L;
-	
-				@Override
-				public Tuple3<String, String, String> map(Tuple2<Boolean, Row> value) throws Exception {
-					String bool = value.f0.toString();
-					String vertexId = value.f1.getField(0).toString();
-					String degree = ((Row) value.f1.getField(1)).getField(0).toString();
-					return new Tuple3<String, String, String>(bool, vertexId, degree);
-				}
-			}).returns(datastreamDegreeConvertedInfo).setParallelism(1);
-			Table degreeTable = fsTableEnv.fromDataStream(datastreamDegreeConverted).as("bool, vertexId, degree");
+			Table degreeTable = fsTableEnv.fromDataStream(vertexStreamDegree).as("bool, vertexId, degree");
 			fsTableEnv.registerFunction("currentVertex", new CurrentVertex());
 			degreeTable = degreeTable
 					.groupBy("vertexId")
 					.aggregate("currentVertex(bool, vertexId, degree) as (bool, degree)")
-					.select("vertexId, degree, bool")
-					.filter("bool = 'true'");		
+					.select("bool, vertexId, degree")
+					.filter("bool = 'true'")
+					.select("vertexId, degree");		
 				//sammeln von bool verändert Verhalten kritisch!
-		
+
+//			RowTypeInfo rowInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.LONG}, new String[] {"vertexId", "degree"});
+//			DataStream<Tuple2<Boolean, Row>> streamDegreeTest = 
+//					fsTableEnv.toRetractStream(degreeTable, rowInfo);
+//			streamDegreeTest.print();
+//			
+//			Table degreeTable2 = fsTableEnv.fromDataStream(dataStreamDegree2).as("bool, vertexId, degree");
+//			RowTypeInfo info2 = new RowTypeInfo(new TypeInformation[] {Types.BOOLEAN, Types.ROW(Types.STRING, Types.INT)});
+//			DataStream<Tuple2<Boolean,Row>> degreeTest = fsTableEnv.toRetractStream(degreeTable2, info2);
+//			degreeTest.print();
+//			datastreamDegreeConverted.print();
 		//create flink vertices table from vertex stream
-		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInput).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
+//		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInput).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
+//		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInput).as("vertexInput");
 		
 		//table joins for vertex table
-		Table vertex_result_table = degreeTable.join(vertexTable).where("vertexId = vertexIdCompare").select("vertexIdLayout, x, y, degree");
+//		Table vertex_result_table = degreeTable.join(vertexTable).where("vertexId = vertexIdCompare").select("vertexIdLayout, x, y, degree");
+//		Table vertex_result_table = degreeTable.join(vertexTable).where("vertexId = vertexInput.idGradoop").select("vertexInput");
+
 		
 		//convert joined vertex table to data stream
-		RowTypeInfo rowTypeInfoVertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING, Types.STRING}, 
-				new String[] {"vertexIdLayout", "x", "y", "degree"});
-		DataStream<Tuple2<Boolean, Row>> vertexStream = fsTableEnv.toRetractStream(vertex_result_table, rowTypeInfoVertices);
+//		RowTypeInfo rowTypeInfoVertices = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.INT, Types.INT, Types.STRING}, 
+//				new String[] {"vertexIdLayout", "x", "y", "degree"});
+//		RowTypeInfo rowTypeInfoVertices = new RowTypeInfo(new TypeInformation[]{Types.POJO(VertexCustom.class)}, 
+//				new String[] {"vertexInput"});
+//		DataStream<Tuple2<Boolean, Row>> vertexStream = fsTableEnv.toRetractStream(vertex_result_table, rowTypeInfoVertices);
+//		vertexStream.print().setParallelism(1);
 		
 		//create flink edge table from edge stream
-		Table edgeTable = fsTableEnv.fromDataStream(edgeStreamInput).as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");	
+//		Table edgeTable = fsTableEnv.fromDataStream(edgeStreamInput).as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
+//		Table edgeTable = fsTableEnv.fromDataStream(edgeStreamInput).as("edgeInput");	
+
 		
 		//table joins for edges table
-		edgeTable = degreeTable.join(edgeTable).where("vertexId = vertexIdSourceOld")
-				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTable = degreeTable.join(edgeTable).where("vertexId = vertexIdTargetOld")
-				.select("edgeId, vertexIdSourceNew, vertexIdTargetNew");
+//		edgeTable = edgeTable.join(degreeTable).where("vertexId = vertexIdSourceOld")
+//				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
+//		edgeTable = edgeTable.join(degreeTable).where("vertexId = vertexIdTargetOld")
+//				.select("edgeId, vertexIdSourceNew, vertexIdTargetNew");
 		
 		//convert joined edge table to data stream
-		RowTypeInfo rowTypeInfoEdges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
-				new String[] {"edgeId", "vertexIdSourceNew", "vertexIdTargetNew"});
-		DataStream<Tuple2<Boolean, Row>> edgeStream = fsTableEnv.toRetractStream(edgeTable, rowTypeInfoEdges);
+//		RowTypeInfo rowTypeInfoEdges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
+//				new String[] {"edgeId", "vertexIdSourceNew", "vertexIdTargetNew"});
+//		DataStream<Tuple2<Boolean, Row>> edgeStream = fsTableEnv.toRetractStream(edgeTable, rowTypeInfoEdges);
 		
-		ArrayList<DataStream<Tuple2<Boolean, Row>>> streams = new ArrayList<DataStream<Tuple2<Boolean, Row>>>();
-		streams.add(vertexStream);
-		streams.add(edgeStream);
-		return streams;
+		//wrapper stream
+		String fieldNames = "edge, edgeIdGradoop, edgeLabel, sourceIdGradoop, sourceIdNumeric, sourceLabel, sourceVertex, sourceX, sourceY, targetIdGradoop,"
+				+ "targetIdNumeric, targetLabel, targetVertex, targetX, targetY";
+		Table wrapperTable = fsTableEnv.fromDataStream(wrapperStreamInput).as(fieldNames);
+		wrapperTable = wrapperTable.join(degreeTable).where("sourceIdGradoop = vertexId").select(fieldNames);
+		wrapperTable = wrapperTable.join(degreeTable).where("targetIdGradoop = vertexId").select(fieldNames);
+		RowTypeInfo rowTypeInfoWrappers = new RowTypeInfo(new TypeInformation[] {
+				Types.ROW(Types.STRING, Types.STRING, Types.STRING, Types.STRING),
+				Types.STRING, Types.STRING, Types.STRING, Types.INT, Types.STRING, 
+				Types.ROW(Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT),
+				Types.INT, Types.INT, Types.STRING, Types.INT, Types.STRING, 
+				Types.ROW(Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT),
+				Types.INT, Types.INT
+				}, new String[] {"edge", "edgeIdGradoop", "edgeLabel", "sourceIdGradoop", "sourceIdNumeric", "sourceLabel", "sourceVertex", "sourceX", 
+						"sourceY", "targetIdGradoop", "targetIdNumeric", "targetLabel", "targetVertex", "targetX", "targetY"});
+		DataStream<Tuple2<Boolean, Row>> wrapperStream = fsTableEnv.toRetractStream(wrapperTable, rowTypeInfoWrappers);	
+		return wrapperStream;
 	}
 }

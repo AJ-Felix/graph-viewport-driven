@@ -1,4 +1,5 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
+ackage aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 import java.nio.ByteBuffer;
 
@@ -13,12 +14,13 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
+import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.utils.LegacyTypeInfoDataTypeConverter;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.StringUtils;
 
-public class FlinkGradoopVerticesLoader {
-	public static DataStream<Row> load(
+public class FlinkGradoopVerticesLoader2 {
+	public static DataStream<Tuple2<Boolean, Row>> load(
 			StreamTableEnvironment fsTableEnv,
 			Integer top_view_number) {
 		fsTableEnv.sqlUpdate(
@@ -36,18 +38,18 @@ public class FlinkGradoopVerticesLoader {
 		RowTypeInfo adjListInfo = new RowTypeInfo(new TypeInformation[]{LegacyTypeInfoDataTypeConverter.toLegacyTypeInfo(DataTypes.BYTES()), 
 				Types.ROW(LegacyTypeInfoDataTypeConverter.toLegacyTypeInfo(DataTypes.BYTES()))}, 
 				new String[] {"rowkey", "row"});
-		DataStream<Tuple2<Boolean, Row>> vertexStream = fsTableEnv.toRetractStream(table, adjListInfo);
-		RowTypeInfo info = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, Types.LONG}, new String[] {"bool", "vertexId", "degree"});
-		DataStream<Row> vertexStreamOutput = vertexStream.map(new MapFunction<Tuple2<Boolean, Row>, Row>(){
+		DataStream<Tuple2<Boolean,Row>> vertexStream = fsTableEnv.toRetractStream(table, adjListInfo);
+		TupleTypeInfo<Tuple2<Boolean, Row>> tupleInfo = 
+				new TupleTypeInfo<Tuple2<Boolean,Row>>(new TypeInformation[] {Types.BOOLEAN, Types.ROW(Types.STRING, Types.LONG)});
+		DataStream<Tuple2<Boolean,Row>> vertexStreamOutput = vertexStream.map(new MapFunction<Tuple2<Boolean, Row>, Tuple2<Boolean, Row>>(){
 			@Override
-			public Row map(Tuple2<Boolean, Row> value) throws Exception {
+			public Tuple2<Boolean, Row> map(Tuple2<Boolean, Row> value) throws Exception {
 				String id = StringUtils.byteToHexString((byte[]) value.f1.getField(0));
 				byte[] arr = (byte[]) ((Row) value.f1.getField(1)).getField(0);
 				ByteBuffer wrapped = ByteBuffer.wrap(arr);
 				long degree = wrapped.getLong();
-				return Row.of(value.f0.toString(), id, degree);
 			}
-		}).returns(info).setParallelism(1);
+		}).returns(tupleInfo).setParallelism(1);
 		return vertexStreamOutput;
 	}
 }

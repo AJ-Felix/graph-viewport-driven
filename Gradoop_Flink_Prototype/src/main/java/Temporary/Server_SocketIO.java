@@ -35,7 +35,7 @@ public class Server_SocketIO {
 			@Override
 			public void onData(SocketIOClient client, String data, AckRequest ackSender) throws Exception {
 				FlinkCore flinkCore = new FlinkCore();
-				List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = flinkCore.buildTopView();
+				List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = flinkCore.buildTopViewRetract();
 				DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
 				DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
 //				Iterator<Tuple2<Boolean,Row>> iterator_vertices = DataStreamUtils.collect(stream_vertices);
