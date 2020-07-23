@@ -45,7 +45,15 @@
 
 	<form class="well form-inline" onsubmit="return false;">
 		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
-		<button type="submit" onClick="sendSignal()" class="btn" id="send">buildTopView</button>
+		<button type="submit" onClick="sendSignalRetract()" class="btn" id="send">buildTopViewRetract</button>
+	</form>
+	<form class="well form-inline" onsubmit="return false;">
+		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
+		<button type="submit" onClick="sendSignalAppendJoin()" class="btn" id="send">buildTopViewAppendJoin</button>
+	</form>
+	<form class="well form-inline" onsubmit="return false;">
+		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
+		<button type="submit" onClick="sendSignalAppendMap()" class="btn" id="send">buildTopViewAppendMap</button>
 	</form>
 	<div id="buttons" >
 		<button type="button" onClick="zoomIn()" class="btn" id="send">zoomIn</button>

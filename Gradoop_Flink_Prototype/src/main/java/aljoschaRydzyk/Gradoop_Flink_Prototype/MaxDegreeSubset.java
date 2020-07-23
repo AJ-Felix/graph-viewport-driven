@@ -51,7 +51,7 @@ public class MaxDegreeSubset {
 			StreamTableEnvironment fsTableEnv, 
 			DataStreamSource<VertexCustom> vertexStreamInput,
 			DataStreamSource<EdgeCustom> edgeStreamInput,
-			DataStreamSource<VVEdgeWrapper> wrapperStreamInput,
+			DataStreamSource<Row> wrapperStream2,
 			DataStream<Row> vertexStreamDegree,
 			LogicalGraph log) throws Exception {
 		
@@ -109,20 +109,18 @@ public class MaxDegreeSubset {
 //		DataStream<Tuple2<Boolean, Row>> edgeStream = fsTableEnv.toRetractStream(edgeTable, rowTypeInfoEdges);
 		
 		//wrapper stream
-		String fieldNames = "edge, edgeIdGradoop, edgeLabel, sourceIdGradoop, sourceIdNumeric, sourceLabel, sourceVertex, sourceX, sourceY, targetIdGradoop,"
-				+ "targetIdNumeric, targetLabel, targetVertex, targetX, targetY";
-		Table wrapperTable = fsTableEnv.fromDataStream(wrapperStreamInput).as(fieldNames);
+		String fieldNames = "graphId, edgeIdGradoop, edgeLabel, sourceIdGradoop, sourceIdNumeric, sourceLabel, sourceX, sourceY, sourceDegree, targetIdGradoop,"
+				+ "targetIdNumeric, targetLabel, targetX, targetY, targetDegree";
+		Table wrapperTable = fsTableEnv.fromDataStream(wrapperStream2).as(fieldNames);
 		wrapperTable = wrapperTable.join(degreeTable).where("sourceIdGradoop = vertexId").select(fieldNames);
 		wrapperTable = wrapperTable.join(degreeTable).where("targetIdGradoop = vertexId").select(fieldNames);
 		RowTypeInfo rowTypeInfoWrappers = new RowTypeInfo(new TypeInformation[] {
-				Types.ROW(Types.STRING, Types.STRING, Types.STRING, Types.STRING),
+				Types.STRING,
 				Types.STRING, Types.STRING, Types.STRING, Types.INT, Types.STRING, 
-				Types.ROW(Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT),
-				Types.INT, Types.INT, Types.STRING, Types.INT, Types.STRING, 
-				Types.ROW(Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT),
-				Types.INT, Types.INT
-				}, new String[] {"edge", "edgeIdGradoop", "edgeLabel", "sourceIdGradoop", "sourceIdNumeric", "sourceLabel", "sourceVertex", "sourceX", 
-						"sourceY", "targetIdGradoop", "targetIdNumeric", "targetLabel", "targetVertex", "targetX", "targetY"});
+				Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, 
+				Types.INT, Types.INT, Types.LONG
+				}, new String[] {"graphId", "edgeIdGradoop", "edgeLabel", "sourceIdGradoop", "sourceIdNumeric", "sourceLabel", "sourceX", 
+						"sourceY", "sourceDegree", "targetIdGradoop", "targetIdNumeric", "targetLabel", "targetX", "targetY", "targetDegree"});
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = fsTableEnv.toRetractStream(wrapperTable, rowTypeInfoWrappers);	
 		return wrapperStream;
 	}

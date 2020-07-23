@@ -39,7 +39,7 @@ public class FlinkCore {
 	  private StreamExecutionEnvironment fsEnv;
 	  private StreamTableEnvironment fsTableEnv;
 	  
-	  private GradoopGraphUtil graphUtil;
+	  private GraphUtil graphUtil;
 	  private Integer topBoundary;
 	  private Integer bottomBoundary;
 	  private Integer leftBoundary;
@@ -65,15 +65,25 @@ public class FlinkCore {
 		return graph;
 	}
 	
-	public GraphUtil initializeGraphUtil() {
+	public GraphUtil initializeGradoopGraphUtil() {
 		LogicalGraph graph;
 		try {
 			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");
-			this.graphUtil = new GradoopGraphUtil(graph, fsEnv, fsTableEnv);
+			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+		return this.graphUtil;
+	}
+	
+	public GraphUtil initializeCSVGraphUtilJoin() {
+		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, "/home/aljoscha/graph-viewport-driven/csvGraphs/one10thousand_sample_2_third_degrees_layout");
+		return this.graphUtil;
+	}
+	
+	public GraphUtil initializeCSVGraphUtilMap() {
+		this.graphUtil = new CSVGraphUtilMap(this.fsEnv, "/home/aljoscha/graph-viewport-driven/csvGraphs/one10thousand_sample_2_third_degrees_layout");
 		return this.graphUtil;
 	}
 	
@@ -82,7 +92,7 @@ public class FlinkCore {
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
 			graphUtil.produceWrapperStream();
-			wrapperStream = graphUtil.getMaxDegreeSubset(dataStreamDegree);
+			wrapperStream = ((GradoopGraphUtil) graphUtil).getMaxDegreeSubset(dataStreamDegree);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -90,16 +100,20 @@ public class FlinkCore {
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> buildTopViewAppend(){
-		DataStream<Row> wrapperStream = CSVGraphUtil.produceWrapperStream(this.fsEnv, 
-				"/home/aljoscha/graph-viewport-driven/csvGraphs/one10thousand_sample_2_third_degrees_layout.csv");
+	public DataStream<Row> buildTopViewAppendJoin(){
+		((CSVGraphUtilJoin) this.graphUtil).produceWrapperStream();
+		DataStream<Row> wrapperStream = ((CSVGraphUtilJoin) this.graphUtil).getMaxDegreeSubset(50);
 		return wrapperStream;
+	}
+	
+	public DataStream<Row> buildTopViewAppendMap(){
+		return ((CSVGraphUtilMap) this.graphUtil).produceWrapperStream();	
 	}
 	
 	@SuppressWarnings("rawtypes")
 	public List<DataStream> zoomIn (Integer top, Integer right, Integer bottom, Integer left) throws Exception{
 		List<DataStream> datastreams = new ArrayList<DataStream>();
-		DataStream<VertexCustom> vertexStream = this.graphUtil.getVertexStream()
+		DataStream<VertexCustom> vertexStream = ((GradoopGraphUtil)this.graphUtil).getVertexStream()
 //			.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
 //			@Override
 //			public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
@@ -111,7 +125,7 @@ public class FlinkCore {
 				;
 		datastreams.add(vertexStream);
 		Table vertexTable = fsTableEnv.fromDataStream(vertexStream).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
-		Table edgeTable = fsTableEnv.fromDataStream(this.graphUtil.getEdgeStream())
+		Table edgeTable = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
 				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
 		edgeTable = edgeTable.join(vertexTable).where("vertexIdCompare = vertexIdSourceOld")
 				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
@@ -128,7 +142,7 @@ public class FlinkCore {
 	public List<DataStream> panRight(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer topNew, Integer rightNew, 
 			Integer bottomNew, Integer leftNew) throws Exception{
 		List<DataStream> datastreams = new ArrayList<DataStream>();
-		DataStream<VertexCustom> vertexStreamAll = this.graphUtil.getVertexStream()
+		DataStream<VertexCustom> vertexStreamAll = ((GradoopGraphUtil)this.graphUtil).getVertexStream()
 //				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
 //				@Override
 //				public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
@@ -161,7 +175,7 @@ public class FlinkCore {
 		
 		//edge stream for all connections within new vertices
 		Table vertexTableNew = fsTableEnv.fromDataStream(vertexStreamNew).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
-		Table edgeTableNew = fsTableEnv.fromDataStream(this.graphUtil.getEdgeStream())
+		Table edgeTableNew = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
 				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
 		edgeTableNew = edgeTableNew.join(vertexTableNew).where("vertexIdCompare = vertexIdSourceOld")
 				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
@@ -171,7 +185,7 @@ public class FlinkCore {
 		
 		//edge stream for all connection between old and new vertices in one direction
 		Table vertexTableOld = fsTableEnv.fromDataStream(vertexStreamOld).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
-		Table edgeTableOld1 = fsTableEnv.fromDataStream(this.graphUtil.getEdgeStream())
+		Table edgeTableOld1 = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
 				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
 		edgeTableOld1 = edgeTableOld1.join(vertexTableOld).where("vertexIdCompare = vertexIdSourceOld")
 				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
@@ -179,7 +193,7 @@ public class FlinkCore {
 				.select("edgeId, vertexIdSourceNew, vertexIdTargetNew");
 			
 		//edge stream for all connection between old and new vertices in the respective other direction
-		Table edgeTableOld2 = fsTableEnv.fromDataStream(this.graphUtil.getEdgeStream())
+		Table edgeTableOld2 = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
 				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
 		edgeTableOld2 = edgeTableOld2.join(vertexTableNew).where("vertexIdCompare = vertexIdSourceOld")
 				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
@@ -210,13 +224,13 @@ public class FlinkCore {
 		List<DataStream> streams = new ArrayList<DataStream>();
 		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
 		try {
-			DataStream<Tuple2<Boolean, Row>> otherStreams = graphUtil.getMaxDegreeSubset(dataStreamDegree);
+			DataStream<Tuple2<Boolean, Row>> otherStreams = ((GradoopGraphUtil)graphUtil).getMaxDegreeSubset(dataStreamDegree);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		streams.add(this.graphUtil.getVertexStream());
-		streams.add(this.graphUtil.getEdgeStream());
+		streams.add(((GradoopGraphUtil)this.graphUtil).getVertexStream());
+		streams.add(((GradoopGraphUtil)this.graphUtil).getEdgeStream());
 		return streams;
 	}
 	

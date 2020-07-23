@@ -13,12 +13,12 @@ import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
 import org.gradoop.common.model.impl.pojo.EPGMVertex;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
-//graphIdGradoop ; edgeIdGradoop ; edgeLabel ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
-//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree
+//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
+//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
 
 public class GradoopToCSV {
 	
-	public static class DegreeComparator implements Comparator<VVEdgeWrapper>{
+	public static class WrapperDegreeComparator implements Comparator<VVEdgeWrapper>{
 		@Override
 		public int compare(VVEdgeWrapper w1, VVEdgeWrapper w2) {
 			Long maxDegree = w1.getSourceDegree();
@@ -33,13 +33,63 @@ public class GradoopToCSV {
 		}
 	}
 	
+	public static class VertexDegreeComparator implements Comparator<EPGMVertex>{
+
+		@Override
+		public int compare(EPGMVertex v1, EPGMVertex v2) {
+			if (v1.getPropertyValue("degree").getLong() > v2.getPropertyValue("degree").getLong()) return -1;
+			else if (v1.getPropertyValue("degree").getLong() == v2.getPropertyValue("degree").getLong()) return 0;
+			else return 1;
+		}
+		
+	}
+	
 	public static void parseGradoopToCSV(LogicalGraph graph, String outPath) throws Exception {
 		List<EPGMGraphHead> lGraphHead = graph.getGraphHead().collect();
 		List<EPGMVertex> lVertices = graph.getVertices().collect();
 		List<EPGMEdge> lEdges = graph.getEdges().collect();
 		Map<String,Integer> vertexIdMap =  new HashMap<String,Integer>();
 		List<VVEdgeWrapper> lVVEdgeWrapper = new ArrayList<VVEdgeWrapper>();
-		for (int i = 0; i < lVertices.size(); i++) 	vertexIdMap.put(lVertices.get(i).getId().toString(), i);
+		File verticesFile = new File(outPath + "_vertices");
+		verticesFile.createNewFile();
+		PrintWriter verticesWriter = new PrintWriter(verticesFile);
+		lVertices.sort(new VertexDegreeComparator());
+		for (int i = 0; i < lVertices.size(); i++) 	{
+			vertexIdMap.put(lVertices.get(i).getId().toString(), i);
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append(lGraphHead.get(0).toString());
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getId().toString());
+			stringBuilder.append(";");
+			stringBuilder.append(i);
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getLabel());
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getPropertyValue("X"));
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getPropertyValue("Y"));
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getPropertyValue("degree"));
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getId().toString());
+			stringBuilder.append(";");
+			stringBuilder.append(i);
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getLabel());
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getPropertyValue("X"));
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getPropertyValue("Y"));
+			stringBuilder.append(";");
+			stringBuilder.append(lVertices.get(i).getPropertyValue("degree"));
+			stringBuilder.append(";");
+			stringBuilder.append("identityEdge");
+			stringBuilder.append(";");
+			stringBuilder.append("identityEdge");
+			stringBuilder.append("\n");
+			verticesWriter.write(stringBuilder.toString());
+		}
+		verticesWriter.close();
 		for (EPGMEdge edge : lEdges) {
 			for (EPGMVertex sourceVertex : lVertices) {
 				for (EPGMVertex targetVertex : lVertices) {
@@ -59,17 +109,13 @@ public class GradoopToCSV {
 				}
 			}
 		}
-		lVVEdgeWrapper.sort(new DegreeComparator());
-		File file = new File(outPath);
-		file.createNewFile();
-		PrintWriter writer = new PrintWriter(file);
+		lVVEdgeWrapper.sort(new WrapperDegreeComparator());
+		File wrapperFile = new File(outPath + "_wrappers");
+		wrapperFile.createNewFile();
+		PrintWriter wrapperWriter = new PrintWriter(wrapperFile);
 		for (VVEdgeWrapper wrapper : lVVEdgeWrapper) {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append(lGraphHead.get(0).getId());
-			stringBuilder.append(";");
-			stringBuilder.append(wrapper.getEdgeIdGradoop());
-			stringBuilder.append(";");
-			stringBuilder.append(wrapper.getEdgeLabel());
 			stringBuilder.append(";");
 			stringBuilder.append(wrapper.getSourceIdGradoop());
 			stringBuilder.append(";");
@@ -94,9 +140,13 @@ public class GradoopToCSV {
 			stringBuilder.append(wrapper.getTargetY());
 			stringBuilder.append(";");
 			stringBuilder.append(wrapper.getTargetDegree());
+			stringBuilder.append(";");
+			stringBuilder.append(wrapper.getEdgeIdGradoop());
+			stringBuilder.append(";");
+			stringBuilder.append(wrapper.getEdgeLabel());
 			stringBuilder.append("\n");
-			writer.write(stringBuilder.toString());
+			wrapperWriter.write(stringBuilder.toString());
 		}
-		writer.close();
+		wrapperWriter.close();
 	}
 }

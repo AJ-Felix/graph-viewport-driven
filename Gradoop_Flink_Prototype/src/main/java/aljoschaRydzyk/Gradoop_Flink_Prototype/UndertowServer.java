@@ -8,6 +8,8 @@ import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
 import static io.undertow.Handlers.*;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,14 @@ public class UndertowServer {
     public static void main(final String[] args) {
     	
 //    	BasicConfigurator.configure();
+//    	PrintStream fileOut = null;
+//		try {
+//			fileOut = new PrintStream("/home/aljoscha/out.txt");
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		System.setOut(fileOut);
     	
         Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
                 .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
@@ -59,21 +69,61 @@ public class UndertowServer {
                     System.out.println(messageData);
                     WebSockets.sendText(messageData, session, null);
                 }
-                if (messageData.equals("buildTopView")) {
+                if (messageData.startsWith("buildTopView")) {
         			flinkCore = new FlinkCore();
-        			flinkCore.initializeGraphUtil();
-        			DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract();
-        			wrapperStream.addSink(new SinkFunction<Tuple2<Boolean,Row>>(){
-        				@Override 
-        				public void invoke(Tuple2<Boolean, Row> element, Context context) {
-        					String sourceIdNumeric = element.f1.getField(4).toString();
-        					String sourceX = element.f1.getField(7).toString();
-        					String sourceY = element.f1.getField(8).toString();
-        					String edgeIdGradoop = element.f1.getField(1).toString();
-        					String targetIdNumeric = element.f1.getField(10).toString();
-        					String targetX = element.f1.getField(13).toString();
-        					String targetY = element.f1.getField(14).toString();
-        					if (element.f0) {
+        			String[] arrMessageData = messageData.split(";");
+        			if (arrMessageData[1].equals("retract")) {
+	        			flinkCore.initializeGradoopGraphUtil();
+	        			DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract();
+	        			UndertowServer.sendToAll("mapFalse");
+	        			wrapperStream.addSink(new SinkFunction<Tuple2<Boolean,Row>>(){
+	        				@Override 
+	        				//graphIdGradoop ; edgeIdGradoop ; edgeLabel ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
+	        				//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree
+	        				public void invoke(Tuple2<Boolean, Row> element, Context context) {
+	        					String sourceIdNumeric = element.f1.getField(4).toString();
+	        					String sourceX = element.f1.getField(6).toString();
+	        					String sourceY = element.f1.getField(7).toString();
+	        					String edgeIdGradoop = element.f1.getField(1).toString();
+	        					String targetIdNumeric = element.f1.getField(10).toString();
+	        					String targetX = element.f1.getField(12).toString();
+	        					String targetY = element.f1.getField(13).toString();
+	        					if (element.f0) {
+	        						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
+	        							";" + sourceX + ";" + sourceY);
+	        						if (!edgeIdGradoop.equals("identityEdge")) {
+	        						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
+	        							";" + targetX + ";" + targetY);
+	        						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
+	        							";" + sourceIdNumeric + ";" + targetIdNumeric);
+	        						}
+	        					} else if (!element.f0) {
+	        							UndertowServer.sendToAll("removeVertex;" + sourceIdNumeric + 
+	                							";" + sourceX + ";" + sourceY );
+	            					if (!edgeIdGradoop.equals("identityEdge")) {
+	        							UndertowServer.sendToAll("removeVertex;" + targetIdNumeric + 
+	                							";" + targetX + ";" + targetY );
+	        							UndertowServer.sendToAll("removeEdge" + edgeIdGradoop + 
+	        							";" + sourceIdNumeric + ";" + targetIdNumeric);
+	            					}
+	        					}
+	        				}
+	        			});
+        			} else if (arrMessageData[1].equals("appendJoin")) {
+        				flinkCore.initializeCSVGraphUtilJoin();
+        				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin();
+        				wrapperStream.addSink(new SinkFunction<Row>(){
+	        				@Override 
+	        				//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
+	        				//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
+	        				public void invoke(Row element, Context context) {
+	        					String sourceIdNumeric = element.getField(2).toString();
+	        					String sourceX = element.getField(4).toString();
+	        					String sourceY = element.getField(5).toString();
+	        					String edgeIdGradoop = element.getField(13).toString();
+	        					String targetIdNumeric = element.getField(8).toString();
+	        					String targetX = element.getField(10).toString();
+	        					String targetY = element.getField(11).toString();
         						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
         							";" + sourceX + ";" + sourceY);
         						if (!edgeIdGradoop.equals("identityEdge")) {
@@ -81,19 +131,14 @@ public class UndertowServer {
         							";" + targetX + ";" + targetY);
         						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
         							";" + sourceIdNumeric + ";" + targetIdNumeric);
-        						}
-        					} else if (!element.f0) {
-        							UndertowServer.sendToAll("removeVertex;" + sourceIdNumeric + 
-                							";" + sourceX + ";" + sourceY );
-            					if (!edgeIdGradoop.equals("identityEdge")) {
-        							UndertowServer.sendToAll("removeVertex;" + targetIdNumeric + 
-                							";" + targetX + ";" + targetY );
-        							UndertowServer.sendToAll("removeEdge" + edgeIdGradoop + 
-        							";" + sourceIdNumeric + ";" + targetIdNumeric);
-            					}
-        					}
-        				}
-        			});
+	        					}
+	        				}
+	        			});
+        			} else if (arrMessageData[1].equals("appendMap")) {
+        				flinkCore.initializeCSVGraphUtilMap();
+        				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendMap();
+        				wrapperStream.print().setParallelism(1);
+        			}
         			try {
         				flinkCore.getFsEnv().execute();
         			} catch (Exception e1) {
