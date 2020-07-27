@@ -11,6 +11,9 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
+//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
+//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
+
 public class CSVGraphUtilMap implements GraphUtil{
 	private StreamExecutionEnvironment fsEnv;
 	private String inPath;
@@ -34,7 +37,7 @@ public class CSVGraphUtilMap implements GraphUtil{
 
 	@Override
 	public DataStream<Row> getWrapperStream() {
-		return null;
+		return this.wrapperStream;
 	}
 
 }

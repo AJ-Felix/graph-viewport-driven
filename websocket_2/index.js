@@ -50,43 +50,60 @@ class JoinHandler{
 
 class MapHandler{
 	vertexDegreeMap = new Map();
-	edgePotential = false;
+	edgePotentialSource;
+	edgePotentialTarget;
 	
-	constructor(){
+	constructor(vertexCountMax){
+		this.vertexCountMax = vertexCountMax;
 	}
 	
-	addVertex(dataArray){
-		var vertexId = dataArray[1];
-		var vertexX = dataArray[2];
-		var vertexY = dataArray[3];
-		var vertexDegree = dataArray[4];
-		if (vertexDegreeMap.size < 50){
-			cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
-			vertexDegreeMap.set(vertexId, vertexDegree);
+	addVertexHelper(vertexId, vertexX, vertexY, vertexDegree){
+		var edgePotential = false;
+		if (this.vertexDegreeMap.has(vertexId)) {
 			edgePotential = true;
-		} else if (vertexDegreeMap.has(vertexId)) {
+		} else if (this.vertexDegreeMap.size < this.vertexCountMax){
+			cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
+			this.vertexDegreeMap.set(vertexId, vertexDegree);
 			edgePotential = true;
 		} else {
-			edgePotential = false;
-			for ([key, value] of vertexDegreeMap.entries()){
-				if (vertexDegree > value){
-					cy.remove(cy.$id(vertexId));
-					cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
-					vertexDegreeMap.delete(key);
-					vertexDegreeMap(vertexId, vertexDegree);
-					edgePotential = true;
-					break;
+			var removalCandidateKey = -1;
+			var removalCandidateDegree =  Infinity;
+			for (const [key, value] of this.vertexDegreeMap.entries()){
+				if ((parseInt(value) < removalCandidateDegree) || (parseInt(value) == removalCandidateDegree && key > removalCandidateKey)){
+					removalCandidateKey = key;
+					removalCandidateDegree = value;
 				}
 			}
+			if ((vertexDegree > removalCandidateDegree) || (vertexDegree == removalCandidateDegree && vertexId < removalCandidateKey)){
+				cy.remove(cy.$id(removalCandidateKey));
+				cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
+				this.vertexDegreeMap.delete(removalCandidateKey);
+				this.vertexDegreeMap.set(vertexId, vertexDegree);
+				edgePotential = true;
+			}
+		}
+		return edgePotential;
+	}
+		
+	addWrapper(dataArray){
+		this.edgePotentialSource = false;
+		this.edgePotentialTarget = false;
+		var sourceVertexId = dataArray[1];
+		var sourceVertexX = dataArray[2];
+		var sourceVertexY = dataArray[3];
+		var sourceVertexDegree = parseInt(dataArray[4]);
+		var targetVertexId = dataArray[5];
+		var targetVertexX = dataArray[6];
+		var targetVertexY = dataArray[7];
+		var targetVertexDegree = parseInt(dataArray[8]);
+		var edgeIdGradoop = dataArray[9];
+		this.edgePotentialSource = this.addVertexHelper(sourceVertexId, sourceVertexX, sourceVertexY, sourceVertexDegree);
+		this.edgePotentialTarget = this.addVertexHelper(targetVertexId, targetVertexX, targetVertexY, targetVertexDegree);
+		if (this.edgePotentialSource && this.edgePotentialTarget){
+			cy.add({group : 'edges', data: {id: edgeIdGradoop, source: sourceVertexId , target: targetVertexId}});
 		}
 	}
-	
-	addEdge(dataArray){
-		var edgeId = dataArray[1];
-		var sourceVertex = dataArray[2];
-		var targetVertex = dataArray[3];
-		cy.add({group : 'edges', data: {id: edgeId, source: sourceVertex , target: targetVertex}})
-	}
+
 }
 
 ws.onmessage = function (evt) {
@@ -94,7 +111,6 @@ ws.onmessage = function (evt) {
 	var vertexId = dataArray[1];
 	var vertexX = dataArray[2];
 	var vertexY = dataArray[3];
-    console.log("Message: " + evt.data);
 	switch (dataArray[0]){
 		case 'clearGraph':
 			console.log('clearing graph');
@@ -116,6 +132,9 @@ ws.onmessage = function (evt) {
 			break;
 		case 'addEdge':
 			handler.addEdge(dataArray);
+			break;
+		case 'addWrapper':
+			handler.addWrapper(dataArray);
 			break;
 		case 'removeSpatialSelection':
 			var top = parseInt(vertexId);
@@ -155,7 +174,7 @@ function sendSignalAppendJoin(){
 }
 
 function sendSignalAppendMap(){
-	handler = new MapHandler();
+	handler = new MapHandler(50);
 	ws.send("buildTopView;appendMap");
 }
 
@@ -168,13 +187,8 @@ function panRight(){
 }
 
 function displayAll(){
-	dataArray = ["addVertex", "0", "200", "300"];
-	handler = new RetractHandler();
-	handler.addVertex(dataArray);
-	// ws.send("displayAll");
+	ws.send("displayAll");
 }
-
-
 
 var header1 = document.getElementById('header1');
 header1.addEventListener("mousedown", 

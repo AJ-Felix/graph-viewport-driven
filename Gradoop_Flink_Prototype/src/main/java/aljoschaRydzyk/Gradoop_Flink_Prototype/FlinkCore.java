@@ -68,12 +68,11 @@ public class FlinkCore {
 	public GraphUtil initializeGradoopGraphUtil() {
 		LogicalGraph graph;
 		try {
-			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");
+			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
 			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+		}	
 		return this.graphUtil;
 	}
 	
@@ -91,66 +90,66 @@ public class FlinkCore {
 		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
+			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
 			graphUtil.produceWrapperStream();
-			wrapperStream = ((GradoopGraphUtil) graphUtil).getMaxDegreeSubset(dataStreamDegree);
+			graphUtil.getMaxDegreeSubset(dataStreamDegree);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return wrapperStream;
 	}
 	
 	public DataStream<Row> buildTopViewAppendJoin(){
-		((CSVGraphUtilJoin) this.graphUtil).produceWrapperStream();
-		DataStream<Row> wrapperStream = ((CSVGraphUtilJoin) this.graphUtil).getMaxDegreeSubset(50);
-		return wrapperStream;
+		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
+		graphUtil.produceWrapperStream();
+		return graphUtil.getMaxDegreeSubset(50);
 	}
 	
 	public DataStream<Row> buildTopViewAppendMap(){
-		return ((CSVGraphUtilMap) this.graphUtil).produceWrapperStream();	
+		CSVGraphUtilMap graphUtil = ((CSVGraphUtilMap) this.graphUtil);
+		return graphUtil.produceWrapperStream();	
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public List<DataStream> zoomIn (Integer top, Integer right, Integer bottom, Integer left) throws Exception{
-		List<DataStream> datastreams = new ArrayList<DataStream>();
-		DataStream<VertexCustom> vertexStream = ((GradoopGraphUtil)this.graphUtil).getVertexStream()
-//			.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-//			@Override
-//			public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-//				Integer x = Integer.parseInt(value.f3);
-//				Integer y = Integer.parseInt(value.f4);
-//				return (left < x) &&  (x < right) && (top < y) && (y < bottom);
-//			}
-//		})
-				;
-		datastreams.add(vertexStream);
-		Table vertexTable = fsTableEnv.fromDataStream(vertexStream).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
-		Table edgeTable = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
-				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTable = edgeTable.join(vertexTable).where("vertexIdCompare = vertexIdSourceOld")
-				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTable = edgeTable.join(vertexTable).where("vertexIdCompare = vertexIdTargetOld")
-				.select("edgeId, vertexIdSourceNew, vertexIdTargetNew");
-		RowTypeInfo rowTypeInfoEdges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
-				new String[] {"edgeId", "vertexIdSourceNew", "vertexIdTargetNew"});
-		DataStream<Tuple2<Boolean, Row>> edgeStream = fsTableEnv.toRetractStream(edgeTable, rowTypeInfoEdges);
-		datastreams.add(edgeStream);
-		return datastreams;
+	public DataStream<Row> zoomIn (Integer top, Integer right, Integer bottom, Integer left){
+		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
+		DataStream<Row> vertexStream = graphUtil.getVertexStream()
+			.filter(new FilterFunction<Row>(){
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (left < x) &&  (x < right) && (top < y) && (y < bottom);
+			}
+		});
+		String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
+					+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
+					+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
+		Table vertexTable = fsTableEnv.fromDataStream(vertexStream).as("graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree");
+		Table wrapperTable = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
+		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
+				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG
+				, Types.STRING, Types.STRING});
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo);
+		//filter out all wrappers whose edges are already in previous view!!!
+		return wrapperStream;
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public List<DataStream> panRight(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer topNew, Integer rightNew, 
-			Integer bottomNew, Integer leftNew) throws Exception{
-		List<DataStream> datastreams = new ArrayList<DataStream>();
-		DataStream<VertexCustom> vertexStreamAll = ((GradoopGraphUtil)this.graphUtil).getVertexStream()
-//				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-//				@Override
-//				public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-//					Integer x = Integer.parseInt(value.f3);
-//					Integer y = Integer.parseInt(value.f4);
-//					return (leftNew < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
-//				}
-//			})
+	public DataStream<Row> panRight(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer topNew, Integer rightNew, 
+			Integer bottomNew, Integer leftNew){
+		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
+		DataStream<Row> vertexStreamAll = graphUtil.getVertexStream();
+				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
+				@Override
+				public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
+					Integer x = Integer.parseInt(value.f3);
+					Integer y = Integer.parseInt(value.f4);
+					return (leftNew < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
+				}
+			})
 				;
 		DataStream<VertexCustom> vertexStreamNew = vertexStreamAll
 //				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){

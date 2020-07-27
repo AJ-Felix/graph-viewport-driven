@@ -52,6 +52,11 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
 		return this.wrapperStream;
 	}
+	
+	@Override
+	public DataStream<Row> getWrapperStream() {
+		return this.wrapperStream;
+	}
 
 	public DataStream<Row> getMaxDegreeSubset(Integer numberVertices){
 		DataStream<Row> filteredVertices = this.vertexStream.filter(new FilterFunction<Row>(){
@@ -67,20 +72,17 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
 				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(wrapperFields);
-		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop")
-			.select(wrapperFields);
-		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop")
-			.select(wrapperFields);
+		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG
 				, Types.STRING, Types.STRING});
 		wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo);
 		return wrapperStream;
 	}
-	
-	@Override
-	public DataStream<Row> getWrapperStream() {
-		// TODO Auto-generated method stub
-		return null;
+
+	public DataStream<Row> getVertexStream() {
+		return this.vertexStream;
 	}
+	
 }

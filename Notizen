@@ -135,8 +135,9 @@ Konversion from table to stream always produces row-typed streams --> without ma
 
 
 TODO: Pan/Zoom: Cytoscape-Koordinaten sinnvoll in Gradoop-Layout-Koordinaten übersetzen.
-TODO: Verschiedene Art und Weisen, wie der Graph im BackEnd gehalten und geladen wird implementieren (Hauptziel der Masterarbeit)
-	-	GraphUtil Interface DataStream<Row> als return type
+TODO: Serverseitigen Code polieren
+TODO: Matthias: Diskutieren, ob Materialisierung von nach Bereichen gefilterten Streams eine Option ist, weil Flink wohl Transformationen (also z.B. das Filtern auf DataStreams) nur bei Definition einer Sink-Operation durchführt.
+
 
 WebSockets: 
 	Server in pure Java while Client in pure Javascript, thats the challenge...

@@ -1,4 +1,4 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -12,6 +12,9 @@ import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.types.Row;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
+
+import aljoschaRydzyk.Gradoop_Flink_Prototype.EdgeCustom;
+import aljoschaRydzyk.Gradoop_Flink_Prototype.VertexCustom;
 
 
 

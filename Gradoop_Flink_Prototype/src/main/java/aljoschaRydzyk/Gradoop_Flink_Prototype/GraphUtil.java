@@ -5,5 +5,5 @@ import org.apache.flink.types.Row;
 
 public interface GraphUtil {
 	DataStream<Row> produceWrapperStream() throws Exception;
-	DataStream<Row> getWrapperStream() throws Exception;
+	DataStream<Row> getWrapperStream();
 }
