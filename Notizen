@@ -135,9 +135,48 @@ Konversion from table to stream always produces row-typed streams --> without ma
 
 
 TODO: Pan/Zoom: Cytoscape-Koordinaten sinnvoll in Gradoop-Layout-Koordinaten übersetzen.
-TODO: Serverseitigen Code polieren
-TODO: Matthias: Diskutieren, ob Materialisierung von nach Bereichen gefilterten Streams eine Option ist, weil Flink wohl Transformationen (also z.B. das Filtern auf DataStreams) nur bei Definition einer Sink-Operation durchführt.
+TODO: PreLayout-WrappersCSV: WrapperCSV in kleinere Stücke geordnet nach Koordinaten aufteilen, um eine Vorfilterung für Zoom- und Pan-Operationen zu realisieren
+	- aber ebenfalls die ungestückelte Variante implementiert lassen für den Vergleich
+TODO: Adjanzenz-Matrix für die Variante ohne Layout implementieren
+TODO: ZoomIn und Panning
+	- Implementieren, dass nicht alle Knoten vorher gelöscht werden (zoom)
+	- Implementieren, dass nur die neuen Knoten/Kanten gesendet werden (beide)
+	- Implementieren, dass alle Nachbarn der Knoten erstellt werden, aber nicht zu sehen sind, damit die entsprechenden Kanten visualisiert werden
+TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem subset an Knoten durchführen, möglicherweise ist das hilfreich
 
+Verschiedene Grundansätze der BackEnd-Struktur:
+	-	Gradoop (Standard)
+	-	WrappersCSV
+		-	Map im FrontEnd
+		-	Join im BackEnd
+	-	Adjazenzmatrix/Index (für den Ansatz ohne PreLayout)
+	-	Darstellung als Tabelle mittels Table API
+	
+Zoom-PreLayout:
+	- neuer Koordinatenbereich wird definiert
+	  - Ausschnitt auf den neuen Koordinatenbereich fokussieren
+	  - alle Knoten, welche nicht im Koordinatenbereich liegen und keine Nachbarn haben, die im Koordinatenbereich liegen, rausschmeißen
+	  - entsprechend der Kapazität des Viewports Knoten und entsprechende Kanten nachladen, vorrangig Knoten mit höherem Grad
+
+Panning-Prelayout:
+	- neuer Koordinatenbereich wird definiert
+	  - Ausschnitt auf den neuen Koordinatenbereich fokussieren
+	  - alle Knoten, welche nicht im Koordinatenbereich liegen und keine Nachbarn haben, die im Koordinatenbereich liegen, rausschmeißen
+	  - entsprechend der Kapazität des Viewports Knoten und entsprechende Kanten, welche sich im neu hinzukommendem Koordinatenbereich befinden, nachladen, vorrangig Knoten mit höherem Grad
+	  
+Zoom-Postlayout:
+	- neue(, kleinere) Knotenmenge und Koordinatenbereich wird definiert
+	  - alle Knoten, deren Koordinaten aus dem Layout der vorherigen Operation nicht mehr im Koordinatenbereich liegen und keine Nachbarn im Koordinatenbereich haben, rausschmeißen
+	    - möglicherweise ist rausschmeißen auch nicht notwendig. Ein Behalten der bereits gelayouteten Knoten verhindert, dass diese später unterschiedlich als zu Beginn positioniert werden können
+	  - entsprechend der Kapazität des Viewports Nachbarknoten und entsprechende Kanten nachladen, vorrangig Knoten mit höherem Grad
+	  - Layout berechnen, dabei zwingend die absolute Position bereits gelayouteter Knoten und Kanten beibehalten, um Übersicht und Konsistenz zu wahren
+	  
+Panning-Postlayout:
+	- neue(, kleinere) Knotenmenge und Koordinatenbereich wird definiert
+	- alle Knoten, deren Koordinaten aus dem Layout der vorherigen Operation nicht mehr im Koordinatenbereich liegen und keine Nachbarn im Koordinatenbereich haben, rausschmeißen
+	    - möglicherweise ist rausschmeißen auch nicht notwendig. Ein Behalten der bereits gelayouteten Knoten verhindert, dass diese später unterschiedlich als zu Beginn positioniert werden können
+	- entsprechend der Kapazität des Viewports bereits gelayoutete Knoten im Koordinatenbereich und Nachbarknoten sowie entsprechende Kanten nachladen, vorrangig Knoten mit höherem Grad
+	- Layout der nicht gelayouteten Knoten berechnen, dabei zwingend die absolute Position bereits gelayouteter Knoten und Kanten beibehalten, um Konsistenz zu wahren
 
 WebSockets: 
 	Server in pure Java while Client in pure Javascript, thats the challenge...

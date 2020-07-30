@@ -13,17 +13,22 @@ class JoinHandler{
 	constructor(){
 	}
 	
+	resetMap(){
+		this.vertexIncidenceMap = new Map();
+	}
+	
 	addVertex(dataArray){
 		var vertexId = dataArray[1];
 		var vertexX = dataArray[2];
 		var vertexY = dataArray[3];
 		if (!this.vertexIncidenceMap.has(vertexId)){
-					this.vertexIncidenceMap.set(vertexId, 1);
+			this.vertexIncidenceMap.set(vertexId, 1);
 		} else {
 			this.vertexIncidenceMap.set(vertexId, this.vertexIncidenceMap.get(vertexId) + 1);
 		}
 		if (this.vertexIncidenceMap.get(vertexId) == 1) {
 			cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
+			console.log("added vertex in join handler");
 		}
 	}
 	
@@ -55,6 +60,10 @@ class MapHandler{
 	
 	constructor(vertexCountMax){
 		this.vertexCountMax = vertexCountMax;
+	}
+	
+	resetMap(){
+		this.vertexDegreeMap = new Map();
 	}
 	
 	addVertexHelper(vertexId, vertexX, vertexY, vertexDegree){
@@ -107,18 +116,16 @@ class MapHandler{
 }
 
 ws.onmessage = function (evt) {
+	console.log(evt.data);
 	var dataArray = evt.data.split(";");
-	var vertexId = dataArray[1];
-	var vertexX = dataArray[2];
-	var vertexY = dataArray[3];
 	switch (dataArray[0]){
 		case 'clearGraph':
 			console.log('clearing graph');
 			cy.elements().remove();
 			break;
 		case 'layout':
-			// var layout = cy.layout({name: 'fcose', ready: () => {console.log("Layout ready")}, stop: () => {console.log("Layout stopped")}});
-			// layout.run();
+			var layout = cy.layout({name: 'fcose', ready: () => {console.log("Layout ready")}, stop: () => {console.log("Layout stopped")}});
+			layout.run();
 			break;
 		case 'fitGraph':
 			console.log('fitting graph');
@@ -135,22 +142,6 @@ ws.onmessage = function (evt) {
 			break;
 		case 'addWrapper':
 			handler.addWrapper(dataArray);
-			break;
-		case 'removeSpatialSelection':
-			var top = parseInt(vertexId);
-			var right = parseInt(vertexX);
-			var bottom = parseInt(vertexY);
-			var left = parseInt(dataArray[4]);
-			cy.nodes().forEach(
-				function (node){
-				var pos = node.position();
-					// console.log(node.position());
-					// console.log(node.position().x);
-					if ((pos.x > right) || (pos.x < left) || (pos.y > bottom) || (pos.y < top)) {
-						cy.remove(node);
-					}
-				}
-			)
 			break;
 	}
 };
@@ -179,14 +170,49 @@ function sendSignalAppendMap(){
 }
 
 function zoomIn(){
-	ws.send("zoomTopLeftCorner");
+	//remove all elements for the time being
+	removeAll();
+	//hard-coded example
+	var top = 0;
+	var right = 2000;
+	var bottom = 2000;
+	var left = 0;
+	ws.send("zoomIn;" + top.toString() + ";" + right.toString() + ";" + bottom.toString() + ";" + left.toString());
+	// removeSpatialSelection(top, right, bottom, left);
 }
 
-function panRight(){
-	ws.send("panRight");
+function pan(){
+	//hard-coded example
+	var top = 0;
+	var right = 2000;
+	var bottom = 2000;
+	var left = 0;
+	var xDiff = 800;
+	var yDiff = 0;
+	ws.send("pan;" + top.toString() + ";" + right.toString() + ";" + bottom.toString() + ";" + left.toString() + ";" + xDiff.toString() + ";" + yDiff.toString());
+	removeSpatialSelection(top + yDiff, right + xDiff, bottom + yDiff, left + xDiff);
+}
+
+function removeSpatialSelection(top, right, bottom, left){
+	cy.nodes().forEach(
+		function (node){
+		var pos = node.position();
+			// console.log(node.position());
+			// console.log(node.position().x);
+			if ((pos.x > right) || (pos.x < left) || (pos.y > bottom) || (pos.y < top)) {
+				cy.remove(node);
+			}
+		}
+	)
+}
+
+function removeAll(){
+	cy.elements().remove();
+	handler.resetMap();
 }
 
 function displayAll(){
+	handler = new JoinHandler();
 	ws.send("displayAll");
 }
 

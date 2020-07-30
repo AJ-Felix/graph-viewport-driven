@@ -3,19 +3,14 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction.Context;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
@@ -92,7 +87,7 @@ public class FlinkCore {
 		try {
 			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
 			graphUtil.produceWrapperStream();
-			graphUtil.getMaxDegreeSubset(dataStreamDegree);
+			wrapperStream = graphUtil.getMaxDegreeSubset(dataStreamDegree);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -110,7 +105,6 @@ public class FlinkCore {
 		return graphUtil.produceWrapperStream();	
 	}
 	
-	@SuppressWarnings("rawtypes")
 	public DataStream<Row> zoomIn (Integer top, Integer right, Integer bottom, Integer left){
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 		DataStream<Row> vertexStream = graphUtil.getVertexStream()
@@ -130,111 +124,263 @@ public class FlinkCore {
 		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
 		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
-				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG
-				, Types.STRING, Types.STRING});
+				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
+				Types.STRING, Types.STRING});
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo);
 		//filter out all wrappers whose edges are already in previous view!!!
 		return wrapperStream;
 	}
 	
-	@SuppressWarnings("rawtypes")
-	public DataStream<Row> panRight(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer topNew, Integer rightNew, 
-			Integer bottomNew, Integer leftNew){
+	public DataStream<Row> pan(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer xDiff, Integer yDiff){
+		Integer topNew = topOld + yDiff;
+		Integer rightNew = rightOld + xDiff;
+		Integer bottomNew = bottomOld + yDiff;
+		Integer leftNew = leftOld + xDiff;
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
-		DataStream<Row> vertexStreamAll = graphUtil.getVertexStream();
-				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
+		DataStream<Row> vertexStreamAll = graphUtil.getVertexStream()
+			.filter(new FilterFunction<Row>(){
 				@Override
-				public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-					Integer x = Integer.parseInt(value.f3);
-					Integer y = Integer.parseInt(value.f4);
+				public boolean filter(Row value) throws Exception {
+					Integer x = (Integer) value.getField(4);
+					Integer y = (Integer) value.getField(5);
 					return (leftNew < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
 				}
-			})
-				;
-		DataStream<VertexCustom> vertexStreamNew = vertexStreamAll
-//				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-//					@Override
-//					public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-//						Integer x = Integer.parseInt(value.f3);
-//						Integer y = Integer.parseInt(value.f4);
-//						return (rightOld < x) &&  (x < rightNew) && (topNew < y) && (y < bottomNew);
-//				}
-//			})
-				;
-		DataStream<VertexCustom> vertexStreamOld = vertexStreamAll
-//				.filter(new FilterFunction<Tuple5<String, String, String, String, String>>(){
-//					@Override
-//					public boolean filter(Tuple5<String, String, String, String, String> value) throws Exception {
-//						Integer x = Integer.parseInt(value.f3);
-//						Integer y = Integer.parseInt(value.f4);
-//						return (leftOld < x) &&  (x < leftNew) && (topNew < y) && (y < bottomNew);
-//				}
-//			})
-				;
+			});
+		List<DataStream<Row>> lStream;
+		if ((xDiff == 0) && (yDiff < 0)) {
+			lStream = panTop(vertexStreamAll, topOld);
+		} else if ((xDiff > 0) && (yDiff < 0)) {
+			lStream = panTopRight(vertexStreamAll, topOld, rightOld);
+		} else if ((xDiff > 0) && (yDiff == 0)) {
+			lStream = panRight(vertexStreamAll, rightOld);
+		} else if ((xDiff > 0) && (yDiff > 0)) {
+			lStream = panBottomRight(vertexStreamAll, bottomOld, rightOld);
+		} else if ((xDiff == 0) && (yDiff > 0)) {
+			lStream = panBottom(vertexStreamAll, bottomOld);
+		} else if ((xDiff < 0) && (yDiff > 0)) {
+			lStream = panBottomLeft(vertexStreamAll, bottomOld, leftOld);
+		} else if ((xDiff < 0) && (yDiff == 0)) {
+			lStream = panLeft(vertexStreamAll, leftOld);
+		} else {
+			lStream = panTopLeft(vertexStreamAll, topOld, leftOld);
+		}
+		
+		DataStream<Row> vertexStreamOld = lStream.get(0);
+		DataStream<Row> vertexStreamNew = lStream.get(1);
+		String vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
+		String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
+				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
+				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
 		
 		//edge stream for all connections within new vertices
-		Table vertexTableNew = fsTableEnv.fromDataStream(vertexStreamNew).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
-		Table edgeTableNew = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
-				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTableNew = edgeTableNew.join(vertexTableNew).where("vertexIdCompare = vertexIdSourceOld")
-				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTableNew = edgeTableNew.join(vertexTableNew).where("vertexIdCompare = vertexIdTargetOld")
-				.select("edgeId, vertexIdSourceNew, vertexIdTargetNew");
+		Table vertexTableNew = fsTableEnv.fromDataStream(vertexStreamNew).as(vertexFields);
+		Table wrapperTableNew = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
+		wrapperTableNew = wrapperTableNew.join(vertexTableNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		wrapperTableNew = wrapperTableNew.join(vertexTableNew).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 
 		
 		//edge stream for all connection between old and new vertices in one direction
-		Table vertexTableOld = fsTableEnv.fromDataStream(vertexStreamOld).as("vertexIdCompare, vertexLabel, vertexIdLayout, x, y");
-		Table edgeTableOld1 = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
-				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTableOld1 = edgeTableOld1.join(vertexTableOld).where("vertexIdCompare = vertexIdSourceOld")
-				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTableOld1 = edgeTableOld1.join(vertexTableNew).where("vertexIdCompare = vertexIdTargetOld")
-				.select("edgeId, vertexIdSourceNew, vertexIdTargetNew");
+		Table vertexTableOld = fsTableEnv.fromDataStream(vertexStreamOld).as(vertexFields);
+		Table edgeTableOld1 = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
+		edgeTableOld1 = edgeTableOld1.join(vertexTableOld).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		edgeTableOld1 = edgeTableOld1.join(vertexTableNew).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 			
 		//edge stream for all connection between old and new vertices in the respective other direction
-		Table edgeTableOld2 = fsTableEnv.fromDataStream(((GradoopGraphUtil)this.graphUtil).getEdgeStream())
-				.as("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTableOld2 = edgeTableOld2.join(vertexTableNew).where("vertexIdCompare = vertexIdSourceOld")
-				.select("edgeId, vertexIdSourceOld, vertexIdTargetOld, vertexIdSourceNew, vertexIdTargetNew");
-		edgeTableOld2 = edgeTableOld2.join(vertexTableOld).where("vertexIdCompare = vertexIdTargetOld")
-				.select("edgeId, vertexIdSourceNew, vertexIdTargetNew");
+		Table edgeTableOld2 = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
+		edgeTableOld2 = edgeTableOld2.join(vertexTableNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		edgeTableOld2 = edgeTableOld2.join(vertexTableOld).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 		
-		RowTypeInfo rowTypeInfoEdges = new RowTypeInfo(new TypeInformation[]{Types.STRING, Types.STRING, Types.STRING}, 
-				new String[] {"edgeId", "vertexIdSourceNew", "vertexIdTargetNew"});
-		DataStream<Tuple2<Boolean, Row>> edgeStreamNew = fsTableEnv.toRetractStream(edgeTableNew, rowTypeInfoEdges);
-		DataStream<Tuple2<Boolean, Row>> edgeStreamOldToNew = fsTableEnv.toRetractStream(edgeTableOld1, rowTypeInfoEdges);
-		DataStream<Tuple2<Boolean, Row>> edgeStreamNewToOld = fsTableEnv.toRetractStream(edgeTableOld2, rowTypeInfoEdges);
-		DataStream<Tuple2<Boolean, Row>> edgeStream = edgeStreamNew.union(edgeStreamOldToNew).union(edgeStreamNewToOld);
-		datastreams.add(vertexStreamNew);
-		datastreams.add(edgeStream);
-		return datastreams;
+		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
+				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
+				Types.STRING, Types.STRING});
+		DataStream<Row> wrapperStreamNew = fsTableEnv.toAppendStream(wrapperTableNew, typeInfo);
+		DataStream<Row> wrapperStreamOldToNew = fsTableEnv.toAppendStream(edgeTableOld1, typeInfo);
+		DataStream<Row> wrapperStreamNewToOld = fsTableEnv.toAppendStream(edgeTableOld2, typeInfo);
+		DataStream<Row> wrapperStream = wrapperStreamNew.union(wrapperStreamOldToNew).union(wrapperStreamNewToOld);
+		wrapperStream.print().setParallelism(1);
+		return wrapperStream;
+	}
+		
+	
+	public List<DataStream<Row>> panTop(DataStream<Row> vertexStream, Integer topOld) {
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer y = (Integer) value.getField(5);
+				return (y < topOld);
+			}
+		});
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer y = (Integer) value.getField(5);
+				return (y > topOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
 	}
 	
-	@SuppressWarnings("rawtypes")
-	public List<DataStream> displayAll() throws Exception {
-		LogicalGraph graph = null;
-		try {
-			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-		this.graphUtil = new GradoopGraphUtil(graph, fsEnv, fsTableEnv);
-		List<DataStream> streams = new ArrayList<DataStream>();
-		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 50);
-		try {
-			DataStream<Tuple2<Boolean, Row>> otherStreams = ((GradoopGraphUtil)graphUtil).getMaxDegreeSubset(dataStreamDegree);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		streams.add(((GradoopGraphUtil)this.graphUtil).getVertexStream());
-		streams.add(((GradoopGraphUtil)this.graphUtil).getEdgeStream());
-		return streams;
+	public List<DataStream<Row>> panTopRight(DataStream<Row> vertexStream, Integer topOld, Integer rightOld) {
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (x < rightOld) && (y > topOld);
+			}
+		});
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (y < topOld) || (x > rightOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
 	}
 	
-	public List<DataStream> pan(Integer xMouseMovement, Integer yMouseMovement){
+	public List<DataStream<Row>> panRight(DataStream<Row> vertexStream, Integer rightOld) {
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				return (x < rightOld) ;
+			}
+		});
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				return (x > rightOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
+	}
+	
+	public List<DataStream<Row>> panBottomRight(DataStream<Row> vertexStream, Integer bottomOld, Integer rightOld) {
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (x < rightOld) && (y < bottomOld);
+			}
+		});
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (y > bottomOld) || (x > rightOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
+	}
+	
+	public List<DataStream<Row>> panBottom (DataStream<Row> vertexStream, Integer bottomOld) {
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer y = (Integer) value.getField(5);
+				return (y < bottomOld);
+			}
+		});
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer y = (Integer) value.getField(5);
+				return (y > bottomOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
+	}
+	
+	public List<DataStream<Row>> panBottomLeft (DataStream<Row> vertexStream, Integer bottomOld, Integer leftOld) {
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (y < bottomOld) && (x > leftOld);
+			}
+		});
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (y > bottomOld) || (x < leftOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
+	}
+	
+	public List<DataStream<Row>> panLeft (DataStream<Row> vertexStream, Integer leftOld) {
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				return (x > leftOld);
+			}
+		});
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (x < leftOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
+	}
+	
+	public List<DataStream<Row>> panTopLeft (DataStream<Row> vertexStream, Integer topOld, Integer leftOld) {
+		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (y > topOld) && (x > leftOld);
+			}
+		});
+		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer x = (Integer) value.getField(4);
+				Integer y = (Integer) value.getField(5);
+				return (y < topOld) || (x < leftOld);
+			}
+		});
+		List<DataStream<Row>> lStream = new ArrayList<DataStream<Row>>();
+		lStream.add(vertexStreamOld);
+		lStream.add(vertexStreamNew);
+		return lStream;
+	}
 		
-		return null;
+	public DataStream<Row> displayAll() {
+		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
+		return graphUtil.produceWrapperStream();
 	}
 }
