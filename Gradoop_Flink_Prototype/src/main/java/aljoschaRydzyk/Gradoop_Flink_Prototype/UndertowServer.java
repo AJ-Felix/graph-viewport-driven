@@ -23,6 +23,10 @@ public class UndertowServer {
     private static String webSocketListenPath = "/graphData";
     private static int webSocketListenPort = 8887;
     private static String webSocketHost = "localhost";
+    
+    private static Float viewportPixelX = (float) 1000;
+    private static Float viewportPixelY = (float) 1000;
+    private static float zoomLevel = 1;
 	
     public static void main(final String[] args) {
     	
@@ -150,8 +154,16 @@ public class UndertowServer {
                 }
     			if (messageData.startsWith("zoomIn")) {
         			String[] arrMessageData = messageData.split(";");
+        			Integer top = Integer.parseInt(arrMessageData[5]);
+					Integer right = Integer.parseInt(arrMessageData[6]);
+					Integer bottom = Integer.parseInt(arrMessageData[7]);
+					Integer left = Integer.parseInt(arrMessageData[8]);
+					Integer modelPositionRangeY = bottom - top; 
+					Integer modelPositionRangeX = right - left;
+					zoomLevel = Math.min((viewportPixelX/modelPositionRangeX), (viewportPixelY/modelPositionRangeY));
+					UndertowServer.sendToAll("positioning;" + zoomLevel + ";" + (-top) + ";" + (-left));
         			DataStream<Row> wrapperStream = flinkCore.zoomIn(Integer.parseInt(arrMessageData[1]), Integer.parseInt(arrMessageData[2]),
-							Integer.parseInt(arrMessageData[3]), Integer.parseInt(arrMessageData[4]));
+							Integer.parseInt(arrMessageData[3]), Integer.parseInt(arrMessageData[4]), top, right, bottom, left);
 					wrapperStream.addSink(new SinkFunction<Row>() {
 	    				@Override 
 	    				public void invoke(Row element, Context context) {
@@ -178,13 +190,17 @@ public class UndertowServer {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-    				UndertowServer.sendToAll("fitGraph");
+//    				UndertowServer.sendToAll("fitGraph");
     			}
     			if (messageData.startsWith("pan")) {
         			String[] arrMessageData = messageData.split(";");
+        			Integer xDiff = Integer.parseInt(arrMessageData[5]); 
+					Integer yDiff = Integer.parseInt(arrMessageData[6]);
+					Integer xPosition = (int) -(xDiff * zoomLevel);
+					Integer yPosition = (int) -(yDiff * zoomLevel);
+        			UndertowServer.sendToAll("pan;" + xPosition + ";" + yPosition);
 					DataStream<Row> wrapperStream = flinkCore.pan(Integer.parseInt(arrMessageData[1]), Integer.parseInt(arrMessageData[2]),
-							Integer.parseInt(arrMessageData[3]), Integer.parseInt(arrMessageData[4]), Integer.parseInt(arrMessageData[5]), 
-							Integer.parseInt(arrMessageData[6]));
+							Integer.parseInt(arrMessageData[3]), Integer.parseInt(arrMessageData[4]), xDiff, yDiff);
 					wrapperStream.addSink(new SinkFunction<Row>() {
 	    				@Override 
 	    				public void invoke(Row element, Context context) {
@@ -211,7 +227,7 @@ public class UndertowServer {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-    				UndertowServer.sendToAll("fitGraph");
+//    				UndertowServer.sendToAll("fitGraph");
     			}
     			if (messageData.equals("displayAll")) {
         			flinkCore = new FlinkCore();
@@ -244,7 +260,7 @@ public class UndertowServer {
 						e.printStackTrace();
 					}
 					UndertowServer.sendToAll("fitGraph");
-					UndertowServer.sendToAll("layout");
+//					UndertowServer.sendToAll("layout");
     			}
             }
         };

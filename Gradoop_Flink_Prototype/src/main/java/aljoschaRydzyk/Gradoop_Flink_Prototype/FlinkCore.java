@@ -105,30 +105,50 @@ public class FlinkCore {
 		return graphUtil.produceWrapperStream();	
 	}
 	
-	public DataStream<Row> zoomIn (Integer top, Integer right, Integer bottom, Integer left){
-		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
-		DataStream<Row> vertexStream = graphUtil.getVertexStream()
-			.filter(new FilterFunction<Row>(){
-			@Override
-			public boolean filter(Row value) throws Exception {
-				Integer x = (Integer) value.getField(4);
-				Integer y = (Integer) value.getField(5);
-				return (left < x) &&  (x < right) && (top < y) && (y < bottom);
-			}
-		});
-		String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
-					+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
-					+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
-		Table vertexTable = fsTableEnv.fromDataStream(vertexStream).as("graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree");
-		Table wrapperTable = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
-		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
-		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
-		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
-				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
-				Types.STRING, Types.STRING});
-		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo);
-		//filter out all wrappers whose edges are already in previous view!!!
-		return wrapperStream;
+	public DataStream<Row> zoomIn (Integer previousTop, Integer previousRight, Integer previousBottom, Integer previousLeft, Integer top, Integer right, 
+				Integer bottom, Integer left){
+			CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
+			DataStream<Row> vertexStreamInner = graphUtil.getVertexStream()
+				.filter(new FilterFunction<Row>(){
+				@Override
+				public boolean filter(Row value) throws Exception {
+					Integer x = (Integer) value.getField(4);
+					Integer y = (Integer) value.getField(5);
+					return (left <= x) &&  (x <= right) && (top <= y) && (y <= bottom);
+				}
+			});
+			String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
+						+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
+						+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
+			String vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
+			Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInner).as(vertexFields);
+			DataStream<Row> wrapperStream = graphUtil.getWrapperStream();
+			Table wrapperTable = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
+			wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+			wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+		//add vertices and edges that have neighbours in the zoomed in view to show edges
+			DataStream<Row> vertexStreamOuter = graphUtil.getVertexStream()
+				.filter(new FilterFunction<Row>() {
+					@Override
+					public boolean filter(Row value) throws Exception {
+						Integer x = (Integer) value.getField(4);
+						Integer y = (Integer) value.getField(5);
+						return (left > x) || (x > right) || (top > y) || (y > bottom);
+					}
+				});
+			Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(vertexFields);
+			Table wrapperTableInOut = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
+			wrapperTableInOut = wrapperTableInOut.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+			wrapperTableInOut = wrapperTableInOut.join(vertexTableOuter).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+			Table wrapperTableOutIn = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
+			wrapperTableOutIn = wrapperTableOutIn.join(vertexTableOuter).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+			wrapperTableOutIn = wrapperTableOutIn.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+			RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
+					Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
+					Types.STRING, Types.STRING});
+			wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo).union(fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo))
+					.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
+			return wrapperStream;
 	}
 	
 	public DataStream<Row> pan(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer xDiff, Integer yDiff){
@@ -137,7 +157,7 @@ public class FlinkCore {
 		Integer bottomNew = bottomOld + yDiff;
 		Integer leftNew = leftOld + xDiff;
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
-		DataStream<Row> vertexStreamAll = graphUtil.getVertexStream()
+		DataStream<Row> vertexStreamInner = graphUtil.getVertexStream()
 			.filter(new FilterFunction<Row>(){
 				@Override
 				public boolean filter(Row value) throws Exception {
@@ -148,56 +168,78 @@ public class FlinkCore {
 			});
 		List<DataStream<Row>> lStream;
 		if ((xDiff == 0) && (yDiff < 0)) {
-			lStream = panTop(vertexStreamAll, topOld);
+			lStream = panTop(vertexStreamInner, topOld);
 		} else if ((xDiff > 0) && (yDiff < 0)) {
-			lStream = panTopRight(vertexStreamAll, topOld, rightOld);
+			lStream = panTopRight(vertexStreamInner, topOld, rightOld);
 		} else if ((xDiff > 0) && (yDiff == 0)) {
-			lStream = panRight(vertexStreamAll, rightOld);
+			lStream = panRight(vertexStreamInner, rightOld);
 		} else if ((xDiff > 0) && (yDiff > 0)) {
-			lStream = panBottomRight(vertexStreamAll, bottomOld, rightOld);
+			lStream = panBottomRight(vertexStreamInner, bottomOld, rightOld);
 		} else if ((xDiff == 0) && (yDiff > 0)) {
-			lStream = panBottom(vertexStreamAll, bottomOld);
+			lStream = panBottom(vertexStreamInner, bottomOld);
 		} else if ((xDiff < 0) && (yDiff > 0)) {
-			lStream = panBottomLeft(vertexStreamAll, bottomOld, leftOld);
+			lStream = panBottomLeft(vertexStreamInner, bottomOld, leftOld);
 		} else if ((xDiff < 0) && (yDiff == 0)) {
-			lStream = panLeft(vertexStreamAll, leftOld);
+			lStream = panLeft(vertexStreamInner, leftOld);
 		} else {
-			lStream = panTopLeft(vertexStreamAll, topOld, leftOld);
+			lStream = panTopLeft(vertexStreamInner, topOld, leftOld);
 		}
 		
-		DataStream<Row> vertexStreamOld = lStream.get(0);
-		DataStream<Row> vertexStreamNew = lStream.get(1);
+		DataStream<Row> vertexStreamInnerOld = lStream.get(0);
+		DataStream<Row> vertexStreamInnerNew = lStream.get(1);
 		String vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
 		String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
 				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
 				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
 		
 		//edge stream for all connections within new vertices
-		Table vertexTableNew = fsTableEnv.fromDataStream(vertexStreamNew).as(vertexFields);
-		Table wrapperTableNew = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
+		Table vertexTableNew = fsTableEnv.fromDataStream(vertexStreamInnerNew).as(vertexFields);
+		DataStream<Row> wrapperStream = graphUtil.getWrapperStream();
+		Table wrapperTableNew = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
 		wrapperTableNew = wrapperTableNew.join(vertexTableNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
 		wrapperTableNew = wrapperTableNew.join(vertexTableNew).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 
 		
 		//edge stream for all connection between old and new vertices in one direction
-		Table vertexTableOld = fsTableEnv.fromDataStream(vertexStreamOld).as(vertexFields);
-		Table edgeTableOld1 = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
-		edgeTableOld1 = edgeTableOld1.join(vertexTableOld).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
-		edgeTableOld1 = edgeTableOld1.join(vertexTableNew).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+		Table vertexTableOld = fsTableEnv.fromDataStream(vertexStreamInnerOld).as(vertexFields);
+		Table wrapperTableOld1 = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
+		wrapperTableOld1 = wrapperTableOld1.join(vertexTableOld).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		wrapperTableOld1 = wrapperTableOld1.join(vertexTableNew).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 			
 		//edge stream for all connection between old and new vertices in the respective other direction
-		Table edgeTableOld2 = fsTableEnv.fromDataStream(graphUtil.getWrapperStream()).as(wrapperFields);
-		edgeTableOld2 = edgeTableOld2.join(vertexTableNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
-		edgeTableOld2 = edgeTableOld2.join(vertexTableOld).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+		Table wrapperTableOld2 = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
+		wrapperTableOld2 = wrapperTableOld2.join(vertexTableNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		wrapperTableOld2 = wrapperTableOld2.join(vertexTableOld).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 		
 		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
 				Types.STRING, Types.STRING});
 		DataStream<Row> wrapperStreamNew = fsTableEnv.toAppendStream(wrapperTableNew, typeInfo);
-		DataStream<Row> wrapperStreamOldToNew = fsTableEnv.toAppendStream(edgeTableOld1, typeInfo);
-		DataStream<Row> wrapperStreamNewToOld = fsTableEnv.toAppendStream(edgeTableOld2, typeInfo);
-		DataStream<Row> wrapperStream = wrapperStreamNew.union(wrapperStreamOldToNew).union(wrapperStreamNewToOld);
-		wrapperStream.print().setParallelism(1);
+		DataStream<Row> wrapperStreamOldToNew = fsTableEnv.toAppendStream(wrapperTableOld1, typeInfo);
+		DataStream<Row> wrapperStreamNewToOld = fsTableEnv.toAppendStream(wrapperTableOld2, typeInfo);
+		DataStream<Row> wrapperStreamInner = wrapperStreamNew.union(wrapperStreamOldToNew).union(wrapperStreamNewToOld);
+		
+		//add vertices and edges that have neighbours in the view to show edges
+		DataStream<Row> vertexStreamOuter = graphUtil.getVertexStream()
+				.filter(new FilterFunction<Row>(){
+					@Override
+					public boolean filter(Row value) throws Exception {
+						Integer x = (Integer) value.getField(4);
+						Integer y = (Integer) value.getField(5);
+						return (leftNew > x) ||  (x > rightNew) || (topNew > y) || (y > bottomNew);
+					}
+				});
+		Table vertexTableInner = fsTableEnv.fromDataStream(vertexStreamInner).as(vertexFields);
+		Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(vertexFields);
+		Table wrapperTableInOut = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
+		wrapperTableInOut = wrapperTableInOut.join(vertexTableInner).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		wrapperTableInOut = wrapperTableInOut.join(vertexTableOuter).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+		Table wrapperTableOutIn = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
+		wrapperTableOutIn = wrapperTableOutIn.join(vertexTableOuter).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		wrapperTableOutIn = wrapperTableOutIn.join(vertexTableInner).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+		DataStream<Row> wrapperStreamOuter = fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo)
+				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
+		wrapperStream = wrapperStreamInner.union(wrapperStreamOuter);
 		return wrapperStream;
 	}
 		

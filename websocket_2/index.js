@@ -9,8 +9,9 @@ ws.onopen = function() {
 
 class JoinHandler{
 	vertexIncidenceMap = new Map();
+	edgeSet = new Set();
 	
-	constructor(){
+	constructor(cy){
 	}
 	
 	resetMap(){
@@ -28,7 +29,6 @@ class JoinHandler{
 		}
 		if (this.vertexIncidenceMap.get(vertexId) == 1) {
 			cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
-			console.log("added vertex in join handler");
 		}
 	}
 	
@@ -49,8 +49,36 @@ class JoinHandler{
 		var edgeId = dataArray[1];
 		var sourceVertex = dataArray[2];
 		var targetVertex = dataArray[3];
-		cy.add({group : 'edges', data: {id: edgeId, source: sourceVertex , target: targetVertex}});
+		if (!this.edgeSet.has(edgeId)) cy.add({group : 'edges', data: {id: edgeId, source: sourceVertex , target: targetVertex}});
+		this.edgeSet.add(edgeId);
 	}
+	
+	removeSpatialSelection(top, right, bottom, left){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if ((sourcePos.x > right) || (sourcePos.x < left) || (sourcePos.y > bottom) || (sourcePos.y < top) || 
+					(targetPos.x > right) || (targetPos.x < left) || (targetPos.y > bottom) || (targetPos.y < top)){
+					cy.remove(edge);
+					set.delete(edge.data('id'));
+				}
+			}
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if ((pos.x > right) || (pos.x < left) || (pos.y > bottom) || (pos.y < top)) {
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}	
 }
 
 class MapHandler{
@@ -116,7 +144,7 @@ class MapHandler{
 }
 
 ws.onmessage = function (evt) {
-	console.log(evt.data);
+	// console.log(evt.data);
 	var dataArray = evt.data.split(";");
 	switch (dataArray[0]){
 		case 'clearGraph':
@@ -130,6 +158,17 @@ ws.onmessage = function (evt) {
 		case 'fitGraph':
 			console.log('fitting graph');
 			cy.fit();
+			cy.zoom(0.25);
+			cy.pan({x:0, y:0});
+			break;
+		case 'positioning':
+			console.log('position viewport!');
+			cy.zoom(parseFloat(dataArray[1]));
+			cy.pan({x:parseInt(dataArray[2]), y:parseInt(dataArray[3])});
+			break;
+		case 'pan':
+			console.log('panning');
+			cy.pan({x:parseInt(dataArray[1]), y:parseInt(dataArray[2])});
 			break;
 		case 'addVertex':
 			handler.addVertex(dataArray);
@@ -160,7 +199,7 @@ function sendSignalRetract(){
 }
 
 function sendSignalAppendJoin(){
-	handler = new JoinHandler();
+	handler = new JoinHandler(cy);
 	ws.send("buildTopView;appendJoin");
 }
 
@@ -171,14 +210,19 @@ function sendSignalAppendMap(){
 
 function zoomIn(){
 	//remove all elements for the time being
-	removeAll();
+	// removeAll();
 	//hard-coded example
+	var previousTop = 0;
+	var previousRight = 4000;
+	var previousBottom = 4000;
+	var previousLeft = 0;
 	var top = 0;
 	var right = 2000;
 	var bottom = 2000;
 	var left = 0;
-	ws.send("zoomIn;" + top.toString() + ";" + right.toString() + ";" + bottom.toString() + ";" + left.toString());
-	// removeSpatialSelection(top, right, bottom, left);
+	ws.send("zoomIn;" + previousTop.toString() + ";" + previousRight.toString() + ";" + previousBottom.toString() + ";" + previousLeft.toString() + ";" + top.toString() + ";" + 
+		right.toString() + ";" + bottom.toString() + ";" + left.toString());
+	handler.removeSpatialSelection(top, right, bottom, left);
 }
 
 function pan(){
@@ -190,7 +234,7 @@ function pan(){
 	var xDiff = 800;
 	var yDiff = 0;
 	ws.send("pan;" + top.toString() + ";" + right.toString() + ";" + bottom.toString() + ";" + left.toString() + ";" + xDiff.toString() + ";" + yDiff.toString());
-	removeSpatialSelection(top + yDiff, right + xDiff, bottom + yDiff, left + xDiff);
+	handler.removeSpatialSelection(top + yDiff, right + xDiff, bottom + yDiff, left + xDiff);
 }
 
 function removeSpatialSelection(top, right, bottom, left){
@@ -201,6 +245,7 @@ function removeSpatialSelection(top, right, bottom, left){
 			// console.log(node.position().x);
 			if ((pos.x > right) || (pos.x < left) || (pos.y > bottom) || (pos.y < top)) {
 				cy.remove(node);
+				
 			}
 		}
 	)

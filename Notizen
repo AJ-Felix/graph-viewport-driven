@@ -133,16 +133,18 @@ Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-O
 
 Konversion from table to stream always produces row-typed streams --> without mapping operator streams of custom objects can not be generated from tables!!!
 
+Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welche in der vorherigen Ansicht schon vorhanden waren, können im BackEnd nicht herausgefiltert werden:
+	Entweder alle Kanten vorher löschen (sieht aber scheiße aus) oder die Duplikate im FrontEnd händeln.
 
-TODO: Pan/Zoom: Cytoscape-Koordinaten sinnvoll in Gradoop-Layout-Koordinaten übersetzen.
+
 TODO: PreLayout-WrappersCSV: WrapperCSV in kleinere Stücke geordnet nach Koordinaten aufteilen, um eine Vorfilterung für Zoom- und Pan-Operationen zu realisieren
 	- aber ebenfalls die ungestückelte Variante implementiert lassen für den Vergleich
 TODO: Adjanzenz-Matrix für die Variante ohne Layout implementieren
-TODO: ZoomIn und Panning
-	- Implementieren, dass nicht alle Knoten vorher gelöscht werden (zoom)
-	- Implementieren, dass nur die neuen Knoten/Kanten gesendet werden (beide)
-	- Implementieren, dass alle Nachbarn der Knoten erstellt werden, aber nicht zu sehen sind, damit die entsprechenden Kanten visualisiert werden
+TODO: Mausoperationen übersetzen!!!!
 TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem subset an Knoten durchführen, möglicherweise ist das hilfreich
+TODO: Bei der Zoom-Operation werden redudante wrapper gesendet. Für GradoopGraphUtil muss der Knoten-Lösch-Mechanismus im FrontEnd angepasst werden, weil der Zähler der Inzidenz-Map sonst fehlerhaft ist.
+	- Eine MÖglichkeit: Am Ende der Operation alle Map-Values auf 1 setzen.
+TODO: Alle GraphUtil-Klassen an CSVGraphUtilJoin anpassen
 
 Verschiedene Grundansätze der BackEnd-Struktur:
 	-	Gradoop (Standard)

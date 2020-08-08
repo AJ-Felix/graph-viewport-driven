@@ -77,7 +77,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG
 				, Types.STRING, Types.STRING});
-		wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo);
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo);
 		return wrapperStream;
 	}
 

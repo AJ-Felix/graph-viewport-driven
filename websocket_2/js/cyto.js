@@ -70,18 +70,69 @@ var cy = cytoscape({
  */  pixelRatio: 'auto'
 });
 
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 },
-		// position: { x: 200, y: 200 }
-	// });
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "200, 200"},
+		position: { x: 200, y: 200 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "100, 100"},
+		position: { x: 100, y: 100 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "300, 300"},
+		position: { x: 300, y: 300 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "100, 200"},
+		position: { x: 100, y: 200 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "100, 300"},
+		position: { x: 100, y: 300 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "200, 100"},
+		position: { x: 200, y: 100 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "200, 300"},
+		position: { x: 200, y: 300 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "300, 100"},
+		position: { x: 300, y: 100 }
+	});
+	
+cy.add({
+		group: 'nodes',
+		data: { weight: 75 , id: "300, 200"},
+		position: { x: 300, y: 200 }
+	});
+	
+
 
 var cyto = document.getElementById('cy');
 cyto.addEventListener('mousedown', function(e){
 	console.log("mouse went down in cy (drag)");
 	this.onmousemove = function (e){
 		console.log(e.movementX);
-		console.log(cy.pan());
+		console.log("cytoscape panning: " + cy.pan());
+		console.log("cytoscape zoom: " + cy.zoom());
 		ws.send("pan;" + e.movementX + ";" + e.movementY);
 	}
 });
@@ -93,6 +144,10 @@ cyto.addEventListener("mouseup", function(e){
 document.addEventListener("click",
 	function(){
 		console.log("Mouse clicked anywhere in document!");
+		console.log("cytoscape panning:");
 		console.log(cy.pan());
+		console.log("cytoscape zoom:");
+		console.log(cy.zoom());
 	}
 );
+
