@@ -11,7 +11,7 @@ class JoinHandler{
 	vertexIncidenceMap = new Map();
 	edgeSet = new Set();
 	
-	constructor(cy){
+	constructor(){
 	}
 	
 	resetMap(){
@@ -24,7 +24,9 @@ class JoinHandler{
 		var vertexY = dataArray[3];
 		if (!this.vertexIncidenceMap.has(vertexId)){
 			this.vertexIncidenceMap.set(vertexId, 1);
+			// console.log("adding vertex" + vertexId + " " + vertexX + " " + vertexY);
 		} else {
+			// console.log("vertex already there: " + vertexId + " " + vertexX + " " + vertexY);
 			this.vertexIncidenceMap.set(vertexId, this.vertexIncidenceMap.get(vertexId) + 1);
 		}
 		if (this.vertexIncidenceMap.get(vertexId) == 1) {
@@ -53,7 +55,7 @@ class JoinHandler{
 		this.edgeSet.add(edgeId);
 	}
 	
-	removeSpatialSelection(top, right, bottom, left){
+	removeSpatialSelectionTop(bottomModelPrevious, yModelDiff){
 		var map = this.vertexIncidenceMap;
 		var set = this.edgeSet;
 		cy.edges().forEach(
@@ -62,8 +64,237 @@ class JoinHandler{
 				var targetId = edge.data('target');
 				var sourcePos = cy.getElementById(sourceId).position();
 				var targetPos = cy.getElementById(targetId).position();
-				if ((sourcePos.x > right) || (sourcePos.x < left) || (sourcePos.y > bottom) || (sourcePos.y < top) || 
-					(targetPos.x > right) || (targetPos.x < left) || (targetPos.y > bottom) || (targetPos.y < top)){
+				if (((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
+						((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff))) {
+					cy.remove(edge);
+					set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if ((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)){
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	
+	removeSpatialSelectionTopRight(bottomModelPrevious, leftModelPrevious, xModelDiff, yModelDiff){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if (((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
+						((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff)) ||
+						((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
+							((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff))) {
+					cy.remove(edge);
+					set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if (((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)) ||
+						((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff))){
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	
+	removeSpatialSelectionRight(leftModelPrevious, xModelDiff){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if (((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
+							((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff))) {
+						cy.remove(edge);
+						set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if ((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff)){
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	
+	removeSpatialSelectionBottomRight(topModelPrevious, leftModelPrevious, xModelDiff, yModelDiff){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if (((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
+							((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff)) ||
+							((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
+							((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff))) {
+						cy.remove(edge);
+						set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if (((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) || 
+						((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff))) { 
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	
+	removeSpatialSelectionBottom(topModelPrevious,  yModelDiff){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if (((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
+							((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff))) {
+						cy.remove(edge);
+						set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if ((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) { 
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	
+	removeSpatialSelectionBottomLeft(topModelPrevious, rightModelPrevious, xModelDiff, yModelDiff){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if (((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
+							((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff)) ||
+							((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
+							((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff))) {
+						cy.remove(edge);
+						set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if (((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) ||
+						((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff))) { 
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	
+	removeSpatialSelectionLeft(rightModelPrevious, xModelDiff){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if (((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
+							((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff))) {
+						cy.remove(edge);
+						set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if ((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff)) { 
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	
+	removeSpatialSelectionTopLeft(rightModelPrevious, bottomModelPrevious, xModelDiff, yModelDiff){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if (((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
+							((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff)) ||
+							((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
+							((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff))) {
+						cy.remove(edge);
+						set.delete(edge.data('id'));
+				}
+			}	
+		)
+		cy.nodes().forEach(
+			function (node){
+			var pos = node.position();
+				if (((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)) || 
+						((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff))) { 
+					cy.remove(node);
+					map.delete(node.data('id'));
+				}
+			}
+		)
+	}
+	removeSpatialSelection(topModel, rightModel, bottomModel, leftModel){
+		var map = this.vertexIncidenceMap;
+		var set = this.edgeSet;
+		cy.edges().forEach(
+			function (edge){
+				var sourceId = edge.data('source');
+				var targetId = edge.data('target');
+				var sourcePos = cy.getElementById(sourceId).position();
+				var targetPos = cy.getElementById(targetId).position();
+				if ((sourcePos.x > rightModel) || (sourcePos.x < leftModel) || 
+						(targetPos.x > rightModel) || (targetPos.x < leftModel) ||
+						(sourcePos.y > bottomModel) || (sourcePos.y < topModel) ||
+						(targetPos.y > bottomModel) || (targetPos.y < topModel)) {
 					cy.remove(edge);
 					set.delete(edge.data('id'));
 				}
@@ -72,7 +303,7 @@ class JoinHandler{
 		cy.nodes().forEach(
 			function (node){
 			var pos = node.position();
-				if ((pos.x > right) || (pos.x < left) || (pos.y > bottom) || (pos.y < top)) {
+				if ((pos.x > rightModel) || (pos.x < leftModel) || (pos.y > bottomModel) || (pos.y < topModel)) {
 					cy.remove(node);
 					map.delete(node.data('id'));
 				}
@@ -156,8 +387,7 @@ ws.onmessage = function (evt) {
 			layout.run();
 			break;
 		case 'fitGraph':
-			console.log('fitting graph');
-			cy.fit();
+			// cy.fit();
 			cy.zoom(0.25);
 			cy.pan({x:0, y:0});
 			break;
@@ -166,10 +396,10 @@ ws.onmessage = function (evt) {
 			cy.zoom(parseFloat(dataArray[1]));
 			cy.pan({x:parseInt(dataArray[2]), y:parseInt(dataArray[3])});
 			break;
-		case 'pan':
-			console.log('panning');
-			cy.pan({x:parseInt(dataArray[1]), y:parseInt(dataArray[2])});
-			break;
+		// case 'pan':
+			// console.log('panning');
+			// cy.pan({x:parseInt(dataArray[1]), y:parseInt(dataArray[2])});
+			// break;
 		case 'addVertex':
 			handler.addVertex(dataArray);
 			break;
@@ -199,7 +429,7 @@ function sendSignalRetract(){
 }
 
 function sendSignalAppendJoin(){
-	handler = new JoinHandler(cy);
+	handler = new JoinHandler();
 	ws.send("buildTopView;appendJoin");
 }
 
@@ -231,9 +461,10 @@ function pan(){
 	var right = 2000;
 	var bottom = 2000;
 	var left = 0;
-	var xDiff = 800;
+	var xDiff = -400;
 	var yDiff = 0;
-	ws.send("pan;" + top.toString() + ";" + right.toString() + ";" + bottom.toString() + ";" + left.toString() + ";" + xDiff.toString() + ";" + yDiff.toString());
+	cy.pan({x:-400, y:0});
+	ws.send("pan;" + xDiff.toString() + ";" + yDiff.toString());
 	handler.removeSpatialSelection(top + yDiff, right + xDiff, bottom + yDiff, left + xDiff);
 }
 

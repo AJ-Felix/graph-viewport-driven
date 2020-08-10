@@ -35,10 +35,10 @@ public class FlinkCore {
 	  private StreamTableEnvironment fsTableEnv;
 	  
 	  private GraphUtil graphUtil;
-	  private Integer topBoundary;
-	  private Integer bottomBoundary;
-	  private Integer leftBoundary;
-	  private Integer rightBoundary;
+	  private Integer topModelPos;
+	  private Integer bottomModelPos;
+	  private Integer leftModelPos;
+	  private Integer rightModelPos;
 	  
 	public  FlinkCore () {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
@@ -48,6 +48,38 @@ public class FlinkCore {
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
 		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
+	}
+	
+	public void setTopModelPos(Integer topModelPos) {
+		this.topModelPos = topModelPos;
+	}
+	
+	public Integer gettopModelPos() {
+		return this.topModelPos;
+	}
+	
+	public void setBottomModelPos(Integer bottomModelPos) {
+		this.bottomModelPos = bottomModelPos;
+	}
+	
+	public Integer getBottomModelPos() {
+		return this.bottomModelPos;
+	}
+	
+	public void setRightModelPos(Integer rightModelPos) {
+		this.rightModelPos = rightModelPos;
+	}
+	
+	public Integer getRightModelPos() {
+		return this.rightModelPos;
+	}
+	
+	public void setLeftModelPos(Integer leftModelPos) {
+		this.leftModelPos = leftModelPos;
+	}
+	
+	public Integer getLeftModelPos() {
+		return this.leftModelPos;
 	}
 	
 	public StreamExecutionEnvironment getFsEnv() {
@@ -97,7 +129,7 @@ public class FlinkCore {
 	public DataStream<Row> buildTopViewAppendJoin(){
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 		graphUtil.produceWrapperStream();
-		return graphUtil.getMaxDegreeSubset(50);
+		return graphUtil.getMaxDegreeSubset(100);
 	}
 	
 	public DataStream<Row> buildTopViewAppendMap(){
@@ -105,8 +137,7 @@ public class FlinkCore {
 		return graphUtil.produceWrapperStream();	
 	}
 	
-	public DataStream<Row> zoomIn (Integer previousTop, Integer previousRight, Integer previousBottom, Integer previousLeft, Integer top, Integer right, 
-				Integer bottom, Integer left){
+	public DataStream<Row> zoomIn (Integer topModel, Integer rightModel, Integer bottomModel, Integer leftModel){
 			CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 			DataStream<Row> vertexStreamInner = graphUtil.getVertexStream()
 				.filter(new FilterFunction<Row>(){
@@ -114,7 +145,7 @@ public class FlinkCore {
 				public boolean filter(Row value) throws Exception {
 					Integer x = (Integer) value.getField(4);
 					Integer y = (Integer) value.getField(5);
-					return (left <= x) &&  (x <= right) && (top <= y) && (y <= bottom);
+					return (leftModel <= x) &&  (x <= rightModel) && (topModel <= y) && (y <= bottomModel);
 				}
 			});
 			String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
@@ -133,7 +164,7 @@ public class FlinkCore {
 					public boolean filter(Row value) throws Exception {
 						Integer x = (Integer) value.getField(4);
 						Integer y = (Integer) value.getField(5);
-						return (left > x) || (x > right) || (top > y) || (y > bottom);
+						return (leftModel > x) || (x > rightModel) || (topModel > y) || (y > bottomModel);
 					}
 				});
 			Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(vertexFields);
@@ -151,11 +182,11 @@ public class FlinkCore {
 			return wrapperStream;
 	}
 	
-	public DataStream<Row> pan(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer xDiff, Integer yDiff){
-		Integer topNew = topOld + yDiff;
-		Integer rightNew = rightOld + xDiff;
-		Integer bottomNew = bottomOld + yDiff;
-		Integer leftNew = leftOld + xDiff;
+	public DataStream<Row> pan(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer xModelDiff, Integer yModelDiff){
+		Integer topNew = topOld + yModelDiff;
+		Integer rightNew = rightOld + xModelDiff;
+		Integer bottomNew = bottomOld + yModelDiff;
+		Integer leftNew = leftOld + xModelDiff;
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 		DataStream<Row> vertexStreamInner = graphUtil.getVertexStream()
 			.filter(new FilterFunction<Row>(){
@@ -167,19 +198,19 @@ public class FlinkCore {
 				}
 			});
 		List<DataStream<Row>> lStream;
-		if ((xDiff == 0) && (yDiff < 0)) {
+		if ((xModelDiff == 0) && (yModelDiff < 0)) { //stattdessen könnte auch ein switch-case auf der pan...-String-Endung verwendet werden!!
 			lStream = panTop(vertexStreamInner, topOld);
-		} else if ((xDiff > 0) && (yDiff < 0)) {
+		} else if ((xModelDiff > 0) && (yModelDiff < 0)) {
 			lStream = panTopRight(vertexStreamInner, topOld, rightOld);
-		} else if ((xDiff > 0) && (yDiff == 0)) {
+		} else if ((xModelDiff > 0) && (yModelDiff == 0)) {
 			lStream = panRight(vertexStreamInner, rightOld);
-		} else if ((xDiff > 0) && (yDiff > 0)) {
+		} else if ((xModelDiff > 0) && (yModelDiff > 0)) {
 			lStream = panBottomRight(vertexStreamInner, bottomOld, rightOld);
-		} else if ((xDiff == 0) && (yDiff > 0)) {
+		} else if ((xModelDiff == 0) && (yModelDiff > 0)) {
 			lStream = panBottom(vertexStreamInner, bottomOld);
-		} else if ((xDiff < 0) && (yDiff > 0)) {
+		} else if ((xModelDiff < 0) && (yModelDiff > 0)) {
 			lStream = panBottomLeft(vertexStreamInner, bottomOld, leftOld);
-		} else if ((xDiff < 0) && (yDiff == 0)) {
+		} else if ((xModelDiff < 0) && (yModelDiff == 0)) {
 			lStream = panLeft(vertexStreamInner, leftOld);
 		} else {
 			lStream = panTopLeft(vertexStreamInner, topOld, leftOld);
@@ -187,6 +218,7 @@ public class FlinkCore {
 		
 		DataStream<Row> vertexStreamInnerOld = lStream.get(0);
 		DataStream<Row> vertexStreamInnerNew = lStream.get(1);
+		vertexStreamInnerNew.print().setParallelism(1);
 		String vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
 		String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
 				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "

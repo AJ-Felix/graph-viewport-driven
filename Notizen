@@ -145,6 +145,8 @@ TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem sub
 TODO: Bei der Zoom-Operation werden redudante wrapper gesendet. Für GradoopGraphUtil muss der Knoten-Lösch-Mechanismus im FrontEnd angepasst werden, weil der Zähler der Inzidenz-Map sonst fehlerhaft ist.
 	- Eine MÖglichkeit: Am Ende der Operation alle Map-Values auf 1 setzen.
 TODO: Alle GraphUtil-Klassen an CSVGraphUtilJoin anpassen
+TODO: In RemoveSpatialSelection nicht alle Knoten raushauen, die nicht im Koordinatenbereich liegen, sondern nur die, die vorher im Koordinatenbereich lagen. Damit wird der Großteil der Nachbarknoten, welche außerhalb des Koordinatenbereichs beibehalten und muss nicht nachgeladen werden beim panning.
+TODO: Überlegung, ob eine Adjazenzmatrix nicht in jeder Art und Weise der BackEnd-Speicherung sinnvoll ist, weil Nachbarschaftsbeziehungen immer abgefragt werden müssen.
 
 Verschiedene Grundansätze der BackEnd-Struktur:
 	-	Gradoop (Standard)
