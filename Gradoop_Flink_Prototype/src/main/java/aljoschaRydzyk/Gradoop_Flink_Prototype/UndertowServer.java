@@ -156,33 +156,18 @@ public class UndertowServer {
                 }
     			if (messageData.startsWith("zoomIn")) {
         			String[] arrMessageData = messageData.split(";");
-        			Integer cytoX = Integer.parseInt(arrMessageData[1]);
-        			Integer cytoY = Integer.parseInt(arrMessageData[2]);
-        			Integer xRenderPos = Integer.parseInt(arrMessageData[3]);
-        			Integer yRenderPos = Integer.parseInt(arrMessageData[4]);
-        			zoomLevel = Float.parseFloat(arrMessageData[5]);
-//        			Integer top = Integer.parseInt(arrMessageData[5]);
-//					Integer right = Integer.parseInt(arrMessageData[6]);
-//					Integer bottom = Integer.parseInt(arrMessageData[7]);
-//					Integer left = Integer.parseInt(arrMessageData[8]);
-        			Integer topModelPosPrevious = -(yRenderPos);
-        			Integer leftModelPosPrevious = -(xRenderPos);
-        			Integer bottomModelPosPrevious = (int) -(yRenderPos * zoomLevel);
-        			Integer rightModelPosPrevious = (int) -(xRenderPos * zoomLevel);
-//        			Integer topModelPos = (int) (cytoY * (modelPixelY / viewportPixelY));
-//        			Integer leftModelPos = (int) (cytoY * (modelPixelY / viewportPixelY));
-//        			Integer topModelPos = (int) (cytoY * (modelPixelY / viewportPixelY));
-//        			Integer topModelPos = (int) (cytoY * (modelPixelY / viewportPixelY));
-//					flinkCore.setTopModelPos(top);
-//					flinkCore.setRightModelPos(right);
-//					flinkCore.setBottomModelPos(bottom);
-//					flinkCore.setLeftModelPos(left);
-//					Integer modelPositionRangeY = bottom - top; 
-//					Integer modelPositionRangeX = right - left;
-//					zoomLevel = Math.min((viewportPixelX/modelPositionRangeX), (viewportPixelY/modelPositionRangeY));
-//					UndertowServer.sendToAll("positioning;" + zoomLevel + ";" + (-top) + ";" + (-left));
-        			DataStream<Row> wrapperStream = null;
-//        			flinkCore.zoomIn(top, right, bottom, left);
+        			Integer xRenderPos = Integer.parseInt(arrMessageData[1]);
+        			Integer yRenderPos = Integer.parseInt(arrMessageData[2]);
+        			zoomLevel = Float.parseFloat(arrMessageData[3]);
+        			Integer topModelPos = (int) (- yRenderPos / zoomLevel);
+        			Integer leftModelPos = (int) (- xRenderPos /zoomLevel);
+        			Integer bottomModelPos = (int) (topModelPos + viewportPixelY / zoomLevel);
+        			Integer rightModelPos = (int) (leftModelPos + viewportPixelX / zoomLevel);
+					flinkCore.setTopModelPos(topModelPos);
+					flinkCore.setRightModelPos(rightModelPos);
+					flinkCore.setBottomModelPos(bottomModelPos);
+					flinkCore.setLeftModelPos(leftModelPos);
+        			DataStream<Row> wrapperStream = flinkCore.zoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 					wrapperStream.addSink(new SinkFunction<Row>() {
 	    				@Override 
 	    				public void invoke(Row element, Context context) {

@@ -152,6 +152,7 @@ class JoinHandler{
 							((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff)) ||
 							((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
 							((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff))) {
+						console.log("removing edge: " + sourcePos.x + " " + sourcePos.y + " " + targetPos.x + " " + targetPos.y);
 						cy.remove(edge);
 						set.delete(edge.data('id'));
 				}
@@ -162,6 +163,7 @@ class JoinHandler{
 			var pos = node.position();
 				if (((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) || 
 						((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff))) { 
+					console.log("removing node: " + node.data('id') + " " + pos.x + " " + pos.y);
 					cy.remove(node);
 					map.delete(node.data('id'));
 				}
@@ -282,7 +284,7 @@ class JoinHandler{
 			}
 		)
 	}
-	removeSpatialSelection(topModel, rightModel, bottomModel, leftModel){
+	removeSpatialSelectionZoomIn(topModel, rightModel, bottomModel, leftModel){
 		var map = this.vertexIncidenceMap;
 		var set = this.edgeSet;
 		cy.edges().forEach(

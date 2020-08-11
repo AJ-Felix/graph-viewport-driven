@@ -218,7 +218,6 @@ public class FlinkCore {
 		
 		DataStream<Row> vertexStreamInnerOld = lStream.get(0);
 		DataStream<Row> vertexStreamInnerNew = lStream.get(1);
-		vertexStreamInnerNew.print().setParallelism(1);
 		String vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
 		String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
 				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "

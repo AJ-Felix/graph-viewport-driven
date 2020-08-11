@@ -1,0 +1,132 @@
+Berechnung der Modellkoordinaten aus den Renderkoordinaten und dem Zoomlevel
+xRender, yRender, zoom
+	f(xRender, yRender, zoom) = top, right, bottom, left
+Beispiele:
+	f(-500, -500, 0.5) = 1000, 3000, 3000, 1000
+	f(0, 0, 0.25) = 0, 4000, 4000, 0
+	f(-1000, -1000, 0.5) = 2000, 4000, 4000, 2000
+	f(-500, -1000, 0.5) = 2000, 3000, 4000, 1000
+	f(-1000, -1000, 1) = 1000, 2000, 2000, 1000
+	
+bottom = top  + 1000 / zoom
+right = left + 1000 / zoom
+
+top = - yRender / zoom
+left = - xRender / zoom
+bottom = - yRender / zoom + 1000 / zoom
+right = -xRender / zoom + 1000 / zoom
+
+Konstanten
+viewport pixel range 	1000;
+model pixel range 	4000;
+
+1
+zoom in die Mitte, und wieder mittig
+zoom	x			y			cytoX		cytoY
+0.25		0 			0			500			500
+0.5 		-500		-500		500			500
+1			-1500	-1500	
+
+2
+zoom im quadranten links oben, dann mittig
+zoom	x			y			cytoX		cytoY
+0.25		0 			0			250			250
+0.5 		0			0			500			500
+1			-500		-500
+
+3
+zoom im quadranten rechts unten, dann mittig
+zoom	x			y			cytoX		cytoY
+0.25		0 			0			750			750
+0.5 		-1000	-1000	500			500
+1			-2500	-2500
+
+4
+zoom im quadranten links oben, dann links oben
+zoom	x			y			cytoX		cytoY
+0.25		0 			0			250			250
+0.5 		0			0			250			250
+1			0			0
+
+5
+zoom im quadranten links oben, dann rechts unten
+zoom	x			y			cytoX		cytoY
+0.25		0 			0			250			250
+0.5 		0			0			750			750
+1			-1000	-1000
+
+6
+zoom im quadranten rechts oben, dann mittig
+zoom	x			y			cytoX		cytoY
+0.25		0 			0			750			250
+0.5 		-1000	0			500			500
+1			-2500	-500
+
+
+zoom in die Mitte
+- 500 + (2 * x) 
+
+Anpassung
+ + (500 - cytoX) * 2
+
+
+zoom out
+1
+zoom aus der Mitte, und wieder mittig
+zoom	x			y			cytoX		cytoY
+1			-1500 	-1500 	500			500
+0.5 		-500		-500		500			500
+0.25		0			0	
+
+2
+zoom oben links aus der Mitte, sodass im quadranten oben links, dann mittig
+zoom	x			y			cytoX		cytoY
+1			-500 	-500		500			500
+0.5 		0			0			500			500
+0.25		250		250
+
+3
+zoom rechts unten aus der Mitte, sodass im quadranten unten rechts, dann mittig
+zoom	x			y			cytoX		cytoY
+1			-2500	-2500	500			500
+0.5 		-1000	-1000	500			500
+0.25		-250 	-250
+
+4
+zoom oben links aus der Mitte, sodass im quadranten oben links, dann ganz unten rechts, sodass in ausgangsposition
+zoom	x			y			cytoX		cytoY
+1			-500 	-500		500			500
+0.5 		0			0			1000		1000
+0.25		0			0
+
+5
+zoom rechts unten aus der Mitte, sodass im quadranten unten rechts, dann ganz oben links, sodass in ausgangsposition
+zoom	x			y			cytoX		cytoY
+1			-2500	-2500	500			500
+0.5 		-1000	-1000	0				0
+0.25		0 			0
+
+4
+zoom oben links aus der Mitte, sodass im quadranten oben links, dann ganz oben links, sodass oberster linker quadrant der ausgangsposition unten rechts als quadrant
+zoom	x			y			cytoX		cytoY
+1			-500 	-500		500			500
+0.5 		0			0			0				0
+0.25		500		500
+
+zoom aus der Mitte
+x + 500 - (x + 500 ) / 2
+ 
+Anpassung
+- (cytoX - 500) / 2
+
+ohne Anpassung
+f(-1500) = -500
+f(-500) = 0
+f(-2500) = -1000
+f(-1000) = -250
+f(0) = 250
+
+mit Anpassung (cytoX)
+f(0, 1000) = 0
+f(-1000, 0) = 0
+f(0, 0) = 500

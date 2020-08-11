@@ -140,13 +140,18 @@ Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welc
 TODO: PreLayout-WrappersCSV: WrapperCSV in kleinere Stücke geordnet nach Koordinaten aufteilen, um eine Vorfilterung für Zoom- und Pan-Operationen zu realisieren
 	- aber ebenfalls die ungestückelte Variante implementiert lassen für den Vergleich
 TODO: Adjanzenz-Matrix für die Variante ohne Layout implementieren
-TODO: Mausoperationen übersetzen!!!!
 TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem subset an Knoten durchführen, möglicherweise ist das hilfreich
 TODO: Bei der Zoom-Operation werden redudante wrapper gesendet. Für GradoopGraphUtil muss der Knoten-Lösch-Mechanismus im FrontEnd angepasst werden, weil der Zähler der Inzidenz-Map sonst fehlerhaft ist.
-	- Eine MÖglichkeit: Am Ende der Operation alle Map-Values auf 1 setzen.
+	- Eine Möglichkeit: Am Ende der Operation alle Map-Values auf 1 setzen.
 TODO: Alle GraphUtil-Klassen an CSVGraphUtilJoin anpassen
-TODO: In RemoveSpatialSelection nicht alle Knoten raushauen, die nicht im Koordinatenbereich liegen, sondern nur die, die vorher im Koordinatenbereich lagen. Damit wird der Großteil der Nachbarknoten, welche außerhalb des Koordinatenbereichs beibehalten und muss nicht nachgeladen werden beim panning.
 TODO: Überlegung, ob eine Adjazenzmatrix nicht in jeder Art und Weise der BackEnd-Speicherung sinnvoll ist, weil Nachbarschaftsbeziehungen immer abgefragt werden müssen.
+TODO: ZoomOut implementieren:
+	- Es sollten wieder die Knoten mit größtem Grad angezeigt werden
+	- Wie wird gehandhabt, welche Knoten gelöscht werden?
+	- z.B. erst alle überschüssigen Knoten mit kleinstem Grad über der MaxZahl löschen und dann neu ankommende Knoten mit existierendem Set vergleichen (ähnlich CSVGraphUtilMap)
+TODO: Für alle Operationen die maximal zu visualisierende Knotenzahl implementieren!!
+	Panning: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
+	ZoomIn: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
 
 Verschiedene Grundansätze der BackEnd-Struktur:
 	-	Gradoop (Standard)
