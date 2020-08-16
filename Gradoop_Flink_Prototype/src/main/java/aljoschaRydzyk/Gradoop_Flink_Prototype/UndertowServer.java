@@ -9,10 +9,18 @@ import io.undertow.websockets.core.WebSockets;
 import static io.undertow.Handlers.*;
 
 import java.util.ArrayList;
+
+import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.types.Row;
+
+import com.nextbreakpoint.flinkclient.api.ApiException;
+import com.nextbreakpoint.flinkclient.api.FlinkApi;
+
 import Temporary.Server;
 
 public class UndertowServer {
@@ -24,11 +32,17 @@ public class UndertowServer {
     private static int webSocketListenPort = 8887;
     private static String webSocketHost = "localhost";
     
+    private static Integer maxVertices = 100;
+    
     private static Float viewportPixelX = (float) 1000;
     private static Float viewportPixelY = (float) 1000;
     private static Float modelPixelX = (float) 4000;
     private static Float modelPixelY = (float) 4000;
     private static float zoomLevel = 1;
+    
+    private static FlinkApi api = new FlinkApi();
+    
+    private static JobID jobId;
 	
     public static void main(final String[] args) {
     	
@@ -52,7 +66,17 @@ public class UndertowServer {
                 .build();
         server.start();
         System.out.println("Server started!");
+        api.getApiClient().setBasePath("http://localhost:8081");
+//        flinkCore = new FlinkCore();
     }
+    
+//    private static MessageHeaders getMessageHeaders() {
+//    	new MessageHeaders();
+//		return null;
+//    	
+//    }
+    
+    
     
     /**
      * helper function to Undertow server
@@ -67,9 +91,11 @@ public class UndertowServer {
                     WebSockets.sendText(messageData, session, null);
                 }
                 if (messageData.startsWith("buildTopView")) {
-        			flinkCore = new FlinkCore();
-        			String[] arrMessageData = messageData.split(";");
-        			if (arrMessageData[1].equals("retract")) {
+                	flinkCore = new FlinkCore();
+//                	jobId = flinkCore.getFsEnv().getStreamGraph().getJobGraph().getJobID();
+//                	System.out.println(jobId);
+                	String[] arrMessageData = messageData.split(";");
+        				if (arrMessageData[1].equals("retract")) {
 	        			flinkCore.initializeGradoopGraphUtil();
 	        			DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract();
 	        			wrapperStream.addSink(new SinkFunction<Tuple2<Boolean,Row>>(){
@@ -105,7 +131,9 @@ public class UndertowServer {
 	        			});
         			} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
-        				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin();
+        				maxVertices = 100;
+        				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
+//        				wrapperStream.print();
         				wrapperStream.addSink(new SinkFunction<Row>(){
 	        				public void invoke(Row element, Context context) {
 	        					String sourceIdNumeric = element.getField(2).toString();
@@ -146,8 +174,13 @@ public class UndertowServer {
 	        				}
 	        			});
         			}
+                	
         			try {
-        				flinkCore.getFsEnv().execute();
+        				System.out.println("before execute");
+        				JobExecutionResult result = flinkCore.getFsEnv().execute();
+        				System.out.println("after execute");
+        				System.out.println(result.getJobID());
+        				jobId = result.getJobID();
         			} catch (Exception e1) {
         				// TODO Auto-generated catch block
         				e1.printStackTrace();
@@ -159,6 +192,8 @@ public class UndertowServer {
         			Integer xRenderPos = Integer.parseInt(arrMessageData[1]);
         			Integer yRenderPos = Integer.parseInt(arrMessageData[2]);
         			zoomLevel = Float.parseFloat(arrMessageData[3]);
+        			Integer removedVertices = Integer.parseInt(arrMessageData[4]);
+        			System.out.println(removedVertices);
         			Integer topModelPos = (int) (- yRenderPos / zoomLevel);
         			Integer leftModelPos = (int) (- xRenderPos /zoomLevel);
         			Integer bottomModelPos = (int) (topModelPos + viewportPixelY / zoomLevel);
@@ -167,7 +202,7 @@ public class UndertowServer {
 					flinkCore.setRightModelPos(rightModelPos);
 					flinkCore.setBottomModelPos(bottomModelPos);
 					flinkCore.setLeftModelPos(leftModelPos);
-        			DataStream<Row> wrapperStream = flinkCore.zoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+        			DataStream<Row> wrapperStream = flinkCore.zoomIn(removedVertices, topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 					wrapperStream.addSink(new SinkFunction<Row>() {
 	    				@Override 
 	    				public void invoke(Row element, Context context) {
@@ -238,7 +273,7 @@ public class UndertowServer {
 					}
     			}
     			if (messageData.equals("displayAll")) {
-        			flinkCore = new FlinkCore();
+    		        flinkCore = new FlinkCore();
         			flinkCore.initializeCSVGraphUtilJoin();
         			DataStream<Row> wrapperStream = flinkCore.displayAll();
 					wrapperStream.addSink(new SinkFunction<Row>() {
@@ -269,6 +304,15 @@ public class UndertowServer {
 					}
 					UndertowServer.sendToAll("fitGraph");
 //					UndertowServer.sendToAll("layout");
+    			}
+    			if (messageData.equals("cancel")){
+    				System.out.println("Cancelling " + jobId);
+    				try {
+						api.terminateJob(jobId.toString(), "cancel");
+					} catch (ApiException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
     			}
             }
         };

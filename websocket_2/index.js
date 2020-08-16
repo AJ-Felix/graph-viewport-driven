@@ -287,6 +287,7 @@ class JoinHandler{
 	removeSpatialSelectionZoomIn(topModel, rightModel, bottomModel, leftModel){
 		var map = this.vertexIncidenceMap;
 		var set = this.edgeSet;
+		var countRemoved = 0;
 		cy.edges().forEach(
 			function (edge){
 				var sourceId = edge.data('source');
@@ -308,9 +309,11 @@ class JoinHandler{
 				if ((pos.x > rightModel) || (pos.x < leftModel) || (pos.y > bottomModel) || (pos.y < topModel)) {
 					cy.remove(node);
 					map.delete(node.data('id'));
+					countRemoved += 1;
 				}
 			}
 		)
+		return countRemoved;
 	}	
 }
 
@@ -433,6 +436,7 @@ function sendSignalRetract(){
 function sendSignalAppendJoin(){
 	handler = new JoinHandler();
 	ws.send("buildTopView;appendJoin");
+	// ws.send("cancel");
 }
 
 function sendSignalAppendMap(){
@@ -492,6 +496,10 @@ function removeAll(){
 function displayAll(){
 	handler = new JoinHandler();
 	ws.send("displayAll");
+}
+
+function cancelJob(){
+	ws.send("cancel");
 }
 
 var header1 = document.getElementById('header1');

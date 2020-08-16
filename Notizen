@@ -133,6 +133,10 @@ Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-O
 
 Konversion from table to stream always produces row-typed streams --> without mapping operator streams of custom objects can not be generated from tables!!!
 
+Aus irgendeinem Grund muss man Flink für buildTopView-Operationen zwingend neu initialisieren, wenn die Anfrage vom Client kommt, während die displayAll-Operation auch bei Flink-Initialisation am Programmstart funktioniert...
+
+FLINK: Der Thread stoppt bei fsEnv.execute() bis alle Jobs fertig sind. Erst dann werden DataSinks getriggert und Flink gestoppt. Um Flink permament laufen zu lassen, könnte man in einem separaten Thread einen nicht endenden Job laufen lassen.  
+
 Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welche in der vorherigen Ansicht schon vorhanden waren, können im BackEnd nicht herausgefiltert werden:
 	Entweder alle Kanten vorher löschen (sieht aber scheiße aus) oder die Duplikate im FrontEnd händeln.
 
@@ -152,6 +156,8 @@ TODO: ZoomOut implementieren:
 TODO: Für alle Operationen die maximal zu visualisierende Knotenzahl implementieren!!
 	Panning: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
 	ZoomIn: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
+TODO: Check ob separater Thread für Flink-Ausführung sinnvoll ist
+
 
 Verschiedene Grundansätze der BackEnd-Struktur:
 	-	Gradoop (Standard)

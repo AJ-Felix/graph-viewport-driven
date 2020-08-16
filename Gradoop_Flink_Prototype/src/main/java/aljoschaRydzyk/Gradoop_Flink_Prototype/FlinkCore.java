@@ -9,13 +9,14 @@ import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.io.api.DataSource;
@@ -29,7 +30,7 @@ public class FlinkCore {
 	  private ExecutionEnvironment env;
 	  private GradoopFlinkConfig graflink_cfg;
 	  private GradoopHBaseConfig gra_hbase_cfg;
-	  private Configuration hbase_cfg;
+	  private org.apache.hadoop.conf.Configuration hbase_cfg;
 	  private EnvironmentSettings fsSettings;
 	  private StreamExecutionEnvironment fsEnv;
 	  private StreamTableEnvironment fsTableEnv;
@@ -46,8 +47,14 @@ public class FlinkCore {
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
-		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+//		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+		org.apache.flink.configuration.Configuration conf = new Configuration();
+		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
+		System.out.println("initiated Flink.");
+		DataStream<String> datastream = fsEnv.socketTextStream("localhost", 9999);
+		datastream.print();
+
 	}
 	
 	public void setTopModelPos(Integer topModelPos) {
@@ -126,10 +133,10 @@ public class FlinkCore {
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> buildTopViewAppendJoin(){
+	public DataStream<Row> buildTopViewAppendJoin(Integer maxVertices){
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 		graphUtil.produceWrapperStream();
-		return graphUtil.getMaxDegreeSubset(100);
+		return graphUtil.getMaxDegreeSubset(maxVertices);
 	}
 	
 	public DataStream<Row> buildTopViewAppendMap(){
@@ -137,7 +144,7 @@ public class FlinkCore {
 		return graphUtil.produceWrapperStream();	
 	}
 	
-	public DataStream<Row> zoomIn (Integer topModel, Integer rightModel, Integer bottomModel, Integer leftModel){
+	public DataStream<Row> zoomIn (Integer countVertices, Integer topModel, Integer rightModel, Integer bottomModel, Integer leftModel){
 			CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 			DataStream<Row> vertexStreamInner = graphUtil.getVertexStream()
 				.filter(new FilterFunction<Row>(){

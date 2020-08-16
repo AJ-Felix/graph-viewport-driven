@@ -227,8 +227,8 @@ cyto.addEventListener("wheel", function(e) {
 		const bottomModelPos = topModelPos + vPix / zoomLevel;
 		const rightModelPos = leftModelPos + vPix / zoomLevel;
 		console.info(topModelPos);
-		handler.removeSpatialSelectionZoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + cy.zoom());
+		var countRemoved = handler.removeSpatialSelectionZoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + cy.zoom() + ";" + countRemoved);
 	} else {
 		cy.zoom(cy.zoom() / zFactor);
 		cy.pan({x:vPixHalf + pan.x - (vPixHalf + pan.x) / zFactor - (cytoX - vPixHalf) / zFactor, y:vPixHalf + pan.y - (vPixHalf + pan.y) / zFactor - (cytoY - vPixHalf) / zFactor});
