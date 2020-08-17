@@ -47,13 +47,15 @@ public class FlinkCore {
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
-//		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
 		org.apache.flink.configuration.Configuration conf = new Configuration();
-		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+//		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
+		TestThread thread = new TestThread("SocketTextStream", StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf));
+		thread.start();
 		System.out.println("initiated Flink.");
-		DataStream<String> datastream = fsEnv.socketTextStream("localhost", 9999);
-		datastream.print();
+//		DataStream<String> datastream = fsEnv.socketTextStream("localhost", 9999);
+//		datastream.print();
 
 	}
 	

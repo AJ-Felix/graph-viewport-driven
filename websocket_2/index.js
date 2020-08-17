@@ -436,7 +436,6 @@ function sendSignalRetract(){
 function sendSignalAppendJoin(){
 	handler = new JoinHandler();
 	ws.send("buildTopView;appendJoin");
-	// ws.send("cancel");
 }
 
 function sendSignalAppendMap(){
@@ -499,7 +498,16 @@ function displayAll(){
 }
 
 function cancelJob(){
-	ws.send("cancel");
+	var id;
+	$.get('http://localhost:8081/jobs', function (data, textStatus, jqXHR) {
+        console.log('status: ' + textStatus + ', data:' + Object.keys(data));
+		console.log(data.jobs[0].id);
+		id = data.jobs[0].id;
+		ws.send('cancel;' + id);
+    });
+	console.log(id);
+	console.log("job cancelled");
+	// ws.send("cancel;" + id);
 }
 
 var header1 = document.getElementById('header1');

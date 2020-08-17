@@ -66,7 +66,7 @@ public class UndertowServer {
                 .build();
         server.start();
         System.out.println("Server started!");
-        api.getApiClient().setBasePath("http://localhost:8081");
+        api.getApiClient().setBasePath("http://localhost:8081");  
 //        flinkCore = new FlinkCore();
     }
     
@@ -92,8 +92,6 @@ public class UndertowServer {
                 }
                 if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore();
-//                	jobId = flinkCore.getFsEnv().getStreamGraph().getJobGraph().getJobID();
-//                	System.out.println(jobId);
                 	String[] arrMessageData = messageData.split(";");
         				if (arrMessageData[1].equals("retract")) {
 	        			flinkCore.initializeGradoopGraphUtil();
@@ -305,14 +303,17 @@ public class UndertowServer {
 					UndertowServer.sendToAll("fitGraph");
 //					UndertowServer.sendToAll("layout");
     			}
-    			if (messageData.equals("cancel")){
-    				System.out.println("Cancelling " + jobId);
+    			if (messageData.startsWith("cancel")){
+    				String[] arr = messageData.split(";");
+    				String jobID = arr[1];
+    				System.out.println("Cancelling " + jobID);
     				try {
-						api.terminateJob(jobId.toString(), "cancel");
+						api.terminateJob(jobID, "cancel");
 					} catch (ApiException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+    				System.out.println("Terminated job");
     			}
             }
         };
