@@ -49,13 +49,11 @@ public class FlinkCore {
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
 		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
 		org.apache.flink.configuration.Configuration conf = new Configuration();
-//		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
-		TestThread thread = new TestThread("SocketTextStream", StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf));
-		thread.start();
+//		TestThread thread = new TestThread("prototype", fsEnv, this);
+//		thread.start();
 		System.out.println("initiated Flink.");
-//		DataStream<String> datastream = fsEnv.socketTextStream("localhost", 9999);
-//		datastream.print();
 
 	}
 	
@@ -190,7 +188,7 @@ public class FlinkCore {
 					.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
 			return wrapperStream;
 	}
-	
+		
 	public DataStream<Row> pan(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer xModelDiff, Integer yModelDiff){
 		Integer topNew = topOld + yModelDiff;
 		Integer rightNew = rightOld + xModelDiff;

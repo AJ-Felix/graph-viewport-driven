@@ -7,315 +7,328 @@ ws.onopen = function() {
     ws.send("Hello Server");
 };
 
-class JoinHandler{
-	vertexIncidenceMap = new Map();
-	edgeSet = new Set();
+// class JoinHandler{
+	// vertexIncidenceMap = new Map();
+	// edgeSet = new Set();
 	
-	constructor(){
-	}
+	// constructor(){
+	// }
 	
-	resetMap(){
-		this.vertexIncidenceMap = new Map();
-	}
+	// resetMap(){
+		// this.vertexIncidenceMap = new Map();
+	// }
 	
-	addVertex(dataArray){
-		var vertexId = dataArray[1];
-		var vertexX = dataArray[2];
-		var vertexY = dataArray[3];
-		if (!this.vertexIncidenceMap.has(vertexId)){
-			this.vertexIncidenceMap.set(vertexId, 1);
-			// console.log("adding vertex" + vertexId + " " + vertexX + " " + vertexY);
-		} else {
-			// console.log("vertex already there: " + vertexId + " " + vertexX + " " + vertexY);
-			this.vertexIncidenceMap.set(vertexId, this.vertexIncidenceMap.get(vertexId) + 1);
-		}
-		if (this.vertexIncidenceMap.get(vertexId) == 1) {
-			cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
-		}
-	}
+	// addVertex(dataArray){
+		// var vertexId = dataArray[1];
+		// var vertexDegree = dataArray[2];
+		// var vertexX = dataArray[3];
+		// var vertexY = dataArray[4];
+		// if (!this.vertexIncidenceMap.has(vertexId)){
+			// this.vertexIncidenceMap.set(vertexId, {'incidence': 1, 'degree': vertexDegree});
+			// // console.log("adding vertex" + vertexId + " " + vertexX + " " + vertexY);
+		// } else {
+			// // console.log("vertex already there: " + vertexId + " " + vertexX + " " + vertexY);
+			// this.vertexIncidenceMap.set(vertexId, this.vertexIncidenceMap.get(vertexId)['incidence'] + 1);
+		// }
+		// if (this.vertexIncidenceMap.get(vertexId)['incidence'] == 1) {
+			// cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
+		// }
+	// }
 	
-	removeVertex(dataArray){
-		var vertexId = dataArray[1];
-		if (!this.vertexIncidenceMap.has(vertexId)) {
-				alert("cannot remove vertex because not in vertexIncidenceMap");
-		} else {
-			this.vertexIncidenceMap.set(vertexId, this.vertexIncidenceMap.get(vertexId) - 1);
-			if (this.vertexIncidenceMap.get(vertexId) == 0) {
-				this.vertexIncidenceMap.delete(vertexId);
-				cy.remove(cy.$id(vertexId));
-			}
-		}
-	}
+	// removeVertex(dataArray){
+		// var vertexId = dataArray[1];
+		// if (!this.vertexIncidenceMap.has(vertexId)) {
+				// alert("cannot remove vertex because not in vertexIncidenceMap");
+		// } else {
+			// this.vertexIncidenceMap.set(vertexId, this.vertexIncidenceMap.get(vertexId)['incidence'] - 1);
+			// if (this.vertexIncidenceMap.get(vertexId)['incidence'] == 0) {
+				// this.vertexIncidenceMap.delete(vertexId);
+				// cy.remove(cy.$id(vertexId));
+			// }
+		// }
+	// }
 	
-	addEdge(dataArray){
-		var edgeId = dataArray[1];
-		var sourceVertex = dataArray[2];
-		var targetVertex = dataArray[3];
-		if (!this.edgeSet.has(edgeId)) cy.add({group : 'edges', data: {id: edgeId, source: sourceVertex , target: targetVertex}});
-		this.edgeSet.add(edgeId);
-	}
+	// addEdge(dataArray){
+		// var edgeId = dataArray[1];
+		// var sourceVertex = dataArray[2];
+		// var targetVertex = dataArray[3];
+		// if (!this.edgeSet.has(edgeId)) cy.add({group : 'edges', data: {id: edgeId, source: sourceVertex , target: targetVertex}});
+		// this.edgeSet.add(edgeId);
+	// }
 	
-	removeSpatialSelectionTop(bottomModelPrevious, yModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
-						((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff))) {
-					cy.remove(edge);
-					set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if ((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)){
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
+	// removeSpatialSelectionTop(bottomModelPrevious, yModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
+						// ((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff))) {
+					// cy.remove(edge);
+					// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if ((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)){
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
 	
-	removeSpatialSelectionTopRight(bottomModelPrevious, leftModelPrevious, xModelDiff, yModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
-						((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff)) ||
-						((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
-							((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff))) {
-					cy.remove(edge);
-					set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if (((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)) ||
-						((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff))){
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
+	// removeSpatialSelectionTopRight(bottomModelPrevious, leftModelPrevious, xModelDiff, yModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
+						// ((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff)) ||
+						// ((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
+							// ((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff))) {
+					// cy.remove(edge);
+					// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if (((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)) ||
+						// ((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff))){
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
 	
-	removeSpatialSelectionRight(leftModelPrevious, xModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
-							((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff))) {
-						cy.remove(edge);
-						set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if ((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff)){
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
+	// removeSpatialSelectionRight(leftModelPrevious, xModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
+							// ((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff))) {
+						// cy.remove(edge);
+						// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if ((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff)){
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
 	
-	removeSpatialSelectionBottomRight(topModelPrevious, leftModelPrevious, xModelDiff, yModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
-							((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff)) ||
-							((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
-							((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff))) {
-						console.log("removing edge: " + sourcePos.x + " " + sourcePos.y + " " + targetPos.x + " " + targetPos.y);
-						cy.remove(edge);
-						set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if (((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) || 
-						((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff))) { 
-					console.log("removing node: " + node.data('id') + " " + pos.x + " " + pos.y);
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
+	// removeSpatialSelectionBottomRight(topModelPrevious, leftModelPrevious, xModelDiff, yModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.x > leftModelPrevious) && (sourcePos.x < leftModelPrevious + xModelDiff)) ||
+							// ((targetPos.x > leftModelPrevious) && (targetPos.x < leftModelPrevious + xModelDiff)) ||
+							// ((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
+							// ((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff))) {
+						// console.log("removing edge: " + sourcePos.x + " " + sourcePos.y + " " + targetPos.x + " " + targetPos.y);
+						// cy.remove(edge);
+						// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if (((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) || 
+						// ((pos.x > leftModelPrevious) && (pos.x < leftModelPrevious + xModelDiff))) { 
+					// console.log("removing node: " + node.data('id') + " " + pos.x + " " + pos.y);
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
 	
-	removeSpatialSelectionBottom(topModelPrevious,  yModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
-							((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff))) {
-						cy.remove(edge);
-						set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if ((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) { 
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
+	// removeSpatialSelectionBottom(topModelPrevious,  yModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
+							// ((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff))) {
+						// cy.remove(edge);
+						// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if ((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) { 
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
 	
-	removeSpatialSelectionBottomLeft(topModelPrevious, rightModelPrevious, xModelDiff, yModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
-							((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff)) ||
-							((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
-							((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff))) {
-						cy.remove(edge);
-						set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if (((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) ||
-						((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff))) { 
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
+	// removeSpatialSelectionBottomLeft(topModelPrevious, rightModelPrevious, xModelDiff, yModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.y > topModelPrevious) && (sourcePos.y < topModelPrevious + yModelDiff)) ||
+							// ((targetPos.y > topModelPrevious) && (targetPos.y < topModelPrevious + yModelDiff)) ||
+							// ((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
+							// ((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff))) {
+						// cy.remove(edge);
+						// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if (((pos.y > topModelPrevious) && (pos.y < topModelPrevious + yModelDiff)) ||
+						// ((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff))) { 
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
 	
-	removeSpatialSelectionLeft(rightModelPrevious, xModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
-							((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff))) {
-						cy.remove(edge);
-						set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if ((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff)) { 
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
+	// removeSpatialSelectionLeft(rightModelPrevious, xModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
+							// ((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff))) {
+						// cy.remove(edge);
+						// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if ((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff)) { 
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
 	
-	removeSpatialSelectionTopLeft(rightModelPrevious, bottomModelPrevious, xModelDiff, yModelDiff){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if (((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
-							((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff)) ||
-							((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
-							((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff))) {
-						cy.remove(edge);
-						set.delete(edge.data('id'));
-				}
-			}	
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if (((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)) || 
-						((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff))) { 
-					cy.remove(node);
-					map.delete(node.data('id'));
-				}
-			}
-		)
-	}
-	removeSpatialSelectionZoomIn(topModel, rightModel, bottomModel, leftModel){
-		var map = this.vertexIncidenceMap;
-		var set = this.edgeSet;
-		var countRemoved = 0;
-		cy.edges().forEach(
-			function (edge){
-				var sourceId = edge.data('source');
-				var targetId = edge.data('target');
-				var sourcePos = cy.getElementById(sourceId).position();
-				var targetPos = cy.getElementById(targetId).position();
-				if ((sourcePos.x > rightModel) || (sourcePos.x < leftModel) || 
-						(targetPos.x > rightModel) || (targetPos.x < leftModel) ||
-						(sourcePos.y > bottomModel) || (sourcePos.y < topModel) ||
-						(targetPos.y > bottomModel) || (targetPos.y < topModel)) {
-					cy.remove(edge);
-					set.delete(edge.data('id'));
-				}
-			}
-		)
-		cy.nodes().forEach(
-			function (node){
-			var pos = node.position();
-				if ((pos.x > rightModel) || (pos.x < leftModel) || (pos.y > bottomModel) || (pos.y < topModel)) {
-					cy.remove(node);
-					map.delete(node.data('id'));
-					countRemoved += 1;
-				}
-			}
-		)
-		return countRemoved;
-	}	
-}
+	// removeSpatialSelectionTopLeft(rightModelPrevious, bottomModelPrevious, xModelDiff, yModelDiff){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if (((sourcePos.x < rightModelPrevious) && (sourcePos.x > rightModelPrevious + xModelDiff)) || 
+							// ((targetPos.x < rightModelPrevious) && (targetPos.x > rightModelPrevious + xModelDiff)) ||
+							// ((sourcePos.y < bottomModelPrevious) && (sourcePos.y > bottomModelPrevious + yModelDiff)) || 
+							// ((targetPos.y < bottomModelPrevious) && (targetPos.y > bottomModelPrevious + yModelDiff))) {
+						// cy.remove(edge);
+						// set.delete(edge.data('id'));
+				// }
+			// }	
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if (((pos.y < bottomModelPrevious) && (pos.y > bottomModelPrevious + yModelDiff)) || 
+						// ((pos.x < rightModelPrevious) && (pos.x > rightModelPrevious + xModelDiff))) { 
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+				// }
+			// }
+		// )
+	// }
+	// removeSpatialSelectionZoomIn(topModel, rightModel, bottomModel, leftModel){
+		// var map = this.vertexIncidenceMap;
+		// var set = this.edgeSet;
+		// var countRemoved = 0;
+		// cy.edges().forEach(
+			// function (edge){
+				// var sourceId = edge.data('source');
+				// var targetId = edge.data('target');
+				// var sourcePos = cy.getElementById(sourceId).position();
+				// var targetPos = cy.getElementById(targetId).position();
+				// if ((sourcePos.x > rightModel) || (sourcePos.x < leftModel) || 
+						// (targetPos.x > rightModel) || (targetPos.x < leftModel) ||
+						// (sourcePos.y > bottomModel) || (sourcePos.y < topModel) ||
+						// (targetPos.y > bottomModel) || (targetPos.y < topModel)) {
+					// cy.remove(edge);
+					// set.delete(edge.data('id'));
+				// }
+			// }
+		// )
+		// cy.nodes().forEach(
+			// function (node){
+			// var pos = node.position();
+				// if ((pos.x > rightModel) || (pos.x < leftModel) || (pos.y > bottomModel) || (pos.y < topModel)) {
+					// cy.remove(node);
+					// map.delete(node.data('id'));
+					// countRemoved += 1;
+				// }
+			// }
+		// )
+		// return countRemoved;
+	// }
+	
+	// addVertexZoomOut(){
+		
+	// }
+	
+	// removeSpatialSelectionZoomOut(topModel, rightModel, bottomModel, leftModel){
+		// cy.edges().forEach(
+			// function (edge){
+				
+			// }
+		// )
+	// }
+// }
 
 class MapHandler{
 	vertexDegreeMap = new Map();
@@ -380,7 +393,7 @@ class MapHandler{
 }
 
 ws.onmessage = function (evt) {
-	// console.log(evt.data);
+	console.log(evt.data);
 	var dataArray = evt.data.split(";");
 	switch (dataArray[0]){
 		case 'clearGraph':
@@ -444,34 +457,39 @@ function sendSignalAppendMap(){
 }
 
 function zoomIn(){
-	//remove all elements for the time being
-	// removeAll();
-	//hard-coded example
-	var previousTop = 0;
-	var previousRight = 4000;
-	var previousBottom = 4000;
-	var previousLeft = 0;
-	var top = 0;
-	var right = 2000;
-	var bottom = 2000;
-	var left = 0;
-	ws.send("zoomIn;" + previousTop.toString() + ";" + previousRight.toString() + ";" + previousBottom.toString() + ";" + previousLeft.toString() + ";" + top.toString() + ";" + 
-		right.toString() + ";" + bottom.toString() + ";" + left.toString());
-	handler.removeSpatialSelection(top, right, bottom, left);
+	handler.updateVertexCollection(topModel, rightModel, bottomModel, leftModel);
 }
 
+// function zoomIn(){
+	// var previousTop = 0;
+	// var previousRight = 4000;
+	// var previousBottom = 4000;
+	// var previousLeft = 0;
+	// var top = 0;
+	// var right = 2000;
+	// var bottom = 2000;
+	// var left = 0;
+	// ws.send("zoomIn;" + previousTop.toString() + ";" + previousRight.toString() + ";" + previousBottom.toString() + ";" + previousLeft.toString() + ";" + top.toString() + ";" + 
+		// right.toString() + ";" + bottom.toString() + ";" + left.toString());
+	// handler.removeSpatialSelection(top, right, bottom, left);
+// }
+
 function pan(){
-	//hard-coded example
-	var top = 0;
-	var right = 2000;
-	var bottom = 2000;
-	var left = 0;
-	var xDiff = -400;
-	var yDiff = 0;
-	cy.pan({x:-400, y:0});
-	ws.send("pan;" + xDiff.toString() + ";" + yDiff.toString());
-	handler.removeSpatialSelection(top + yDiff, right + xDiff, bottom + yDiff, left + xDiff);
+	handler.updateVertexCollection(topModel, rightModel, bottomModel, leftModel);
 }
+
+// function pan(){
+	// //hard-coded example
+	// var top = 0;
+	// var right = 2000;
+	// var bottom = 2000;
+	// var left = 0;
+	// var xDiff = -400;
+	// var yDiff = 0;
+	// cy.pan({x:-400, y:0});
+	// ws.send("pan;" + xDiff.toString() + ";" + yDiff.toString());
+	// handler.removeSpatialSelection(top + yDiff, right + xDiff, bottom + yDiff, left + xDiff);
+// }
 
 function removeSpatialSelection(top, right, bottom, left){
 	cy.nodes().forEach(
@@ -499,15 +517,51 @@ function displayAll(){
 
 function cancelJob(){
 	var id;
+	// var x = new XMLHttpRequest();
+	// x.open("patch", "/");
+	// x.send(null);
 	$.get('http://localhost:8081/jobs', function (data, textStatus, jqXHR) {
         console.log('status: ' + textStatus + ', data:' + Object.keys(data));
 		console.log(data.jobs[0].id);
 		id = data.jobs[0].id;
-		ws.send('cancel;' + id);
+		// ws.send('cancel;' + id);
+		$.get('http://localhost:8081/jobs/' + id, function (data, textStatus, jqXHR) {
+			console.log('status: ' + textStatus + ', data:' + Object.keys(data));
+		});
+		// var x = new XMLHttpRequest();
+		// x.open("PATCH",  'http://localhost:8081/jobs/' + id);
+		// x.send();
+		fetch('http://localhost:8081/jobs/' + id, {method: 'PATCH'});
+		$.ajax({
+			type: 'GET',
+			url: 'http://localhost:8081/jobs/' + id
+		});
+		$.ajax({
+			type: 'PATCH',
+			url: 'http://localhost:8081/jobs/' + id,
+			data: JSON.stringify({}),
+			processData: false,
+			headers: {
+				"Access-Control-Allow-Origin": '*',
+				'Accept' : 'application/json; charset=UTF-8',
+                'Content-Type' : 'application/json; charset=UTF-8'},
+				 error : function(jqXHR, textStatus, errorThrown) {
+
+                // log the error to the console
+
+                console.log("The following error occured: " + textStatus, errorThrown);
+
+            },
+		});
     });
 	console.log(id);
 	console.log("job cancelled");
 	// ws.send("cancel;" + id);
+}
+
+function testThread(){
+	handler = new JoinHandler();
+	ws.send("TestThread");
 }
 
 var header1 = document.getElementById('header1');

@@ -40,7 +40,7 @@ public class UndertowServer {
     private static Float modelPixelY = (float) 4000;
     private static float zoomLevel = 1;
     
-    private static FlinkApi api = new FlinkApi();
+//    private static FlinkApi api = new FlinkApi();
     
     private static JobID jobId;
 	
@@ -66,7 +66,7 @@ public class UndertowServer {
                 .build();
         server.start();
         System.out.println("Server started!");
-        api.getApiClient().setBasePath("http://localhost:8081");  
+//        api.getApiClient().setBasePath("http://localhost:8081");  
 //        flinkCore = new FlinkCore();
     }
     
@@ -89,6 +89,10 @@ public class UndertowServer {
                 for (WebSocketChannel session : channel.getPeerConnections()) {
                     System.out.println(messageData);
                     WebSockets.sendText(messageData, session, null);
+                }
+                if (messageData.startsWith("TestThread")){
+                	TestThread thread = new TestThread("prototype");
+            		thread.start();
                 }
                 if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore();
@@ -137,18 +141,23 @@ public class UndertowServer {
 	        					String sourceIdNumeric = element.getField(2).toString();
 	        					String sourceX = element.getField(4).toString();
 	        					String sourceY = element.getField(5).toString();
+	        					String sourceDegree = element.getField(6).toString();
 	        					String edgeIdGradoop = element.getField(13).toString();
+	        					String edgeLabel = element.getField(14).toString();
 	        					String targetIdNumeric = element.getField(8).toString();
 	        					String targetX = element.getField(10).toString();
 	        					String targetY = element.getField(11).toString();
-        						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
-        							";" + sourceX + ";" + sourceY);
-        						if (!edgeIdGradoop.equals("identityEdge")) {
-        						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
-        							";" + targetX + ";" + targetY);
-        						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
-        							";" + sourceIdNumeric + ";" + targetIdNumeric);
-	        					}
+	        					String targetDegree = element.getField(12).toString();
+	        					UndertowServer.sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdNumeric + ";" + sourceDegree + ";" +
+	        							sourceX + ";" + sourceY + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
+//        						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
+//        							";" + sourceX + ";" + sourceY);
+//        						if (!edgeIdGradoop.equals("identityEdge")) {
+//        						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
+//        							";" + targetX + ";" + targetY);
+//        						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
+//        							";" + sourceIdNumeric + ";" + targetIdNumeric);
+//	        					}
 	        				}
 	        			});
         			} else if (arrMessageData[1].equals("appendMap")) {
@@ -172,13 +181,18 @@ public class UndertowServer {
 	        				}
 	        			});
         			}
-                	
+//    				DataStream<String> datastream = flinkCore.getFsEnv().socketTextStream("localhost", 9999);
+//    				datastream.addSink(new SinkFunction<String>() {
+//    					public void invoke(String element, Context context) {
+//    						UndertowServer.sendToAll(element);
+//    					}
+//    				});
         			try {
         				System.out.println("before execute");
         				JobExecutionResult result = flinkCore.getFsEnv().execute();
         				System.out.println("after execute");
-        				System.out.println(result.getJobID());
-        				jobId = result.getJobID();
+//        				System.out.println(result.getJobID());
+//        				jobId = result.getJobID();
         			} catch (Exception e1) {
         				// TODO Auto-generated catch block
         				e1.printStackTrace();
@@ -307,12 +321,12 @@ public class UndertowServer {
     				String[] arr = messageData.split(";");
     				String jobID = arr[1];
     				System.out.println("Cancelling " + jobID);
-    				try {
-						api.terminateJob(jobID, "cancel");
-					} catch (ApiException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+//    				try {
+//						api.terminateJob(jobID, "cancel");
+//					} catch (ApiException e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
     				System.out.println("Terminated job");
     			}
             }
