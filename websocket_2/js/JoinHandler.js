@@ -9,29 +9,14 @@ class JoinHandler{
 	rightModel;
 	bottomModel;
 	leftModel;
+	operation;
+	timeOut;
 	
 	constructor(){
 		this.vertexGlobalMap = new Map();
 		this.vertexInnerMap = new Map();
-	}
-	
-	clearOperation(){
-		cy.nodes().forEach( 
-			function(node){
-				var pos = node.position();
-				if (((pos.x < this.leftModel) || (this.rightModel < pos.x) || (pos.y < this.topModel) || (this.bottomModel < pos.y)) && (cy.neighborhood().length == 0)) {
-					cy.remove(node);
-				} 
-			}
-		)
-		this.vertexInnerMap = new Map([this.vertexInnerMap, this.newVerticesMap]);
-		edgeIdString = "";
-		cy.edges().forEach(
-			function(edge){
-				edgeIdString += ";" + edge.data('id');
-			}
-		)
-		ws.send("edgeIdString" + edgeIdString);
+		this.timeOut = null;
+		console.log("defined maps");
 	}
 	
 	updateVertexCollection(topModel, rightModel, bottomModel, leftModel){
@@ -94,7 +79,44 @@ class JoinHandler{
 		)
 	}
 	
+	addWrapperInitial(dataArray) {
+		console.log("in addwrapperInitial");
+		const edgeId = dataArray[1];
+		const edgeLabel = dataArray[2];
+		const sourceId = dataArray[3];
+		const sourceDegree = dataArray[4];
+		const sourceX = dataArray[5];
+		const sourceY = dataArray[6];
+		const targetId = dataArray[7];
+		const targetDegree = dataArray[8];
+		const targetX = dataArray[9];
+		const targetY = dataArray[10];
+		const sourceVertex = new Vertex(sourceId, sourceDegree, sourceX, sourceY);
+		const targetVertex = new Vertex(targetId, targetDegree, targetX, targetY);
+		if (edgeLabel == "identityEdge"){
+			this.addIdentityWrapperInitial(sourceVertex);
+		} else {
+			this.addNonIdentityWrapperInitial(edgeId, edgeLabel, sourceVertex, targetVertex);
+		}
+		clearTimeout(this.timeOut);
+		this.timeOut = setTimeout(clearOperation, 100);
+	}
+	
+	addIdentityWrapperInitial(vertex){
+		this.newVerticesMap.set(vertex.id, vertex);
+		this.addVertex(vertex);	
+	}	
+	
+	addNonIdentityWrapperInitial(edgeId, edgeLabel, sourceVertex, targetVertex){
+		this.addVertex(sourceVertex);
+		this.newVerticesMap.set(sourceVertex.id, sourceVertex);
+		this.addVertex(targetVertex);
+		this.newVerticesMap.set(targetVertex.id, targetVertex);
+		this.addEdge(edgeId, sourceVertex, targetVertex);
+	}
+	
 	addIdentityWrapper(vertex){
+		console.log("false wrapper function");
 		if (this.capacity > 0) {
 			if ((vertex.x >= this.leftModel) && (this.rightModel >= vertex.x) && (vertex.y >= this.topModel) && (this.bottomModel >= vertex.y)){
 				updateMinDegreeVertex(vertex);
@@ -116,6 +138,7 @@ class JoinHandler{
 	}
 		
 	addNonIdentityWrapper(edgeId, edgeLabel, sourceVertex, targetVertex){
+		console.log("false wrapper function");
 		var sourceIn = true;
 		var targetIn = true;
 		if (this.capacity > 0){
@@ -138,12 +161,12 @@ class JoinHandler{
 			}
 			if (sourceIn && targetIn){
 				if (sourceVertex.degree < targetVertex.degree){
-					newVerticesMap.set(sourceId, sourceVertex);
+					this.newVerticesMap.set(sourceVertex.id, sourceVertex);
 				} else if (targetVertex.degree < sourceVertex.degree){
-					newVerticesMap.set(targetId, targetVertex);
+					this.newVerticesMap.set(targetVertex.id, targetVertex);
 				} else {
-					newVerticesMap.set(sourceId, sourceVertex);
-					newVerticesMap.set(targetId, targetVertex);
+					this.newVerticesMap.set(sourceVertex.id, sourceVertex);
+					this.newVerticesMap.set(targetVertex.id, targetVertex);
 				}
 			}
 		} else {
@@ -169,38 +192,44 @@ class JoinHandler{
 	}
 		
 	addWrapper(dataArray){
-		const edgeId = dataArray[1];
-		const edgeLabel = dataArray[2];
-		const sourceId = dataArray[3];
-		const sourceDegree = dataArray[4];
-		const sourceX = dataArray[5];
-		const sourceY = dataArray[6];
-		const targetId = dataArray[7];
-		const targetDegree = dataArray[8];
-		const targetX = dataArray[9];
-		const targetY = dataArray[10];
-		const sourceVertex = new Vertex(sourceId, sourceDegree, sourceX, sourceY);
-		const targetVertex = new Vertex(targetId, targetDegree, targetX, targetY);
-		console.log(sourceVertex);
-		if (edgeLabel == "identity"){
-			this.addIdentityWrapper(sourceVertex);
+		if (this.operation == "initial") {
+			this.addWrapperInitial(dataArray);
 		} else {
-			this.addNonIdentityWrapper(edgeId, edgeLabel, sourceVertex, targetVertex);
+			const edgeId = dataArray[1];
+			const edgeLabel = dataArray[2];
+			const sourceId = dataArray[3];
+			const sourceDegree = dataArray[4];
+			const sourceX = dataArray[5];
+			const sourceY = dataArray[6];
+			const targetId = dataArray[7];
+			const targetDegree = dataArray[8];
+			const targetX = dataArray[9];
+			const targetY = dataArray[10];
+			const sourceVertex = new Vertex(sourceId, sourceDegree, sourceX, sourceY);
+			const targetVertex = new Vertex(targetId, targetDegree, targetX, targetY);
+			if (edgeLabel == "identityEdge"){
+				this.addIdentityWrapper(sourceVertex);
+			} else {
+				this.addNonIdentityWrapper(edgeId, edgeLabel, sourceVertex, targetVertex);
+			}
+			clearTimeout(this.timeOut);
+			this.timeOut = setTimeout(clearOperation, 100);
 		}
-		ws.setTimeout(this.clearOperation, 100);
 	}
 	
 	addVertex(vertex){
 		if (!this.vertexGlobalMap.has(vertex.id)){
 			var map = new Map();
-			map.incidence = 1;
-			map.vertex = vertex;
-			this.vertexGlobalMap.set(vertex.id, map);				
+			map.set("incidence", 1);
+			map.set("vertex", vertex);
+			console.log(this.vertexGlobalMap);
+			this.vertexGlobalMap.set(vertex.id, map);	
 		} else {
-			this.vertexGlobalMap.set(vertex.id, this.vertexGlobalMap.get(vertex.id).incidence + 1);
+			var map = this.vertexGlobalMap.get(vertex.id);
+			map.set("incidence" , map.get("incidence") + 1);
 		}
-		if (this.vertexGlobalMap.get(vertex.id).incidence == 1) {
-			cy.add({group : 'nodes', data: {id: vertex.id}, position: {x: vertex.x , y: vertex.y}});
+		if (map.get("incidence") == 1) {
+			cy.add({group : 'nodes', data: {id: vertex.id}, position: {x: parseInt(vertex.x) , y: parseInt(vertex.y)}});
 		}
 	}
 	
@@ -218,7 +247,28 @@ class JoinHandler{
 	}
 	
 	addEdge(edgeId, sourceVertex, targetVertex){
-		console.log(sourceVertex);
 		cy.add({group : 'edges', data: {id: edgeId, source: sourceVertex.id , target: targetVertex.id}});
 	}
+}
+
+function clearOperation(){
+	if (!handler.operation == "initial"){
+		cy.nodes().forEach( 
+			function(node){
+				var pos = node.position();
+				if (((pos.x < handler.leftModel) || (handler.rightModel < pos.x) || (pos.y < handler.topModel) || (handler.bottomModel < pos.y)) && (cy.neighborhood().length == 0)) {
+					cy.remove(node);
+				} 
+			}
+		)
+	}
+	handler.vertexInnerMap = new Map([handler.vertexInnerMap, handler.newVerticesMap]);
+	var edgeIdString = "";
+	cy.edges().forEach(
+		function(edge){
+			edgeIdString += ";" + edge.data('id');
+		}
+	)
+	handler.operation = null;
+	ws.send("edgeIdString" + edgeIdString);
 }

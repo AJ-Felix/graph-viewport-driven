@@ -3,6 +3,8 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -40,6 +42,7 @@ public class FlinkCore {
 	  private Integer bottomModelPos;
 	  private Integer leftModelPos;
 	  private Integer rightModelPos;
+	  private Set<String> visualizedWrappers;
 	  
 	public  FlinkCore () {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
@@ -91,6 +94,14 @@ public class FlinkCore {
 	
 	public StreamExecutionEnvironment getFsEnv() {
 		return this.fsEnv;
+	}
+	
+	public void setVisualizedWrappers(Set<String> visualizedWrappers) {
+		this.visualizedWrappers = visualizedWrappers;
+	}
+	
+	public Set<String> getVisualizedWrappers(){
+		return this.visualizedWrappers;
 	}
 	
 	public LogicalGraph getLogicalGraph(String gradoopGraphID) throws IOException {

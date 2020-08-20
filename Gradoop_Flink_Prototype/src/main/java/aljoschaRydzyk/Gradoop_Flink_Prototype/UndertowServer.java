@@ -9,6 +9,10 @@ import io.undertow.websockets.core.WebSockets;
 import static io.undertow.Handlers.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
@@ -93,6 +97,13 @@ public class UndertowServer {
                 if (messageData.startsWith("TestThread")){
                 	TestThread thread = new TestThread("prototype");
             		thread.start();
+                }
+                if (messageData.startsWith("edgeIdString")) {
+                	String[] arrMessageData = messageData.split(";");
+                	List<String> list = Arrays.asList(arrMessageData);
+                	list.remove(0);
+                	Set<String> visualizedWrappers = new HashSet<String>(list);
+                	flinkCore.setVisualizedWrappers(visualizedWrappers);
                 }
                 if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore();

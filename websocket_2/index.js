@@ -448,6 +448,8 @@ function sendSignalRetract(){
 
 function sendSignalAppendJoin(){
 	handler = new JoinHandler();
+	handler.operation = "initial";
+	handler.newVerticesMap = new Map();
 	ws.send("buildTopView;appendJoin");
 }
 
