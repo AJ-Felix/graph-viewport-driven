@@ -428,7 +428,7 @@ ws.onmessage = function (evt) {
 			handler.addEdge(dataArray);
 			break;
 		case 'addWrapper':
-			handler.addWrapper(dataArray);
+			handler.addWrapperToQueue(dataArray);
 			break;
 	}
 };
@@ -459,7 +459,12 @@ function sendSignalAppendMap(){
 }
 
 function zoomIn(){
+	var topModel = 0;
+	var rightModel = 2000;
+	var bottomModel = 2000;
+	var leftModel = 0;
 	handler.updateVertexCollection(topModel, rightModel, bottomModel, leftModel);
+	ws.send("zoomIn;0;0;0.5");
 }
 
 // function zoomIn(){
@@ -477,6 +482,10 @@ function zoomIn(){
 // }
 
 function pan(){
+	var topModel = 0;
+	var rightModel = 3000;
+	var bottomModel = 2000;
+	var leftModel = 1000;
 	handler.updateVertexCollection(topModel, rightModel, bottomModel, leftModel);
 }
 

@@ -100,8 +100,8 @@ public class UndertowServer {
                 }
                 if (messageData.startsWith("edgeIdString")) {
                 	String[] arrMessageData = messageData.split(";");
-                	List<String> list = Arrays.asList(arrMessageData);
-                	list.remove(0);
+                	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
+                	String removed = list.remove(0);
                 	Set<String> visualizedWrappers = new HashSet<String>(list);
                 	flinkCore.setVisualizedWrappers(visualizedWrappers);
                 }
@@ -186,9 +186,9 @@ public class UndertowServer {
 	        					String targetX = element.getField(10).toString();
 	        					String targetY = element.getField(11).toString();
 	        					String targetDegree = element.getField(12).toString();
-        						UndertowServer.sendToAll("addWrapper;" + sourceIdNumeric + 
+        						UndertowServer.sendToAll("addWrapper;" + edgeIdGradoop + ";" +  sourceIdNumeric + 
         							";" + sourceX + ";" + sourceY + ";" + sourceDegree + ";" + targetIdNumeric + 
-        							";" + targetX + ";" + targetY + ";" + targetDegree + ";" + edgeIdGradoop);
+        							";" + targetX + ";" + targetY + ";" + targetDegree);
 	        				}
 	        			});
         			}
@@ -215,8 +215,6 @@ public class UndertowServer {
         			Integer xRenderPos = Integer.parseInt(arrMessageData[1]);
         			Integer yRenderPos = Integer.parseInt(arrMessageData[2]);
         			zoomLevel = Float.parseFloat(arrMessageData[3]);
-        			Integer removedVertices = Integer.parseInt(arrMessageData[4]);
-        			System.out.println(removedVertices);
         			Integer topModelPos = (int) (- yRenderPos / zoomLevel);
         			Integer leftModelPos = (int) (- xRenderPos /zoomLevel);
         			Integer bottomModelPos = (int) (topModelPos + viewportPixelY / zoomLevel);
@@ -225,25 +223,30 @@ public class UndertowServer {
 					flinkCore.setRightModelPos(rightModelPos);
 					flinkCore.setBottomModelPos(bottomModelPos);
 					flinkCore.setLeftModelPos(leftModelPos);
-        			DataStream<Row> wrapperStream = flinkCore.zoomIn(removedVertices, topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+        			DataStream<Row> wrapperStream = flinkCore.zoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 					wrapperStream.addSink(new SinkFunction<Row>() {
 	    				@Override 
 	    				public void invoke(Row element, Context context) {
 	    					String sourceIdNumeric = element.getField(2).toString();
         					String sourceX = element.getField(4).toString();
         					String sourceY = element.getField(5).toString();
+        					String sourceDegree = element.getField(6).toString();
         					String edgeIdGradoop = element.getField(13).toString();
+        					String edgeLabel = element.getField(14).toString();
         					String targetIdNumeric = element.getField(8).toString();
         					String targetX = element.getField(10).toString();
         					String targetY = element.getField(11).toString();
-    						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
-    							";" + sourceX + ";" + sourceY);
-    						if (!edgeIdGradoop.equals("identityEdge")) {
-    						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
-    							";" + targetX + ";" + targetY);
-    						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
-    							";" + sourceIdNumeric + ";" + targetIdNumeric);
-        					}
+        					String targetDegree = element.getField(12).toString();
+        					UndertowServer.sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdNumeric + ";" + sourceDegree + ";" +
+        							sourceX + ";" + sourceY + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
+//    						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
+//    							";" + sourceX + ";" + sourceY);
+//    						if (!edgeIdGradoop.equals("identityEdge")) {
+//    						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
+//    							";" + targetX + ";" + targetY);
+//    						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
+//    							";" + sourceIdNumeric + ";" + targetIdNumeric);
+//        					}
 	    				}
 					});
 					try {
@@ -261,8 +264,6 @@ public class UndertowServer {
         			Integer rightModelPos = flinkCore.getRightModelPos();
         			Integer xModelDiff = Integer.parseInt(arrMessageData[1]); 
 					Integer yModelDiff = Integer.parseInt(arrMessageData[2]);
-//					Integer xModelDiff = (int) -(xRenderDiff / zoomLevel);
-//					Integer yModelDiff = (int) -(yRenderDiff / zoomLevel);
 					DataStream<Row> wrapperStream = flinkCore.pan(topModelPos, rightModelPos, bottomModelPos, leftModelPos, xModelDiff, yModelDiff);
 					flinkCore.setTopModelPos(topModelPos + yModelDiff);
 					flinkCore.setBottomModelPos(bottomModelPos + yModelDiff);
