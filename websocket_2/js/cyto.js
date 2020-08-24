@@ -1,7 +1,7 @@
 const vPix = 1000
 const vPixHalf = 500;
 const zFactor = 2;
-const maxNumberVertices = 100;
+const maxNumberVertices = 10;
 
 var cy = cytoscape({
   container: $('#cy'),

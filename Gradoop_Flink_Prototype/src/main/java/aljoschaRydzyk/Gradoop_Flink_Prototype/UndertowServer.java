@@ -36,7 +36,7 @@ public class UndertowServer {
     private static int webSocketListenPort = 8887;
     private static String webSocketHost = "localhost";
     
-    private static Integer maxVertices = 100;
+    private static Integer maxVertices = 10;
     
     private static Float viewportPixelX = (float) 1000;
     private static Float viewportPixelY = (float) 1000;
@@ -144,33 +144,9 @@ public class UndertowServer {
 	        			});
         			} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
-        				maxVertices = 100;
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
 //        				wrapperStream.print();
-        				wrapperStream.addSink(new SinkFunction<Row>(){
-	        				public void invoke(Row element, Context context) {
-	        					String sourceIdNumeric = element.getField(2).toString();
-	        					String sourceX = element.getField(4).toString();
-	        					String sourceY = element.getField(5).toString();
-	        					String sourceDegree = element.getField(6).toString();
-	        					String edgeIdGradoop = element.getField(13).toString();
-	        					String edgeLabel = element.getField(14).toString();
-	        					String targetIdNumeric = element.getField(8).toString();
-	        					String targetX = element.getField(10).toString();
-	        					String targetY = element.getField(11).toString();
-	        					String targetDegree = element.getField(12).toString();
-	        					UndertowServer.sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdNumeric + ";" + sourceDegree + ";" +
-	        							sourceX + ";" + sourceY + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
-//        						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
-//        							";" + sourceX + ";" + sourceY);
-//        						if (!edgeIdGradoop.equals("identityEdge")) {
-//        						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
-//        							";" + targetX + ";" + targetY);
-//        						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
-//        							";" + sourceIdNumeric + ";" + targetIdNumeric);
-//	        					}
-	        				}
-	        			});
+        				wrapperStream.addSink(new WrapperSink());
         			} else if (arrMessageData[1].equals("appendMap")) {
         				flinkCore.initializeCSVGraphUtilMap();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendMap();
@@ -192,20 +168,9 @@ public class UndertowServer {
 	        				}
 	        			});
         			}
-//    				DataStream<String> datastream = flinkCore.getFsEnv().socketTextStream("localhost", 9999);
-//    				datastream.addSink(new SinkFunction<String>() {
-//    					public void invoke(String element, Context context) {
-//    						UndertowServer.sendToAll(element);
-//    					}
-//    				});
         			try {
-        				System.out.println("before execute");
-        				JobExecutionResult result = flinkCore.getFsEnv().execute();
-        				System.out.println("after execute");
-//        				System.out.println(result.getJobID());
-//        				jobId = result.getJobID();
+        				flinkCore.getFsEnv().execute();
         			} catch (Exception e1) {
-        				// TODO Auto-generated catch block
         				e1.printStackTrace();
         			}
         			UndertowServer.sendToAll("fitGraph");
@@ -224,35 +189,31 @@ public class UndertowServer {
 					flinkCore.setBottomModelPos(bottomModelPos);
 					flinkCore.setLeftModelPos(leftModelPos);
         			DataStream<Row> wrapperStream = flinkCore.zoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-					wrapperStream.addSink(new SinkFunction<Row>() {
-	    				@Override 
-	    				public void invoke(Row element, Context context) {
-	    					String sourceIdNumeric = element.getField(2).toString();
-        					String sourceX = element.getField(4).toString();
-        					String sourceY = element.getField(5).toString();
-        					String sourceDegree = element.getField(6).toString();
-        					String edgeIdGradoop = element.getField(13).toString();
-        					String edgeLabel = element.getField(14).toString();
-        					String targetIdNumeric = element.getField(8).toString();
-        					String targetX = element.getField(10).toString();
-        					String targetY = element.getField(11).toString();
-        					String targetDegree = element.getField(12).toString();
-        					UndertowServer.sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdNumeric + ";" + sourceDegree + ";" +
-        							sourceX + ";" + sourceY + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
-//    						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
-//    							";" + sourceX + ";" + sourceY);
-//    						if (!edgeIdGradoop.equals("identityEdge")) {
-//    						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
-//    							";" + targetX + ";" + targetY);
-//    						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
-//    							";" + sourceIdNumeric + ";" + targetIdNumeric);
-//        					}
-	    				}
-					});
+					wrapperStream.addSink(new WrapperSink());
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+    			}
+    			if (messageData.startsWith("zoomOut")) {
+        			String[] arrMessageData = messageData.split(";");
+        			Integer xRenderPos = Integer.parseInt(arrMessageData[1]);
+        			Integer yRenderPos = Integer.parseInt(arrMessageData[2]);
+        			zoomLevel = Float.parseFloat(arrMessageData[3]);
+        			Integer topModelPos = (int) (- yRenderPos / zoomLevel);
+        			Integer leftModelPos = (int) (- xRenderPos /zoomLevel);
+        			Integer bottomModelPos = (int) (topModelPos + viewportPixelY / zoomLevel);
+        			Integer rightModelPos = (int) (leftModelPos + viewportPixelX / zoomLevel);
+					flinkCore.setTopModelPos(topModelPos);
+					flinkCore.setRightModelPos(rightModelPos);
+					flinkCore.setBottomModelPos(bottomModelPos);
+					flinkCore.setLeftModelPos(leftModelPos);
+        			DataStream<Row> wrapperStream = flinkCore.zoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+					wrapperStream.addSink(new WrapperSink());
+					try {
+						flinkCore.getFsEnv().execute();
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
     			}
@@ -269,26 +230,7 @@ public class UndertowServer {
 					flinkCore.setBottomModelPos(bottomModelPos + yModelDiff);
 					flinkCore.setLeftModelPos(leftModelPos + xModelDiff);
 					flinkCore.setRightModelPos(rightModelPos + xModelDiff);
-					wrapperStream.addSink(new SinkFunction<Row>() {
-	    				@Override 
-	    				public void invoke(Row element, Context context) {
-	    					String sourceIdNumeric = element.getField(2).toString();
-        					String sourceX = element.getField(4).toString();
-        					String sourceY = element.getField(5).toString();
-        					String edgeIdGradoop = element.getField(13).toString();
-        					String targetIdNumeric = element.getField(8).toString();
-        					String targetX = element.getField(10).toString();
-        					String targetY = element.getField(11).toString();
-    						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
-    							";" + sourceX + ";" + sourceY);
-    						if (!edgeIdGradoop.equals("identityEdge")) {
-    						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
-    							";" + targetX + ";" + targetY);
-    						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
-    							";" + sourceIdNumeric + ";" + targetIdNumeric);
-    						}
-        				}
-					});
+					wrapperStream.addSink(new WrapperSink());
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
@@ -300,30 +242,10 @@ public class UndertowServer {
     		        flinkCore = new FlinkCore();
         			flinkCore.initializeCSVGraphUtilJoin();
         			DataStream<Row> wrapperStream = flinkCore.displayAll();
-					wrapperStream.addSink(new SinkFunction<Row>() {
-	    				@Override 
-	    				public void invoke(Row element, Context context) {
-	    					String sourceIdNumeric = element.getField(2).toString();
-        					String sourceX = element.getField(4).toString();
-        					String sourceY = element.getField(5).toString();
-        					String edgeIdGradoop = element.getField(13).toString();
-        					String targetIdNumeric = element.getField(8).toString();
-        					String targetX = element.getField(10).toString();
-        					String targetY = element.getField(11).toString();
-    						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
-    							";" + sourceX + ";" + sourceY);
-    						if (!edgeIdGradoop.equals("identityEdge")) {
-    						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
-    							";" + targetX + ";" + targetY);
-    						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
-    							";" + sourceIdNumeric + ";" + targetIdNumeric);
-    						}
-	    				}
-					});
+					wrapperStream.addSink(new WrapperSink());
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					UndertowServer.sendToAll("fitGraph");

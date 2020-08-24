@@ -458,12 +458,23 @@ function sendSignalAppendMap(){
 	ws.send("buildTopView;appendMap");
 }
 
+function zoomOut(){
+	handler.operation = "zoomOut";
+	var topModel = 0;
+	var rightModel = 4000;
+	var bottomModel = 4000;
+	var leftModel = 0;
+	handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
+	ws.send("zoomOut;0;0;0.25");
+}
+
 function zoomIn(){
+	handler.operation = "zoomIn";
 	var topModel = 0;
 	var rightModel = 2000;
 	var bottomModel = 2000;
 	var leftModel = 0;
-	handler.updateVertexCollection(topModel, rightModel, bottomModel, leftModel);
+	handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
 	ws.send("zoomIn;0;0;0.5");
 }
 
@@ -486,7 +497,9 @@ function pan(){
 	var rightModel = 3000;
 	var bottomModel = 2000;
 	var leftModel = 1000;
-	handler.updateVertexCollection(topModel, rightModel, bottomModel, leftModel);
+	handler.operation = "pan";
+	handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
+	ws.send("pan;" + 1000 + ";" + 0);
 }
 
 // function pan(){

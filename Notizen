@@ -157,7 +157,7 @@ TODO: Für alle Operationen die maximal zu visualisierende Knotenzahl implementi
 	Panning: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
 	ZoomIn: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
 TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits gesendet wurden.
-TODO: Troubleshooting JoinHandler.js, panning Function
+TODO: Troubleshooting JoinHandler.js, zoomOut Function
 
 
 BuildTopViewAppend:

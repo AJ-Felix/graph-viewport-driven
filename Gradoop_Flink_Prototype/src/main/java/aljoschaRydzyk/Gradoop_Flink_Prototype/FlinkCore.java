@@ -256,13 +256,13 @@ public class FlinkCore {
 		String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
 				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
 				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
-		Table vertexTableNewInner = fsTableEnv.fromDataStream(vertexStreamInnerNew).as(vertexFields);
+		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNew).as(vertexFields);
 		Table vertexTableOldOuter = fsTableEnv.fromDataStream(vertexStreamOldOuter).as(vertexFields);
 		DataStream<Row> wrapperStream = graphUtil.getWrapperStream();
 		Table wrapperTable = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
-		Table wrapperTableInOut = wrapperTable.join(vertexTableNewInner).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
+		Table wrapperTableInOut = wrapperTable.join(vertexTableInnerNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
 		wrapperTableInOut = wrapperTableInOut.join(vertexTableOldOuter).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
-		Table wrapperTableOutIn = wrapperTable.join(vertexTableNewInner).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
+		Table wrapperTableOutIn = wrapperTable.join(vertexTableInnerNew).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
 		wrapperTableOutIn = wrapperTableOutIn.join(vertexTableOldOuter).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
 		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
