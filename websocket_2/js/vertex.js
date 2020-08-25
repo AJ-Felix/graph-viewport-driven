@@ -7,8 +7,8 @@ class Vertex{
 	
 	constructor(id, degree, x, y){
 		this.id = id;
-		this.degree = degree;
-		this.x = x;
-		this.y = y;
+		this.degree = parseInt(degree);
+		this.x = parseInt(x);
+		this.y = parseInt(y);
 	}
 }

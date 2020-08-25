@@ -221,6 +221,12 @@ public class FlinkCore {
 					Types.STRING, Types.STRING});
 			wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo).union(fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo))
 					.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
+			wrapperStream.addSink(new SinkFunction<Row>() {
+				@Override
+				public void invoke(Row element) {
+					System.out.println(element);
+				}
+			});
 			return wrapperStream;
 	}
 		

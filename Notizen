@@ -160,6 +160,7 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 TODO: Troubleshooting JoinHandler.js, zoomOut Function
 
 
+
 BuildTopViewAppend:
 	- Server sendet alle relevanten Wrapper genau einmal. Daher ist kaum Kontrollstruktur notwendig.
 
