@@ -15,6 +15,7 @@ import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
@@ -43,6 +44,7 @@ public class FlinkCore {
 	  private Integer leftModelPos;
 	  private Integer rightModelPos;
 	  private Set<String> visualizedWrappers;
+	  private Set<String> visualizedVertices;
 	  
 	public  FlinkCore () {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
@@ -102,6 +104,14 @@ public class FlinkCore {
 	
 	public Set<String> getVisualizedWrappers(){
 		return this.visualizedWrappers;
+	}
+	
+	public void setVisualizedVertices(Set<String> visualizedVertices) {
+		this.visualizedVertices = visualizedVertices;
+	}
+	
+	public Set<String> getVisualizedVertices(){
+		return this.visualizedVertices;
 	}
 	
 	public LogicalGraph getLogicalGraph(String gradoopGraphID) throws IOException {
@@ -177,6 +187,13 @@ public class FlinkCore {
 				@Override
 				public boolean filter(Row value) throws Exception {
 					return !visualizedWrappers.contains(value.getField(13)); 
+				}
+			});
+			Set<String> visualizedVertices = this.getVisualizedVertices();
+			wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
+				@Override
+				public boolean filter(Row value) throws Exception {
+					return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
 				}
 			});
 			Table wrapperTable = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
@@ -259,6 +276,12 @@ public class FlinkCore {
 		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNew).as(vertexFields);
 		Table vertexTableOldOuter = fsTableEnv.fromDataStream(vertexStreamOldOuter).as(vertexFields);
 		DataStream<Row> wrapperStream = graphUtil.getWrapperStream();
+//		wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
+//			@Override
+//			public boolean filter(Row value) throws Exception {
+//				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
+//			}
+//		});
 		Table wrapperTable = fsTableEnv.fromDataStream(wrapperStream).as(wrapperFields);
 		Table wrapperTableInOut = wrapperTable.join(vertexTableInnerNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(wrapperFields);
 		wrapperTableInOut = wrapperTableInOut.join(vertexTableOldOuter).where("vertexIdGradoop = targetVertexIdGradoop").select(wrapperFields);
@@ -267,7 +290,14 @@ public class FlinkCore {
 		RowTypeInfo typeInfo = new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
 				Types.STRING, Types.STRING});
-		wrapperStream = fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo).union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
+		DataStream<Row> wrapperStreamInOut = fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo)
+			.filter(new FilterFunction<Row>() {
+				@Override
+				public boolean filter(Row value) throws Exception {
+					return !(value.getField(14).equals("identityEdge"));
+				}
+			});
+		wrapperStream = wrapperStreamInOut.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
 		
 		//edge stream for all connections within new vertices
 //		Table vertexTableNew = fsTableEnv.fromDataStream(vertexStreamInnerNew).as(vertexFields);
@@ -317,6 +347,12 @@ public class FlinkCore {
 //		DataStream<Row> wrapperStreamOuter = fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo)
 //				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
 //		wrapperStream = wrapperStreamInner.union(wrapperStreamOuter);
+		wrapperStream.addSink(new SinkFunction<Row>() {
+			@Override
+			public void invoke(Row element) {
+				System.out.println(element);
+			}
+		});
 		return wrapperStream;
 	}
 		

@@ -80,41 +80,45 @@ class JoinHandler{
 	}
 	
 	updateMinDegreeVertices(){
-		console.log("hello");
-		console.log(this.newVerticesMap);
+		console.log(this.minDegreeVertex);
+		console.log(this.secondMinDegreeVertex);
 		this.newVerticesMap.forEach(
 			function(vertex, id){
-				if (this.secondMinDegreeVertex == null) {
-					this.secondMinDegreeVertex = vertex;
-				} else if (this.minDegreeVertex == null) {
-					this.minDegreeVertex = vertex;
-				} else if (vertex.degree < this.minDegreeVertex.degree) {
+				// if (this.secondMinDegreeVertex == null && !(vertex.id == this.minDegreeVertex.id) {
+					// this.secondMinDegreeVertex = vertex;
+				// } else if (this.minDegreeVertex == null) {
+					// this.minDegreeVertex = vertex;
+				// } else 
+				if (vertex.degree < this.minDegreeVertex.degree && !(vertex.id == this.minDegreeVertex.id)) {
 					this.secondMinDegreeVertex = this.minDegreeVertex;
 					this.minDegreeVertex = vertex;
-				} else if (vertex.degree < this.secondMinDegreeVertex.degree)  {
+				} else if (vertex.degree < this.secondMinDegreeVertex.degree && !(vertex.id == this.secondMinDegreeVertex.id))  {
 					this.secondMinDegreeVertex = vertex;
 				}
 			}, this
 		)
+		console.log("min degree vertices");
+		console.log(this.minDegreeVertex);
+		console.log(this.secondMinDegreeVertex);
 	}
 	
 	reduceNeighborIncidence(vertex){
-		console.log("reduce incidence");
+		// console.log("reduce incidence");
 		var neighbors = cy.$id(vertex.id).neighborhood("node");
-		console.log(neighbors);
-		console.log("vertex id: " + vertex.id);
-		console.log(this.vertexGlobalMap);
+		// console.log("vertex id: " + vertex.id);
+		// console.log(neighbors);
+		// console.log(this.vertexGlobalMap);
 		var map = this.vertexGlobalMap;
 		cy.$id(vertex.id).neighborhood("node").forEach(
 			function (node) {
-				console.log("node id: " + node.data('id'));
+				// console.log("node id: " + node.data('id'));
 				var vertexMap = map.get(node.data('id'));
-				console.log("before: " + vertexMap.get('incidence'));
+				// console.log("before: " + vertexMap.get('incidence'));
 				vertexMap.set('incidence', vertexMap.get('incidence') - 1);
-				console.log("after: " + vertexMap.get('incidence'));
+				// console.log("after: " + vertexMap.get('incidence'));
 			}
 		)
-		console.log(this.vertexGlobalMap);
+		// console.log(this.vertexGlobalMap);
 	}
 	
 	addWrapperInitial(dataArray) {
@@ -153,8 +157,8 @@ class JoinHandler{
 	}
 	
 	addIdentityWrapper(vertex){
-		console.log(vertex.degree);
-		// console.log(this.minDegreeVertex.degree);
+		console.log("vertex Degree identity: " + vertex.degree);
+		if (this.minDegreeVertex != null) console.log(this.minDegreeVertex.degree);
 		if (this.capacity > 0) {
 			var added = this.addVertex(vertex);
 			if (added) {
@@ -172,21 +176,19 @@ class JoinHandler{
 					console.log(vertex);
 					this.newVerticesMap.set(vertex.id, vertex);
 					// if (this.operation == "zoomOut") 
-
 					this.reduceNeighborIncidence(this.minDegreeVertex);
-					console.log("hello 2");
 					this.removeVertex(this.minDegreeVertex);
-					this.minDegreeVertex = null;
+					this.minDegreeVertex = this.newVerticesMap.values()[0];
 					this.updateMinDegreeVertices();
 				}
 			} 
 		}
-		console.log(this.vertexGlobalMap);
+		// console.log(this.vertexGlobalMap);
 		// console.log("added identity wrapper, newVerticesMap size: " + this.newVerticesMap.size);
 	}
 		
 	addNonIdentityWrapper(edgeId, edgeLabel, sourceVertex, targetVertex){
-		if (this.capacity > 0){
+		if (this.capacity > 1){
 			var addedSource = this.addVertex(sourceVertex);
 			if ((sourceVertex.x >= this.leftModel) && (this.rightModel >= sourceVertex.x) && (sourceVertex.y >= this.topModel) && (this.bottomModel >= sourceVertex.y) && addedSource){
 				this.updateMinDegreeVertex(sourceVertex);
@@ -222,14 +224,14 @@ class JoinHandler{
 					this.removeVertex(this.minDegreeVertex);
 					this.newVerticesMap.set(sourceVertex.id, sourceVertex);
 					this.newVerticesMap.set(targetVertex.id, targetVertex);
-					this.secondMinDegreeVertex = null;
-					this.minDegreeVertex = null;
+					this.secondMinDegreeVertex = this.newVerticesMap.values()[0];
+					this.minDegreeVertex = this.newVerticesMap.values()[1];
 					this.updateMinDegreeVertices();
 				} else if (addedSource || addedTarget) {
 					// if (this.operation == "zoomOut") 
 						this.reduceNeighborIncidence(this.minDegreeVertex);
 					this.removeVertex(this.minDegreeVertex);
-					this.minDegreeVertex = null;
+					this.minDegreeVertex = this.newVerticesMap.values()[0];
 					this.updateMinDegreeVertices();
 					if (addedSource) this.newVerticesMap.set(sourceVertex.id, sourceVertex);
 					if (addedTarget) this.newVerticesMap.set(targetVertex.id, targetVertex);
@@ -242,8 +244,8 @@ class JoinHandler{
 					// if (this.operation == "zoomOut") 
 						this.reduceNeighborIncidence(this.minDegreeVertex);
 					this.removeVertex(this.minDegreeVertex);
-					this.minDegreeVertex = null;
-					this.updateMinDegreeVertices;
+					this.minDegreeVertex = this.newVerticesMap.values()[0];
+					this.updateMinDegreeVertices();
 					this.newVerticesMap.set(sourceVertex.id, sourceVertex);
 				}
 			} else if (targetIn && targetVertex.degree > this.minDegreeVertex) {
@@ -254,14 +256,14 @@ class JoinHandler{
 					// if (this.operation == "zoomOut") 
 						this.reduceNeighborIncidence(this.minDegreeVertex);
 					this.removeVertex(this.minDegreeVertex);
-					this.minDegreeVertex = null;
-					this.updateMinDegreeVertices;
+					this.minDegreeVertex = this.newVerticesMap.values()[0];
+					this.updateMinDegreeVertices();
 					this.newVerticesMap.set(targetVertex.id, targetVertex);
 				}
 			}
 		}
 		// console.log("added non-identity wrapper, newVerticesMap size: " + this.newVerticesMap.size);
-		console.log(this.vertexGlobalMap);
+		// console.log(this.vertexGlobalMap);
 	}
 		
 	addWrapperToQueue(dataArray){
@@ -299,9 +301,9 @@ class JoinHandler{
 					}
 					// console.log("remaining capacity after adding: " + this.capacity);
 					clearTimeout(this.timeOut);
-					this.timeOut = setTimeout(clearOperation, 10000);
+					this.timeOut = setTimeout(clearOperation, 2000);
 				}
-				console.log("about to resolve true");
+				// console.log("about to resolve true");
 				resolve(true);
 			});
 			await promise;
@@ -349,12 +351,18 @@ function clearOperation(){
 				var pos = node.position();
 				if (((pos.x < handler.leftModel) || (handler.rightModel < pos.x) || (pos.y < handler.topModel) || (handler.bottomModel < pos.y)) && (node.neighborhood().length == 0) || 
 						(this.vertexGlobalMap.get(node.data('id')).get('incidence') < 1)) {
+					console.log('deleting node');
 					cy.remove(node);
 					this.vertexGlobalMap.delete(node.data('id'));
 				} 
 			}, handler
 		)
 	}
+	// handler.vertexGlobalMap.forEach(
+		// function(vertexMap, id){
+			// vertexMap.set('incidence', 0);
+		// }	
+	// )
 	handler.vertexInnerMap = new Map([...handler.newVerticesMap, ...handler.vertexInnerMap]);
 	var edgeIdString = "";
 	cy.edges().forEach(
@@ -362,7 +370,17 @@ function clearOperation(){
 			edgeIdString += ";" + edge.data('id');
 		}
 	)
+	var vertexIdString = "";
+	handler.vertexInnerMap.forEach(
+		function(vertex, id){
+			vertexIdString += ";" + id;
+		}
+	)
 	handler.operation = null;
 	ws.send("edgeIdString" + edgeIdString);
+	ws.send("vertexIdString" + vertexIdString);
 	console.log(handler.vertexGlobalMap);
+	console.log(handler.minDegreeVertex);
+	console.log(handler.secondMinDegreeVertex);
+	handler.updateMinDegreeVertices();
 }

@@ -16,7 +16,6 @@ public class WrapperSink implements SinkFunction<Row>{
 		String targetX = element.getField(10).toString();
 		String targetY = element.getField(11).toString();
 		String targetDegree = element.getField(12).toString();
-		System.out.println(element);
 		UndertowServer.sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdNumeric + ";" + sourceDegree + ";" +
 				sourceX + ";" + sourceY + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
 	}

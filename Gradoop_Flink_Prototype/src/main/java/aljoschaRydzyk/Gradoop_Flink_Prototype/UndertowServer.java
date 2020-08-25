@@ -8,6 +8,8 @@ import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
 import static io.undertow.Handlers.*;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -21,6 +23,7 @@ import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.types.Row;
+import org.apache.log4j.BasicConfigurator;
 
 import com.nextbreakpoint.flinkclient.api.ApiException;
 import com.nextbreakpoint.flinkclient.api.FlinkApi;
@@ -51,14 +54,14 @@ public class UndertowServer {
     public static void main(final String[] args) {
     	
 //    	BasicConfigurator.configure();
-//    	PrintStream fileOut = null;
-//		try {
-//			fileOut = new PrintStream("/home/aljoscha/out.txt");
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		System.setOut(fileOut);
+    	PrintStream fileOut = null;
+		try {
+			fileOut = new PrintStream("/home/aljoscha/out.txt");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.setOut(fileOut);
     	
         Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
                 .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
@@ -104,6 +107,13 @@ public class UndertowServer {
                 	String removed = list.remove(0);
                 	Set<String> visualizedWrappers = new HashSet<String>(list);
                 	flinkCore.setVisualizedWrappers(visualizedWrappers);
+                }
+                if (messageData.startsWith("vertexIdString")) {
+                	String[] arrMessageData = messageData.split(";");
+                	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
+                	String removed = list.remove(0);
+                	Set<String> visualizedVertices = new HashSet<String>(list);
+                	flinkCore.setVisualizedVertices(visualizedVertices);
                 }
                 if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore();
