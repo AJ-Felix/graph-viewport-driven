@@ -352,8 +352,8 @@ class MapHandler{
 			this.vertexDegreeMap.set(vertexId, vertexDegree);
 			edgePotential = true;
 		} else {
-			var removalCandidateKey = -1;
-			var removalCandidateDegree =  Infinity;
+			let removalCandidateKey = -1;
+			let removalCandidateDegree =  Infinity;
 			for (const [key, value] of this.vertexDegreeMap.entries()){
 				if ((parseInt(value) < removalCandidateDegree) || (parseInt(value) == removalCandidateDegree && key > removalCandidateKey)){
 					removalCandidateKey = key;
@@ -374,15 +374,15 @@ class MapHandler{
 	addWrapper(dataArray){
 		this.edgePotentialSource = false;
 		this.edgePotentialTarget = false;
-		var sourceVertexId = dataArray[1];
-		var sourceVertexX = dataArray[2];
-		var sourceVertexY = dataArray[3];
-		var sourceVertexDegree = parseInt(dataArray[4]);
-		var targetVertexId = dataArray[5];
-		var targetVertexX = dataArray[6];
-		var targetVertexY = dataArray[7];
-		var targetVertexDegree = parseInt(dataArray[8]);
-		var edgeIdGradoop = dataArray[9];
+		const sourceVertexId = dataArray[1];
+		const sourceVertexX = dataArray[2];
+		const sourceVertexY = dataArray[3];
+		const sourceVertexDegree = parseInt(dataArray[4]);
+		const targetVertexId = dataArray[5];
+		const targetVertexX = dataArray[6];
+		const targetVertexY = dataArray[7];
+		const targetVertexDegree = parseInt(dataArray[8]);
+		const edgeIdGradoop = dataArray[9];
 		this.edgePotentialSource = this.addVertexHelper(sourceVertexId, sourceVertexX, sourceVertexY, sourceVertexDegree);
 		this.edgePotentialTarget = this.addVertexHelper(targetVertexId, targetVertexX, targetVertexY, targetVertexDegree);
 		if (this.edgePotentialSource && this.edgePotentialTarget){
@@ -394,7 +394,7 @@ class MapHandler{
 
 ws.onmessage = function (evt) {
 	console.log(evt.data);
-	var dataArray = evt.data.split(";");
+	const dataArray = evt.data.split(";");
 	switch (dataArray[0]){
 		case 'clearGraph':
 			console.log('clearing graph');
@@ -460,20 +460,20 @@ function sendSignalAppendMap(){
 
 function zoomOut(){
 	handler.operation = "zoomOut";
-	var topModel = 0;
-	var rightModel = 4000;
-	var bottomModel = 4000;
-	var leftModel = 0;
+	const topModel = 0;
+	const rightModel = 4000;
+	const bottomModel = 4000;
+	const leftModel = 0;
 	handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
 	ws.send("zoomOut;0;0;0.25");
 }
 
 function zoomIn(){
 	handler.operation = "zoomIn";
-	var topModel = 0;
-	var rightModel = 2000;
-	var bottomModel = 2000;
-	var leftModel = 0;
+	const topModel = 0;
+	const rightModel = 2000;
+	const bottomModel = 2000;
+	const leftModel = 0;
 	handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
 	ws.send("zoomIn;0;0;0.5");
 }
@@ -493,10 +493,10 @@ function zoomIn(){
 // }
 
 function pan(){
-	var topModel = 0;
-	var rightModel = 3000;
-	var bottomModel = 2000;
-	var leftModel = 1000;
+	const topModel = 0;
+	const rightModel = 3000;
+	const bottomModel = 2000;
+	const leftModel = 1000;
 	handler.operation = "pan";
 	handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
 	ws.send("pan;" + 1000 + ";" + 0);
@@ -518,7 +518,7 @@ function pan(){
 function removeSpatialSelection(top, right, bottom, left){
 	cy.nodes().forEach(
 		function (node){
-		var pos = node.position();
+		const pos = node.position();
 			// console.log(node.position());
 			// console.log(node.position().x);
 			if ((pos.x > right) || (pos.x < left) || (pos.y > bottom) || (pos.y < top)) {
@@ -540,7 +540,7 @@ function displayAll(){
 }
 
 function cancelJob(){
-	var id;
+	let id;
 	// var x = new XMLHttpRequest();
 	// x.open("patch", "/");
 	// x.send(null);
@@ -588,7 +588,7 @@ function testThread(){
 	ws.send("TestThread");
 }
 
-var header1 = document.getElementById('header1');
+let header1 = document.getElementById('header1');
 header1.addEventListener("mousedown", 
 	function(){
 		console.log("Mouse went down on header1");

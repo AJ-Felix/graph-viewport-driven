@@ -39,10 +39,10 @@ public class FlinkCore {
 	  private StreamTableEnvironment fsTableEnv;
 	  
 	  private GraphUtil graphUtil;
-	  private Integer topModelPos;
-	  private Integer bottomModelPos;
-	  private Integer leftModelPos;
-	  private Integer rightModelPos;
+	  private Float topModelPos;
+	  private Float bottomModelPos;
+	  private Float leftModelPos;
+	  private Float rightModelPos;
 	  private Set<String> visualizedWrappers;
 	  private Set<String> visualizedVertices;
 	  
@@ -62,35 +62,35 @@ public class FlinkCore {
 
 	}
 	
-	public void setTopModelPos(Integer topModelPos) {
-		this.topModelPos = topModelPos;
+	public void setTopModelPos(Float topModelPos2) {
+		this.topModelPos = topModelPos2;
 	}
 	
-	public Integer gettopModelPos() {
+	public Float gettopModelPos() {
 		return this.topModelPos;
 	}
 	
-	public void setBottomModelPos(Integer bottomModelPos) {
+	public void setBottomModelPos(Float bottomModelPos) {
 		this.bottomModelPos = bottomModelPos;
 	}
 	
-	public Integer getBottomModelPos() {
+	public Float getBottomModelPos() {
 		return this.bottomModelPos;
 	}
 	
-	public void setRightModelPos(Integer rightModelPos) {
+	public void setRightModelPos(Float rightModelPos) {
 		this.rightModelPos = rightModelPos;
 	}
 	
-	public Integer getRightModelPos() {
+	public Float getRightModelPos() {
 		return this.rightModelPos;
 	}
 	
-	public void setLeftModelPos(Integer leftModelPos) {
+	public void setLeftModelPos(Float leftModelPos) {
 		this.leftModelPos = leftModelPos;
 	}
 	
-	public Integer getLeftModelPos() {
+	public Float getLeftModelPos() {
 		return this.leftModelPos;
 	}
 	
@@ -165,7 +165,7 @@ public class FlinkCore {
 		return graphUtil.produceWrapperStream();	
 	}
 	
-	public DataStream<Row> zoomIn (Integer topModel, Integer rightModel, Integer bottomModel, Integer leftModel){
+	public DataStream<Row> zoomIn (Float topModel, Float rightModel, Float bottomModel, Float leftModel){
 			CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 			DataStream<Row> vertexStreamInner = graphUtil.getVertexStream()
 				.filter(new FilterFunction<Row>(){
@@ -221,20 +221,20 @@ public class FlinkCore {
 					Types.STRING, Types.STRING});
 			wrapperStream = fsTableEnv.toAppendStream(wrapperTable, typeInfo).union(fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo))
 					.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
-			wrapperStream.addSink(new SinkFunction<Row>() {
-				@Override
-				public void invoke(Row element) {
-					System.out.println(element);
-				}
-			});
+//			wrapperStream.addSink(new SinkFunction<Row>() {
+//				@Override
+//				public void invoke(Row element) {
+//					System.out.println(element);
+//				}
+//			});
 			return wrapperStream;
 	}
 		
-	public DataStream<Row> pan(Integer topOld, Integer rightOld, Integer bottomOld, Integer leftOld, Integer xModelDiff, Integer yModelDiff){
-		Integer topNew = topOld + yModelDiff;
-		Integer rightNew = rightOld + xModelDiff;
-		Integer bottomNew = bottomOld + yModelDiff;
-		Integer leftNew = leftOld + xModelDiff;
+	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld,Float xModelDiff, Float yModelDiff){
+		Float topNew = topOld + yModelDiff;
+		Float rightNew = rightOld + xModelDiff;
+		Float bottomNew = bottomOld + yModelDiff;
+		Float leftNew = leftOld + xModelDiff;
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 		DataStream<Row> vertexStreamInner = graphUtil.getVertexStream()
 			.filter(new FilterFunction<Row>(){
@@ -353,17 +353,17 @@ public class FlinkCore {
 //		DataStream<Row> wrapperStreamOuter = fsTableEnv.toAppendStream(wrapperTableInOut, typeInfo)
 //				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, typeInfo));
 //		wrapperStream = wrapperStreamInner.union(wrapperStreamOuter);
-		wrapperStream.addSink(new SinkFunction<Row>() {
-			@Override
-			public void invoke(Row element) {
-				System.out.println(element);
-			}
-		});
+//		wrapperStream.addSink(new SinkFunction<Row>() {
+//			@Override
+//			public void invoke(Row element) {
+//				System.out.println(element);
+//			}
+//		});
 		return wrapperStream;
 	}
 		
 	
-	public List<DataStream<Row>> panTop(DataStream<Row> vertexStream, Integer topOld) {
+	public List<DataStream<Row>> panTop(DataStream<Row> vertexStream, Float topOld) {
 		DataStream<Row> vertexStreamNew = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -384,7 +384,7 @@ public class FlinkCore {
 		return lStream;
 	}
 	
-	public List<DataStream<Row>> panTopRight(DataStream<Row> vertexStream, Integer topOld, Integer rightOld) {
+	public List<DataStream<Row>> panTopRight(DataStream<Row> vertexStream, Float topOld, Float rightOld) {
 		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -407,7 +407,7 @@ public class FlinkCore {
 		return lStream;
 	}
 	
-	public List<DataStream<Row>> panRight(DataStream<Row> vertexStream, Integer rightOld) {
+	public List<DataStream<Row>> panRight(DataStream<Row> vertexStream, Float rightOld) {
 		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -428,7 +428,7 @@ public class FlinkCore {
 		return lStream;
 	}
 	
-	public List<DataStream<Row>> panBottomRight(DataStream<Row> vertexStream, Integer bottomOld, Integer rightOld) {
+	public List<DataStream<Row>> panBottomRight(DataStream<Row> vertexStream, Float bottomOld, Float rightOld) {
 		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -451,7 +451,7 @@ public class FlinkCore {
 		return lStream;
 	}
 	
-	public List<DataStream<Row>> panBottom (DataStream<Row> vertexStream, Integer bottomOld) {
+	public List<DataStream<Row>> panBottom (DataStream<Row> vertexStream, Float bottomOld) {
 		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -472,7 +472,7 @@ public class FlinkCore {
 		return lStream;
 	}
 	
-	public List<DataStream<Row>> panBottomLeft (DataStream<Row> vertexStream, Integer bottomOld, Integer leftOld) {
+	public List<DataStream<Row>> panBottomLeft (DataStream<Row> vertexStream, Float bottomOld, Float leftOld) {
 		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -495,7 +495,7 @@ public class FlinkCore {
 		return lStream;
 	}
 	
-	public List<DataStream<Row>> panLeft (DataStream<Row> vertexStream, Integer leftOld) {
+	public List<DataStream<Row>> panLeft (DataStream<Row> vertexStream, Float leftOld) {
 		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -517,7 +517,7 @@ public class FlinkCore {
 		return lStream;
 	}
 	
-	public List<DataStream<Row>> panTopLeft (DataStream<Row> vertexStream, Integer topOld, Integer leftOld) {
+	public List<DataStream<Row>> panTopLeft (DataStream<Row> vertexStream, Float topOld, Float leftOld) {
 		DataStream<Row> vertexStreamOld = vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {

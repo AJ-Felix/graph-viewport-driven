@@ -136,10 +136,10 @@ var cy = cytoscape({
 // var bottomModelPosPrevious = 2000;
 // var leftModelPosPrevious = 0;
 
-var xRenderDiff = 0;
-var yRenderDiff = 0;
+let xRenderDiff = 0;
+let yRenderDiff = 0;
 
-var cyto = document.getElementById('cy');
+let cyto = document.getElementById('cy');
 cyto.addEventListener('mousedown', function(e){
 	console.log("mouse went down in cy (drag)");
 	xRenderDiff = 0;
@@ -147,8 +147,8 @@ cyto.addEventListener('mousedown', function(e){
 	this.onmousemove = function (e){
 		xRenderDiff = xRenderDiff + e.movementX;
 		yRenderDiff = yRenderDiff + e.movementY;
-		var xRenderPos = cy.pan().x;
-		var yRenderPos = cy.pan().y;
+		let xRenderPos = cy.pan().x;
+		let yRenderPos = cy.pan().y;
 		console.log("accumulated movement x: " + xRenderDiff.toString());
 		console.log("accumulated movement y: " + yRenderDiff.toString());
 		cy.pan({x:xRenderPos + e.movementX, y:yRenderPos + e.movementY});
@@ -158,45 +158,43 @@ cyto.addEventListener('mousedown', function(e){
 cyto.addEventListener("mouseup", function(e){
     this.onmousemove = null;
 	const zoomLevel = cy.zoom();
-	var xModelDiff = - (xRenderDiff / zoomLevel);
-	var yModelDiff = - (yRenderDiff / zoomLevel);
-	const xRenderPos = cy.pan().x;
-	const yRenderPos = cy.pan().y;
-	const topModelPosPrevious = - yRenderPos / zoomLevel - yModelDiff;
-	const leftModelPosPrevious = - xRenderPos / zoomLevel - xModelDiff;
-	const bottomModelPosPrevious = topModelPosPrevious + vPix / zoomLevel;
-	const rightModelPosPrevious = leftModelPosPrevious + vPix / zoomLevel
-	console.info("topModelPosPrevious " + topModelPosPrevious);
-	console.info("rightModelPosPrevious " + rightModelPosPrevious);
-	console.info("bottomModelPosPrevious " +bottomModelPosPrevious);
-	console.info("leftModelPosPrevious " + leftModelPosPrevious);
-	console.info("xModelDiff " + xModelDiff);
-	console.info("yModelDiff " + yModelDiff);
-	if ((xModelDiff == 0) && (yModelDiff < 0)) {
-			handler.removeSpatialSelectionTop(bottomModelPosPrevious, yModelDiff);
-			ws.send("panTop;" + xModelDiff + ";" + yModelDiff);
-		} else if ((xModelDiff > 0) && (yModelDiff < 0)) {
-			handler.removeSpatialSelectionTopRight(bottomModelPosPrevious, leftModelPosPrevious , xModelDiff, yModelDiff);
-			ws.send("panTopRight;" + xModelDiff + ";" + yModelDiff);
-		} else if ((xModelDiff > 0) && (yModelDiff == 0)) {
-			handler.removeSpatialSelectionRight(leftModelPosPrevious , xModelDiff);
-			ws.send("panRight;" + xModelDiff + ";" + yModelDiff);
-		} else if ((xModelDiff > 0) && (yModelDiff > 0)) {
-			handler.removeSpatialSelectionBottomRight(topModelPosPrevious, leftModelPosPrevious , xModelDiff, yModelDiff);
-			ws.send("panBottomRight;" + xModelDiff + ";" + yModelDiff);
-		} else if ((xModelDiff == 0) && (yModelDiff > 0)) {
-			handler.removeSpatialSelectionBottom(topModelPosPrevious, yModelDiff);
-			ws.send("panBottom;" + xModelDiff + ";" + yModelDiff);
-		} else if ((xModelDiff < 0) && (yModelDiff > 0)) {
-			handler.removeSpatialSelectionBottomLeft(topModelPosPrevious, rightModelPosPrevious, xModelDiff, yModelDiff);
-			ws.send("panBottomLeft;" + xModelDiff + ";" + yModelDiff);
-		} else if ((xModelDiff < 0) && (yModelDiff == 0)) {
-			handler.removeSpatialSelectionLeft(rightModelPosPrevious, xModelDiff);
-			ws.send("panLeft;" + xModelDiff + ";" + yModelDiff);
-		} else {
-			handler.removeSpatialSelectionTopLeft(rightModelPosPrevious, bottomModelPosPrevious, xModelDiff, yModelDiff);
-			ws.send("panTopLeft;" + xModelDiff + ";" + yModelDiff);
-		}
+	const xModelDiff = - (xRenderDiff / zoomLevel);
+	const yModelDiff = - (yRenderDiff / zoomLevel);
+	const pan = cy.pan();
+	const xRenderPos = pan.x;
+	const yRenderPos = pan.y;
+	const topModelPos= - yRenderPos / zoomLevel;
+	const leftModelPos = - xRenderPos / zoomLevel;
+	const bottomModelPos = topModelPos + vPix / zoomLevel;
+	const rightModelPos = leftModelPos + vPix / zoomLevel
+	handler.operation = "pan";
+	handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+	ws.send("pan;" + xModelDiff + ";" + yModelDiff);
+	// if ((xModelDiff == 0) && (yModelDiff < 0)) {
+			// handler.removeSpatialSelectionTop(bottomModelPosPrevious, yModelDiff);
+			// ws.send("panTop;" + xModelDiff + ";" + yModelDiff);
+		// } else if ((xModelDiff > 0) && (yModelDiff < 0)) {
+			// handler.removeSpatialSelectionTopRight(bottomModelPosPrevious, leftModelPosPrevious , xModelDiff, yModelDiff);
+			// ws.send("panTopRight;" + xModelDiff + ";" + yModelDiff);
+		// } else if ((xModelDiff > 0) && (yModelDiff == 0)) {
+			// handler.removeSpatialSelectionRight(leftModelPosPrevious , xModelDiff);
+			// ws.send("panRight;" + xModelDiff + ";" + yModelDiff);
+		// } else if ((xModelDiff > 0) && (yModelDiff > 0)) {
+			// handler.removeSpatialSelectionBottomRight(topModelPosPrevious, leftModelPosPrevious , xModelDiff, yModelDiff);
+			// ws.send("panBottomRight;" + xModelDiff + ";" + yModelDiff);
+		// } else if ((xModelDiff == 0) && (yModelDiff > 0)) {
+			// handler.removeSpatialSelectionBottom(topModelPosPrevious, yModelDiff);
+			// ws.send("panBottom;" + xModelDiff + ";" + yModelDiff);
+		// } else if ((xModelDiff < 0) && (yModelDiff > 0)) {
+			// handler.removeSpatialSelectionBottomLeft(topModelPosPrevious, rightModelPosPrevious, xModelDiff, yModelDiff);
+			// ws.send("panBottomLeft;" + xModelDiff + ";" + yModelDiff);
+		// } else if ((xModelDiff < 0) && (yModelDiff == 0)) {
+			// handler.removeSpatialSelectionLeft(rightModelPosPrevious, xModelDiff);
+			// ws.send("panLeft;" + xModelDiff + ";" + yModelDiff);
+		// } else {
+			// handler.removeSpatialSelectionTopLeft(rightModelPosPrevious, bottomModelPosPrevious, xModelDiff, yModelDiff);
+			// ws.send("panTopLeft;" + xModelDiff + ";" + yModelDiff);
+		// }
 });
 
 
@@ -217,23 +215,31 @@ cyto.addEventListener("wheel", function(e) {
     const delta = Math.sign(e.deltaY);
 	const cytoX = e.pageX - cyto.offsetLeft;
 	const cytoY = e.pageY - cyto.offsetTop;
-	var pan = cy.pan();
+	let pan = cy.pan();
 	if (delta < 0){
 		cy.zoom(cy.zoom() * zFactor);
 		cy.pan({x:-vPixHalf + zFactor * pan.x + (vPixHalf - cytoX) * zFactor, y:-vPixHalf + zFactor * pan.y + (vPixHalf - cytoY) * zFactor});
 		pan = cy.pan();
-		var zoomLevel = cy.zoom();
+		const zoomLevel = cy.zoom();
 		const topModelPos = - pan.y / zoomLevel;
 		const leftModelPos = - pan.x / zoomLevel;
 		const bottomModelPos = topModelPos + vPix / zoomLevel;
 		const rightModelPos = leftModelPos + vPix / zoomLevel;
-		console.info(topModelPos);
-		var countRemoved = handler.removeSpatialSelectionZoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + cy.zoom() + ";" + countRemoved);
+		handler.operation = "zoomIn";
+		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	} else {
 		cy.zoom(cy.zoom() / zFactor);
 		cy.pan({x:vPixHalf + pan.x - (vPixHalf + pan.x) / zFactor - (cytoX - vPixHalf) / zFactor, y:vPixHalf + pan.y - (vPixHalf + pan.y) / zFactor - (cytoY - vPixHalf) / zFactor});
-		ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + cy.zoom());
+		pan = cy.pan();
+		const zoomLevel = cy.zoom();
+		const topModelPos = - pan.y / zoomLevel;
+		const leftModelPos = - pan.x / zoomLevel;
+		const bottomModelPos = topModelPos + vPix / zoomLevel;
+		const rightModelPos = leftModelPos + vPix / zoomLevel;
+		handler.operation = "zoomOut";
+		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+		ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	}
 });
 
