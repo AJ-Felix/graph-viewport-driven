@@ -56,7 +56,7 @@ var cy = cytoscape({
   userZoomingEnabled: false,
   panningEnabled: true,
   userPanningEnabled: false,
-  boxSelectionEnabled: true,
+  boxSelectionEnabled: false,
   selectionType: 'single',
   touchTapThreshold: 8,
   desktopTapThreshold: 4,
@@ -74,67 +74,6 @@ var cy = cytoscape({
 /*   wheelSensitivity: 1,
  */  pixelRatio: 'auto'
 });
-
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "200, 200"},
-		// position: { x: 200, y: 200 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "100, 100"},
-		// position: { x: 100, y: 100 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "300, 300"},
-		// position: { x: 300, y: 300 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "100, 200"},
-		// position: { x: 100, y: 200 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "100, 300"},
-		// position: { x: 100, y: 300 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "200, 100"},
-		// position: { x: 200, y: 100 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "200, 300"},
-		// position: { x: 200, y: 300 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "300, 100"},
-		// position: { x: 300, y: 100 }
-	// });
-	
-// cy.add({
-		// group: 'nodes',
-		// data: { weight: 75 , id: "300, 200"},
-		// position: { x: 300, y: 200 }
-	// });
-	
-// var xRenderPos = 0;
-// var yRenderPos = 0;
-// var topModelPosPrevious = 0;
-// var rightModelPosPrevious = 2000;
-// var bottomModelPosPrevious = 2000;
-// var leftModelPosPrevious = 0;
 
 let xRenderDiff = 0;
 let yRenderDiff = 0;
@@ -170,33 +109,7 @@ cyto.addEventListener("mouseup", function(e){
 	handler.operation = "pan";
 	handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	ws.send("pan;" + xModelDiff + ";" + yModelDiff);
-	// if ((xModelDiff == 0) && (yModelDiff < 0)) {
-			// handler.removeSpatialSelectionTop(bottomModelPosPrevious, yModelDiff);
-			// ws.send("panTop;" + xModelDiff + ";" + yModelDiff);
-		// } else if ((xModelDiff > 0) && (yModelDiff < 0)) {
-			// handler.removeSpatialSelectionTopRight(bottomModelPosPrevious, leftModelPosPrevious , xModelDiff, yModelDiff);
-			// ws.send("panTopRight;" + xModelDiff + ";" + yModelDiff);
-		// } else if ((xModelDiff > 0) && (yModelDiff == 0)) {
-			// handler.removeSpatialSelectionRight(leftModelPosPrevious , xModelDiff);
-			// ws.send("panRight;" + xModelDiff + ";" + yModelDiff);
-		// } else if ((xModelDiff > 0) && (yModelDiff > 0)) {
-			// handler.removeSpatialSelectionBottomRight(topModelPosPrevious, leftModelPosPrevious , xModelDiff, yModelDiff);
-			// ws.send("panBottomRight;" + xModelDiff + ";" + yModelDiff);
-		// } else if ((xModelDiff == 0) && (yModelDiff > 0)) {
-			// handler.removeSpatialSelectionBottom(topModelPosPrevious, yModelDiff);
-			// ws.send("panBottom;" + xModelDiff + ";" + yModelDiff);
-		// } else if ((xModelDiff < 0) && (yModelDiff > 0)) {
-			// handler.removeSpatialSelectionBottomLeft(topModelPosPrevious, rightModelPosPrevious, xModelDiff, yModelDiff);
-			// ws.send("panBottomLeft;" + xModelDiff + ";" + yModelDiff);
-		// } else if ((xModelDiff < 0) && (yModelDiff == 0)) {
-			// handler.removeSpatialSelectionLeft(rightModelPosPrevious, xModelDiff);
-			// ws.send("panLeft;" + xModelDiff + ";" + yModelDiff);
-		// } else {
-			// handler.removeSpatialSelectionTopLeft(rightModelPosPrevious, bottomModelPosPrevious, xModelDiff, yModelDiff);
-			// ws.send("panTopLeft;" + xModelDiff + ";" + yModelDiff);
-		// }
 });
-
 
 document.addEventListener("click",
 	function(e){

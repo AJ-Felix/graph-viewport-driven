@@ -1,5 +1,7 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
+import Temporary.VertexCustom;
+
 public class VVEdgeWrapper {
 	private VertexCustom sourceVertex;
 	private VertexCustom targetVertex;

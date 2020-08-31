@@ -28,7 +28,7 @@ import Temporary.MaxDegreeSubset.VertexAccum;
 
 public class GradoopGraphUtil implements GraphUtil{
 	
-	private DataStreamSource<VertexCustom> vertexStream;
+	private DataStreamSource<Row> vertexStream;
 	private DataStreamSource<EdgeCustom> edgeStream;
 	private DataStreamSource<Row> wrapperStream = null;
 	private Map<String, Integer> vertexIdMap = null;
@@ -47,7 +47,7 @@ public class GradoopGraphUtil implements GraphUtil{
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
 		List<EPGMVertex> vertices = this.graph.getVertices().collect();
 		this.vertexIdMap = new HashMap<String, Integer>();
-		List<VertexCustom> customVertices = new ArrayList<VertexCustom>();
+		List<Row> customVertices = new ArrayList<Row>();
 		List<Row> edgeRow = new ArrayList<Row>();
 		for (int i = 0; i < vertices.size(); i++) {
 			String vertexIdGradoop = vertices.get(i).getId().toString();
@@ -57,10 +57,10 @@ public class GradoopGraphUtil implements GraphUtil{
 			Integer y = ((Integer) vertices.get(i).getPropertyValue("Y").getInt());
 			Long degree = ((Long) vertices.get(i).getPropertyValue("degree").getLong());
 			String vertexLabel = vertices.get(i).getLabel();
-			customVertices.add(new VertexCustom(vertexIdGradoop, vertexLabel, vertexIdNumeric, x, y, degree));
-			edgeRow.add(Row.of(graphId, "identityEdge", "identityEdge", vertexIdGradoop, vertexIdNumeric, vertexLabel,
+			customVertices.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, degree));
+			edgeRow.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel,
 					x, y, degree, vertexIdGradoop, vertexIdNumeric, vertexLabel,
-					x, y, degree));
+					x, y, degree, "identityEdge", "identityEdge"));
 		}	
 		List<EPGMEdge> edges = this.graph.getEdges().collect();
 		List<EdgeCustom> customEdges = new ArrayList<EdgeCustom>();
@@ -71,14 +71,14 @@ public class GradoopGraphUtil implements GraphUtil{
 			String targetVertexIdGradoop = edges.get(i).getTargetId().toString();		
 			EdgeCustom edgeCustom = new EdgeCustom(edgeIdGradoop, edgeLabel, sourceVertexIdGradoop, targetVertexIdGradoop);
 			customEdges.add(edgeCustom);
-			for (VertexCustom sourceVertex: customVertices) {
-				if (sourceVertex.getIdGradoop().equals(sourceVertexIdGradoop)) {
-					for (VertexCustom targetVertex: customVertices) {
-						if (targetVertex.getIdGradoop().equals(targetVertexIdGradoop)) {
-							edgeRow.add(Row.of(graphId, edgeIdGradoop, edgeLabel, sourceVertexIdGradoop, sourceVertex.getIdNumeric(), 
-									sourceVertex.getLabel(), sourceVertex.getX(), sourceVertex.getY(), sourceVertex.getDegree(), targetVertexIdGradoop, 
-									targetVertex.getIdNumeric(), targetVertex.getLabel(), targetVertex.getX(), targetVertex.getY(), 
-									targetVertex.getDegree()));
+			for (Row sourceVertex: customVertices) {
+				if (sourceVertex.getField(1).equals(sourceVertexIdGradoop)) {
+					for (Row targetVertex: customVertices) {
+						if (targetVertex.getField(1).equals(targetVertexIdGradoop)) {
+							edgeRow.add(Row.of(graphId, sourceVertexIdGradoop, sourceVertex.getField(2), 
+									sourceVertex.getField(3), sourceVertex.getField(4), sourceVertex.getField(5), sourceVertex.getField(6), 
+									targetVertexIdGradoop, targetVertex.getField(2), targetVertex.getField(3), targetVertex.getField(4), targetVertex.getField(5), 
+									targetVertex.getField(6), edgeIdGradoop, edgeLabel));
 						}
 					}
 				}
@@ -105,24 +105,23 @@ public class GradoopGraphUtil implements GraphUtil{
 				.filter("bool = 'true'")
 				.select("vertexId, degree");		
 			//sammeln von bool verändert Verhalten kritisch!
-		String fieldNames = "graphId, edgeIdGradoop, edgeLabel, sourceIdGradoop, sourceIdNumeric, sourceLabel, sourceX, sourceY, sourceDegree, targetIdGradoop,"
-				+ "targetIdNumeric, targetLabel, targetX, targetY, targetDegree";
+		String fieldNames = "graphId, sourceIdGradoop, sourceIdNumeric, sourceLabel, sourceX, sourceY, sourceDegree, targetIdGradoop,"
+				+ "targetIdNumeric, targetLabel, targetX, targetY, targetDegree, edgeIdGradoop, edgeLabel";
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(fieldNames);
 		wrapperTable = wrapperTable.join(degreeTable).where("sourceIdGradoop = vertexId").select(fieldNames);
 		wrapperTable = wrapperTable.join(degreeTable).where("targetIdGradoop = vertexId").select(fieldNames);
 		RowTypeInfo rowTypeInfoWrappers = new RowTypeInfo(new TypeInformation[] {
-				Types.STRING,
-				Types.STRING, Types.STRING, Types.STRING, Types.INT, Types.STRING, 
+				Types.STRING, Types.STRING, Types.INT, Types.STRING, 
 				Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, 
-				Types.INT, Types.INT, Types.LONG
-				}, new String[] {"graphId", "edgeIdGradoop", "edgeLabel", "sourceIdGradoop", "sourceIdNumeric", "sourceLabel", "sourceX", 
-						"sourceY", "sourceDegree", "targetIdGradoop", "targetIdNumeric", "targetLabel", "targetX", "targetY", "targetDegree"});
+				Types.INT, Types.INT, Types.LONG,
+				Types.STRING, Types.STRING
+				}, new String[] {"graphId", "sourceIdGradoop", "sourceIdNumeric", "sourceLabel", "sourceX", "sourceY", "sourceDegree", 
+						"targetIdGradoop", "targetIdNumeric", "targetLabel", "targetX", "targetY", "targetDegree", "edgeIdGradoop", "edgeLabel"});
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = fsTableEnv.toRetractStream(wrapperTable, rowTypeInfoWrappers);	
 		return wrapperStream;
 	}
 
-	public DataStreamSource<VertexCustom> getVertexStream() throws Exception{
-		if (this.wrapperStream == null) throw new Exception("This function can only be used posterior to 'produceWrapperStream' invocation!");
+	public DataStreamSource<Row> getVertexStream(){
 		return this.vertexStream;
 	}
 	

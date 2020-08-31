@@ -147,18 +147,14 @@ TODO: Adjanzenz-Matrix für die Variante ohne Layout implementieren
 TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem subset an Knoten durchführen, möglicherweise ist das hilfreich
 TODO: Bei der Zoom-Operation werden redudante wrapper gesendet. Für GradoopGraphUtil muss der Knoten-Lösch-Mechanismus im FrontEnd angepasst werden, weil der Zähler der Inzidenz-Map sonst fehlerhaft ist.
 	- Eine Möglichkeit: Am Ende der Operation alle Map-Values auf 1 setzen.
-TODO: Alle GraphUtil-Klassen an CSVGraphUtilJoin anpassen
-TODO: Überlegung, ob eine Adjazenzmatrix nicht in jeder Art und Weise der BackEnd-Speicherung sinnvoll ist, weil Nachbarschaftsbeziehungen immer abgefragt werden müssen.
-TODO: ZoomOut implementieren:
-	- Es sollten wieder die Knoten mit größtem Grad angezeigt werden
-	- Wie wird gehandhabt, welche Knoten gelöscht werden?
-	- z.B. erst alle überschüssigen Knoten mit kleinstem Grad über der MaxZahl löschen und dann neu ankommende Knoten mit existierendem Set vergleichen (ähnlich CSVGraphUtilMap)
-TODO: Für alle Operationen die maximal zu visualisierende Knotenzahl implementieren!!
-	Panning: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
-	ZoomIn: Die Anzahl an gelöschten/nicht-gelöschten Knoten ins BackEnd übertragen und dort als Filter verwenden. Dabei muss zwischen Knoten innerhalb und außerhalb des Viewports unterschieden werden.
-TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits gesendet wurden.
-TODO: Troubleshooting: Bei hin und her pannen, werden immer mehr outside Kanten gelöscht
+TODO: Überlegung, ob eine Adjazenzmatrix nicht in jeder Art und Weise der BackEnd-Speicherung sinnvoll ist, weil Nachbarschaftsbeziehungen immer abgefragt werden müssen. Momentan wird dies über einen Vergleich mit bereits
+	visualisierten Kanten getan, diese Kantenmenge kann jedoch sehr groß werden.
+TODO: Die Adjazenzmatrix ist höchstens bei Nachbarschaftsabfragen sinnvoll, das heißt wenn z.B. ein Layout ad-hoc erstellt werden soll oder wenn geprüft werden soll, ob Nachbarknoten außerhalb des Zielbereichs dargestellt
+	werden sollten.
+TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
+	gesendet wurden.
 
+FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren müsste man also auf Java-HashMaps zurückgreifen
 
 
 BuildTopViewAppend:
@@ -181,6 +177,13 @@ Verschiedene Grundansätze der BackEnd-Struktur:
 		-	Join im BackEnd
 	-	Adjazenzmatrix/Index (für den Ansatz ohne PreLayout)
 	-	Darstellung als Tabelle mittels Table API
+	
+Adjazenzmatrix:
+	-	Konvertierung in Adjazenzmatrix und Speicherung der Matrix als CSV. Dabei sollten die Einträge in der Matrix Indizes für Kantenobjekte sein
+	-	Speicherung einer indizierten Kantentabelle als CSV
+	- 	Spericherung einer indizierten Knotentabelle als CSV
+
+
 	
 Zoom-PreLayout:
 	- neuer Koordinatenbereich wird definiert

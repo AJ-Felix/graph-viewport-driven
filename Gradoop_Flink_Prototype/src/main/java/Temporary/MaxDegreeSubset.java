@@ -14,7 +14,6 @@ import org.apache.flink.types.Row;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
 import aljoschaRydzyk.Gradoop_Flink_Prototype.EdgeCustom;
-import aljoschaRydzyk.Gradoop_Flink_Prototype.VertexCustom;
 
 
 

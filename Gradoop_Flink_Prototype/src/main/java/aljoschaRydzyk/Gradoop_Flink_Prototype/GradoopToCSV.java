@@ -13,6 +13,8 @@ import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
 import org.gradoop.common.model.impl.pojo.EPGMVertex;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
+import Temporary.VertexCustom;
+
 //graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
 //targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
 
@@ -34,7 +36,6 @@ public class GradoopToCSV {
 	}
 	
 	public static class VertexDegreeComparator implements Comparator<EPGMVertex>{
-
 		@Override
 		public int compare(EPGMVertex v1, EPGMVertex v2) {
 			if (v1.getPropertyValue("degree").getLong() > v2.getPropertyValue("degree").getLong()) return -1;
@@ -148,5 +149,32 @@ public class GradoopToCSV {
 			wrapperWriter.write(stringBuilder.toString());
 		}
 		wrapperWriter.close();
+		File adjacencyFile = new File(outPath + "_adjacency");
+		adjacencyFile.createNewFile();
+		PrintWriter adjacencyWriter = new PrintWriter(adjacencyFile);
+		for (int i = 0; i < lVertices.size(); i++) 	{
+			StringBuilder stringBuilder = new StringBuilder();
+			for (int j = 0; j < lVertices.size(); j++) 	{
+				boolean incident = false;
+				EPGMEdge connectingEdge = null;
+				for (int k = 0; k < lEdges.size(); k++) 	{
+					EPGMEdge edge = lEdges.get(k);
+					if (edge.getSourceId().equals(lVertices.get(i).getId()) && edge.getTargetId().equals(lVertices.get(j).getId())) {
+						incident = true;
+						connectingEdge = edge;
+					}
+				}
+				if (incident) {
+					stringBuilder.append(connectingEdge.getId());
+				} else {
+					stringBuilder.append(0);
+				}
+				stringBuilder.append(";");
+			}
+			stringBuilder.substring(0, stringBuilder.length() - 1);
+			stringBuilder.append("\n");
+			adjacencyWriter.write(stringBuilder.toString());
+		}
+		adjacencyWriter.close();
 	}
 }

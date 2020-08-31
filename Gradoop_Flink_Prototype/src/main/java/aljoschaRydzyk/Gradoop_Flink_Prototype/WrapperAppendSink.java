@@ -3,7 +3,7 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.types.Row;
 
-public class WrapperSink implements SinkFunction<Row>{
+public class WrapperAppendSink implements SinkFunction<Row>{
 	@Override 
 	public void invoke(Row element, Context context) {
 		String sourceIdNumeric = element.getField(2).toString();

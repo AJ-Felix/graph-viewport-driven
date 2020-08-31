@@ -54,14 +54,14 @@ public class UndertowServer {
     public static void main(final String[] args) {
     	
 //    	BasicConfigurator.configure();
-//    	PrintStream fileOut = null;
-//		try {
-//			fileOut = new PrintStream("/home/aljoscha/out.txt");
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		System.setOut(fileOut);
+    	PrintStream fileOut = null;
+		try {
+			fileOut = new PrintStream("/home/aljoscha/out.txt");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.setOut(fileOut);
     	
         Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
                 .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
@@ -104,14 +104,14 @@ public class UndertowServer {
                 if (messageData.startsWith("edgeIdString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
-                	String removed = list.remove(0);
+                	list.remove(0);
                 	Set<String> visualizedWrappers = new HashSet<String>(list);
                 	flinkCore.setVisualizedWrappers(visualizedWrappers);
                 }
                 if (messageData.startsWith("vertexIdString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
-                	String removed = list.remove(0);
+                	list.remove(0);
                 	Set<String> visualizedVertices = new HashSet<String>(list);
                 	flinkCore.setVisualizedVertices(visualizedVertices);
                 }
@@ -121,71 +121,19 @@ public class UndertowServer {
         				if (arrMessageData[1].equals("retract")) {
 	        			flinkCore.initializeGradoopGraphUtil();
 	        			DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract();
-	        			wrapperStream.addSink(new SinkFunction<Tuple2<Boolean,Row>>(){
-	        				@Override 
-	        				public void invoke(Tuple2<Boolean, Row> element, Context context) {
-	        					String sourceIdNumeric = element.f1.getField(4).toString();
-	        					String sourceX = element.f1.getField(6).toString();
-	        					String sourceY = element.f1.getField(7).toString();
-	        					String edgeIdGradoop = element.f1.getField(1).toString();
-	        					String targetIdNumeric = element.f1.getField(10).toString();
-	        					String targetX = element.f1.getField(12).toString();
-	        					String targetY = element.f1.getField(13).toString();
-	        					if (element.f0) {
-	        						UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
-	        							";" + sourceX + ";" + sourceY);
-	        						if (!edgeIdGradoop.equals("identityEdge")) {
-	        						UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
-	        							";" + targetX + ";" + targetY);
-	        						UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
-	        							";" + sourceIdNumeric + ";" + targetIdNumeric);
-	        						}
-	        					} else if (!element.f0) {
-	        							UndertowServer.sendToAll("removeVertex;" + sourceIdNumeric + 
-	                							";" + sourceX + ";" + sourceY );
-	            					if (!edgeIdGradoop.equals("identityEdge")) {
-	        							UndertowServer.sendToAll("removeVertex;" + targetIdNumeric + 
-	                							";" + targetX + ";" + targetY );
-	        							UndertowServer.sendToAll("removeEdge" + edgeIdGradoop + 
-	        							";" + sourceIdNumeric + ";" + targetIdNumeric);
-	            					}
-	        					}
-	        				}
-	        			});
+	        			wrapperStream.addSink(new WrapperRetractSink());
         			} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
-//        				wrapperStream.print();
-        				wrapperStream.addSink(new WrapperSink());
-        			} else if (arrMessageData[1].equals("appendMap")) {
-        				flinkCore.initializeCSVGraphUtilMap();
-        				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendMap();
-        				wrapperStream.addSink(new SinkFunction<Row>(){
-	        				@Override
-	        				public void invoke(Row element, Context context) {
-	        					String sourceIdNumeric = element.getField(2).toString();
-	        					String sourceX = element.getField(4).toString();
-	        					String sourceY = element.getField(5).toString();
-	        					String sourceDegree = element.getField(6).toString();
-	        					String edgeIdGradoop = element.getField(13).toString();
-	        					String targetIdNumeric = element.getField(8).toString();
-	        					String targetX = element.getField(10).toString();
-	        					String targetY = element.getField(11).toString();
-	        					String targetDegree = element.getField(12).toString();
-        						UndertowServer.sendToAll("addWrapper;" + edgeIdGradoop + ";" +  sourceIdNumeric + 
-        							";" + sourceX + ";" + sourceY + ";" + sourceDegree + ";" + targetIdNumeric + 
-        							";" + targetX + ";" + targetY + ";" + targetDegree);
-	        				}
-	        			});
+        				wrapperStream.addSink(new WrapperAppendSink());
         			}
         			try {
         				flinkCore.getFsEnv().execute();
         			} catch (Exception e1) {
         				e1.printStackTrace();
         			}
-        			UndertowServer.sendToAll("fitGraph");
                 }
-    			if (messageData.startsWith("zoomIn")) {
+    			if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
         			Float xRenderPos = Float.parseFloat(arrMessageData[1]);
         			Float yRenderPos = Float.parseFloat(arrMessageData[2]);
@@ -198,29 +146,8 @@ public class UndertowServer {
 					flinkCore.setRightModelPos(rightModelPos);
 					flinkCore.setBottomModelPos(bottomModelPos);
 					flinkCore.setLeftModelPos(leftModelPos);
-        			DataStream<Row> wrapperStream = flinkCore.zoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-					wrapperStream.addSink(new WrapperSink());
-					try {
-						flinkCore.getFsEnv().execute();
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-    			}
-    			if (messageData.startsWith("zoomOut")) {
-        			String[] arrMessageData = messageData.split(";");
-        			Float xRenderPos = Float.parseFloat(arrMessageData[1]);
-        			Float yRenderPos = Float.parseFloat(arrMessageData[2]);
-        			zoomLevel = Float.parseFloat(arrMessageData[3]);
-        			Float topModelPos = (- yRenderPos / zoomLevel);
-        			Float leftModelPos = (- xRenderPos /zoomLevel);
-        			Float bottomModelPos = (topModelPos + viewportPixelY / zoomLevel);
-        			Float rightModelPos = (leftModelPos + viewportPixelX / zoomLevel);
-					flinkCore.setTopModelPos(topModelPos);
-					flinkCore.setRightModelPos(rightModelPos);
-					flinkCore.setBottomModelPos(bottomModelPos);
-					flinkCore.setLeftModelPos(leftModelPos);
-        			DataStream<Row> wrapperStream = flinkCore.zoomIn(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-					wrapperStream.addSink(new WrapperSink());
+        			DataStream<Row> wrapperStream = flinkCore.zoom(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+					wrapperStream.addSink(new WrapperAppendSink());
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
@@ -240,7 +167,7 @@ public class UndertowServer {
 					flinkCore.setBottomModelPos(bottomModelPos + yModelDiff);
 					flinkCore.setLeftModelPos(leftModelPos + xModelDiff);
 					flinkCore.setRightModelPos(rightModelPos + xModelDiff);
-					wrapperStream.addSink(new WrapperSink());
+					wrapperStream.addSink(new WrapperAppendSink());
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
@@ -252,7 +179,7 @@ public class UndertowServer {
     		        flinkCore = new FlinkCore();
         			flinkCore.initializeCSVGraphUtilJoin();
         			DataStream<Row> wrapperStream = flinkCore.displayAll();
-					wrapperStream.addSink(new WrapperSink());
+					wrapperStream.addSink(new WrapperAppendSink());
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
