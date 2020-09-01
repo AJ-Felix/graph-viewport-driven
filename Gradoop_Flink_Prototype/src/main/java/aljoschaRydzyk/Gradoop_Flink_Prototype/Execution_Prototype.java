@@ -143,7 +143,7 @@ public class Execution_Prototype {
 //
 			GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
 			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2"); 			//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			GradoopToCSV.parseGradoopToCSV(log, "/home/aljoscha/graph-viewport-driven/csvGraphs/one10thousand_sample_2_third_degrees_layout");
+			GradoopToCSV.parseGradoopToCSV(log, "/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout");
 //			
 //			DataStream<Tuple2<Boolean, Row>> ds_degree = FlinkGradoopVerticesLoader.load(fsTableEnv, 10);
 //			ds_degree.print().setParallelism(1);

@@ -2,10 +2,14 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -20,6 +24,7 @@ import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.Collector;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.io.api.DataSource;
@@ -323,6 +328,12 @@ public class FlinkCore {
 			@Override
 			public boolean filter(Row value) throws Exception {
 				return !(visualizedWrappers.contains(value.getField(13)));
+			}
+		});
+		wrapperStreamOldInNewIn.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				return false;
 			}
 		});
 		//

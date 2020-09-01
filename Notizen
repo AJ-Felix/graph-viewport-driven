@@ -153,8 +153,10 @@ TODO: Die Adjazenzmatrix ist höchstens bei Nachbarschaftsabfragen sinnvoll, das
 	werden sollten.
 TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
 	gesendet wurden.
+TODO: Die Reihenfolge der Flink Operationen für die Visualisierungsoperationen sollte optimiert oder zumindest einheitlich gestaltet werden.
 
-FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren müsste man also auf Java-HashMaps zurückgreifen
+FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren müsste man also auf Java-HashMaps zurückgreifen.
+
 
 
 BuildTopViewAppend:
@@ -182,6 +184,10 @@ Adjazenzmatrix:
 	-	Konvertierung in Adjazenzmatrix und Speicherung der Matrix als CSV. Dabei sollten die Einträge in der Matrix Indizes für Kantenobjekte sein
 	-	Speicherung einer indizierten Kantentabelle als CSV
 	- 	Spericherung einer indizierten Knotentabelle als CSV
+	-	Operationen:
+		- BuildTopView: Unverändert
+		- ZoomIn/pan/ZoomOut: Auswahl der Knoten im Zielbereich wird wie bisher durch den Knotengrad bestimmt. Die Auswahl an Kanten kann durch die Adjazenzmatrix bestimmt werden. Dafür z.B. für jeden Knoten im Zielbereich eine Map-Operation durchführen, sodass alle relevanten Nachbarn ausgewählt werden. Diese Auswahl dann ggf. noch durch die bereits visualisierten Kanten filtern, viellecht findet sich jedoch auch eine elegantere Variante.
+	-	Entweder wird die Adjazenz-Matrix als Java-HashMap implementiert und DataStreams werden aus Map-Operation mit dieser Map gebildet oder die Adjazenz-Matrix wird als Flink Table implementiert und joins werden verwendet. Intuitiv würde ich den Join weniger performant einschätzen, weil die Indexierung nicht ausgenutzt wird, sondern für jeden Knoten über die ganze Table iteriert wird.	
 
 
 	

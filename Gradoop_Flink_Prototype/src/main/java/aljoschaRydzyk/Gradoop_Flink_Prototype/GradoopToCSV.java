@@ -154,20 +154,24 @@ public class GradoopToCSV {
 		PrintWriter adjacencyWriter = new PrintWriter(adjacencyFile);
 		for (int i = 0; i < lVertices.size(); i++) 	{
 			StringBuilder stringBuilder = new StringBuilder();
+			GradoopId vId1 = lVertices.get(i).getId();
+			stringBuilder.append(vId1);
+			stringBuilder.append(";");
 			for (int j = 0; j < lVertices.size(); j++) 	{
 				boolean incident = false;
-				EPGMEdge connectingEdge = null;
+				GradoopId vId2 = lVertices.get(j).getId();
 				for (int k = 0; k < lEdges.size(); k++) 	{
 					EPGMEdge edge = lEdges.get(k);
-					if (edge.getSourceId().equals(lVertices.get(i).getId()) && edge.getTargetId().equals(lVertices.get(j).getId())) {
+					GradoopId sourceId = edge.getSourceId();
+					GradoopId targetId = edge.getTargetId();
+					if (sourceId.equals(vId1) && targetId.equals(vId2) || sourceId.equals(vId2) && targetId.equals(vId1)) {
 						incident = true;
-						connectingEdge = edge;
 					}
 				}
 				if (incident) {
-					stringBuilder.append(connectingEdge.getId());
+					stringBuilder.append(vId2 + "," + "1");
 				} else {
-					stringBuilder.append(0);
+					stringBuilder.append(vId2 + "," + "0");
 				}
 				stringBuilder.append(";");
 			}
