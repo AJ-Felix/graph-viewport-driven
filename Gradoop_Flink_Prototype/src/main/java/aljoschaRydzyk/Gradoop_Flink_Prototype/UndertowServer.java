@@ -106,14 +106,14 @@ public class UndertowServer {
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
                 	Set<String> visualizedWrappers = new HashSet<String>(list);
-                	flinkCore.setVisualizedWrappers(visualizedWrappers);
+                	flinkCore.getGraphUtil().setVisualizedWrappers(visualizedWrappers);
                 }
                 if (messageData.startsWith("vertexIdString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
                 	Set<String> visualizedVertices = new HashSet<String>(list);
-                	flinkCore.setVisualizedVertices(visualizedVertices);
+                	flinkCore.getGraphUtil().setVisualizedVertices(visualizedVertices);
                 }
                 if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore();
@@ -125,6 +125,10 @@ public class UndertowServer {
         			} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
+        				wrapperStream.addSink(new WrapperAppendSink());
+        			} else if (arrMessageData[1].contentEquals("adjacency")) {
+        				flinkCore.initializeAdjacencyGraphUtil();
+        				DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
         				wrapperStream.addSink(new WrapperAppendSink());
         			}
         			try {

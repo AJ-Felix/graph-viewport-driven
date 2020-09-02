@@ -140,6 +140,13 @@ function sendSignalAppendMap(){
 	ws.send("buildTopView;appendMap");
 }
 
+function sendSignalAdjacency(){
+	handler = new AppendHandler();
+	handler.operation = "initial";
+	handler.newVerticesMap = new Map();
+	ws.send("buildTopView;adjacency");
+}
+
 function zoomOut(){
 	handler.operation = "zoomOut";
 	const topModel = 0;

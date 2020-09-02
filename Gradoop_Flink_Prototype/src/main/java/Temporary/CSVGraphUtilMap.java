@@ -27,7 +27,7 @@ public class CSVGraphUtilMap implements GraphUtil{
 	}
 	
 	@Override
-	public DataStream<Row> produceWrapperStream() {
+	public DataStream<Row> initializeStreams() {
 		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "_wrappers"));
 		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,

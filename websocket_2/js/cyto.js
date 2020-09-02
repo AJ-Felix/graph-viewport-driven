@@ -46,7 +46,7 @@ var cy = cytoscape({
   },
   
     // initial viewport state:
-  zoom: 1,
+  zoom: 0.25,
   pan: { x: 0, y: 0 },
 
   // interaction options:

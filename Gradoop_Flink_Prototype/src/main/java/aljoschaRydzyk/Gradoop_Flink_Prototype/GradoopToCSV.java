@@ -7,6 +7,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.math3.geometry.spherical.twod.Edge;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
 import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
@@ -159,6 +161,7 @@ public class GradoopToCSV {
 			stringBuilder.append(";");
 			for (int j = 0; j < lVertices.size(); j++) 	{
 				boolean incident = false;
+				EPGMEdge connectingEdge = null;
 				GradoopId vId2 = lVertices.get(j).getId();
 				for (int k = 0; k < lEdges.size(); k++) 	{
 					EPGMEdge edge = lEdges.get(k);
@@ -166,14 +169,13 @@ public class GradoopToCSV {
 					GradoopId targetId = edge.getTargetId();
 					if (sourceId.equals(vId1) && targetId.equals(vId2) || sourceId.equals(vId2) && targetId.equals(vId1)) {
 						incident = true;
+						connectingEdge = edge;
 					}
 				}
 				if (incident) {
-					stringBuilder.append(vId2 + "," + "1");
-				} else {
-					stringBuilder.append(vId2 + "," + "0");
-				}
-				stringBuilder.append(";");
+					stringBuilder.append(vId2 + "," + connectingEdge.getId());
+					stringBuilder.append(";");
+				} 
 			}
 			stringBuilder.substring(0, stringBuilder.length() - 1);
 			stringBuilder.append("\n");

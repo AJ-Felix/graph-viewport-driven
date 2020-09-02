@@ -1,9 +1,11 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -43,7 +45,7 @@ public class GradoopGraphUtil implements GraphUtil{
 	}
 	
 	@Override
-	public DataStreamSource<Row> produceWrapperStream() throws Exception{
+	public DataStreamSource<Row> initializeStreams() throws Exception{
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
 		List<EPGMVertex> vertices = this.graph.getVertices().collect();
 		this.vertexIdMap = new HashMap<String, Integer>();
@@ -90,7 +92,6 @@ public class GradoopGraphUtil implements GraphUtil{
 		return this.wrapperStream;
 	}
 	
-	@Override
 	public DataStream<Row> getWrapperStream() {
 		return this.wrapperStream;
 	}
@@ -153,6 +154,32 @@ public class GradoopGraphUtil implements GraphUtil{
 			accumulator.v_id = v_id;
 			accumulator.degree = degree;
 		}
+	}
+
+	@Override
+	public DataStream<Row> zoom(Float topModel, Float rightModel, Float bottomModel, Float leftModel)
+			throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff,
+			Float yModelDiff) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setVisualizedVertices(Set<String> visualizedVertices) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setVisualizedWrappers(Set<String> visualizedWrappers) {
+		// TODO Auto-generated method stub
+		
 	}
 
 

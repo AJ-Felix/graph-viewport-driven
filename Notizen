@@ -154,8 +154,9 @@ TODO: Die Adjazenzmatrix ist höchstens bei Nachbarschaftsabfragen sinnvoll, das
 TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
 	gesendet wurden.
 TODO: Die Reihenfolge der Flink Operationen für die Visualisierungsoperationen sollte optimiert oder zumindest einheitlich gestaltet werden.
+TODO: CODE AUFRÄUMEN!
 
-FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren müsste man also auf Java-HashMaps zurückgreifen.
+FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
 
 
