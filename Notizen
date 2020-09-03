@@ -143,18 +143,15 @@ Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welc
 
 TODO: PreLayout-WrappersCSV: WrapperCSV in kleinere Stücke geordnet nach Koordinaten aufteilen, um eine Vorfilterung für Zoom- und Pan-Operationen zu realisieren
 	- aber ebenfalls die ungestückelte Variante implementiert lassen für den Vergleich
-TODO: Adjanzenz-Matrix für die Variante ohne Layout implementieren
 TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem subset an Knoten durchführen, möglicherweise ist das hilfreich
-TODO: Bei der Zoom-Operation werden redudante wrapper gesendet. Für GradoopGraphUtil muss der Knoten-Lösch-Mechanismus im FrontEnd angepasst werden, weil der Zähler der Inzidenz-Map sonst fehlerhaft ist.
-	- Eine Möglichkeit: Am Ende der Operation alle Map-Values auf 1 setzen.
+TODO: Die Inzidenz wird bei Zoom-Out nicht verringert!!! Inwiefern könnte das problematisch werden. Inwiefern ist das Inzidenzkonzept überhaupt notwendig?
 TODO: Überlegung, ob eine Adjazenzmatrix nicht in jeder Art und Weise der BackEnd-Speicherung sinnvoll ist, weil Nachbarschaftsbeziehungen immer abgefragt werden müssen. Momentan wird dies über einen Vergleich mit bereits
 	visualisierten Kanten getan, diese Kantenmenge kann jedoch sehr groß werden.
 TODO: Die Adjazenzmatrix ist höchstens bei Nachbarschaftsabfragen sinnvoll, das heißt wenn z.B. ein Layout ad-hoc erstellt werden soll oder wenn geprüft werden soll, ob Nachbarknoten außerhalb des Zielbereichs dargestellt
 	werden sollten.
 TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
 	gesendet wurden.
-TODO: Die Reihenfolge der Flink Operationen für die Visualisierungsoperationen sollte optimiert oder zumindest einheitlich gestaltet werden.
-TODO: CODE AUFRÄUMEN!
+
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 

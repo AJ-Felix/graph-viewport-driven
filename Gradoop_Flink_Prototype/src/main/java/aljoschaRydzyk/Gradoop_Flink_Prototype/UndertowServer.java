@@ -16,19 +16,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.flink.api.common.JobExecutionResult;
-import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.runtime.rest.messages.MessageHeaders;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.types.Row;
-import org.apache.log4j.BasicConfigurator;
-
-import com.nextbreakpoint.flinkclient.api.ApiException;
-import com.nextbreakpoint.flinkclient.api.FlinkApi;
-
-import Temporary.Server;
 
 public class UndertowServer {
 	
@@ -43,13 +33,11 @@ public class UndertowServer {
     
     private static Float viewportPixelX = (float) 1000;
     private static Float viewportPixelY = (float) 1000;
-    private static Float modelPixelX = (float) 4000;
-    private static Float modelPixelY = (float) 4000;
     private static float zoomLevel = 1;
     
 //    private static FlinkApi api = new FlinkApi();
     
-    private static JobID jobId;
+//    private static JobID jobId;
 	
     public static void main(final String[] args) {
     	
@@ -68,8 +56,8 @@ public class UndertowServer {
                     channels.add(channel);
                     channel.getReceiveSetter().set(getListener());
                     channel.resumeReceives();
-                })).addPrefixPath("/", resource(new ClassPathResourceManager(Server.class.getClassLoader(),
-                        Server.class.getPackage())).addWelcomeFiles("index.html")/*.setDirectoryListingEnabled(true)*/))
+                })).addPrefixPath("/", resource(new ClassPathResourceManager(UndertowServer.class.getClassLoader(),
+                        UndertowServer.class.getPackage())).addWelcomeFiles("index.html")/*.setDirectoryListingEnabled(true)*/))
                 .build();
         server.start();
         System.out.println("Server started!");
@@ -120,7 +108,7 @@ public class UndertowServer {
                 	String[] arrMessageData = messageData.split(";");
         				if (arrMessageData[1].equals("retract")) {
 	        			flinkCore.initializeGradoopGraphUtil();
-	        			DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract();
+	        			DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract(maxVertices);
 	        			wrapperStream.addSink(new WrapperRetractSink());
         			} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
@@ -133,8 +121,8 @@ public class UndertowServer {
         			}
         			try {
         				flinkCore.getFsEnv().execute();
-        			} catch (Exception e1) {
-        				e1.printStackTrace();
+        			} catch (Exception e) {
+        				e.printStackTrace();
         			}
                 }
     			if (messageData.startsWith("zoom")) {

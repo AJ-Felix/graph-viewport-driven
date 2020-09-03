@@ -2,7 +2,6 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
@@ -12,27 +11,19 @@ import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
-import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction.Context;
-import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 
 public class AdjacencyGraphUtil implements GraphUtil{
 	private StreamExecutionEnvironment fsEnv;
-	private StreamTableEnvironment fsTableEnv;
 	private String inPath;
-	private DataStream<Row> wrapperStream = null;
 	private DataStreamSource<Row> vertexStream = null;
 	private Map<String,Map<String,String>> adjMatrix;
 	private Map<String,Row> wrapperMap;
@@ -40,43 +31,143 @@ public class AdjacencyGraphUtil implements GraphUtil{
 	private Set<String> visualizedWrappers;
 	private Set<String> visualizedVertices;
 	
-	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, StreamTableEnvironment fsTableEnv, String inPath) {
+	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, String inPath) {
 		this.fsEnv = fsEnv;
-		this.fsTableEnv = fsTableEnv;
 		this.inPath = inPath;
 	}
 
 	@Override
-	public DataStream<Row> initializeStreams() {
-//		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "_wrappers"));
-//		RowCsvInputFormat wrappersFormatIdentity = new RowCsvInputFormat(wrappersFilePath, new TypeInformation[] {Types.STRING, Types.STRING, 
-//				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
-//				Types.STRING, Types.STRING});
-//		wrappersFormatIdentity.setFieldDelimiter(";");
-//		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, new TypeInformation[] {Types.STRING, Types.STRING, 
-//				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
-//				Types.STRING, Types.STRING});
-//		wrappersFormat.setFieldDelimiter(";");
-//		DataStream<Row> wrapperStreamIdentity = this.fsEnv.readFile(wrappersFormatIdentity, this.inPath + "_vertices").setParallelism(1);
-//		this.wrapperStream = wrapperStreamIdentity.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "_wrappers").setParallelism(1));
+	public void initializeStreams() {
 		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {Types.STRING, Types.STRING, Types.INT, Types.STRING, 
 				Types.INT, Types.INT, Types.LONG});
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
-		return this.wrapperStream;
+	}
+	
+	@Override
+	public DataStream<Row> getVertexStream() {
+		return this.vertexStream;
+	}
+
+	@Override
+	public void setVisualizedVertices(Set<String> visualizedVertices) {
+		this.visualizedVertices = visualizedVertices;
+	}
+
+	@Override
+	public void setVisualizedWrappers(Set<String> visualizedWrappers) {
+		this.visualizedWrappers = visualizedWrappers;
+	}
+	
+	@Override
+	public DataStream<Row> zoom(Float topModel, Float rightModel, Float bottomModel, Float leftModel) throws IOException {
+		DataStream<Row> vertexStreamInner = this.getVertexStream().filter(new VertexFilterInner(topModel, rightModel, bottomModel, leftModel));
+		Map<String, Map<String, String>> adjMatrix = this.buildAdjacencyMatrix();
+		Map<String, Row> vertexMap = this.buildVertexMap();
+		
+		//produce NonIdentity Wrapper Stream
+		DataStream<String> wrapperKeys = vertexStreamInner.flatMap(new FlatMapFunction<Row,String>(){
+			@Override
+			public void flatMap(Row value, Collector<String> out) throws Exception {
+				String sourceId = (String) value.getField(1);
+				Map<String,String> map = adjMatrix.get(sourceId);
+				for (Map.Entry<String, String> entry : map.entrySet()) {
+					String targetId = entry.getKey();
+					Row targetVertex = vertexMap.get(targetId);
+					Integer targetX = (Integer) targetVertex.getField(4);
+					Integer targetY = (Integer) targetVertex.getField(5);
+					if ((leftModel > targetX) ||  (targetX > rightModel) || (topModel > targetY) || (targetY > bottomModel)) {
+						out.collect(entry.getValue());
+					} else {
+						if (sourceId.compareTo(targetId) < 0) {
+							out.collect(entry.getValue());
+						}
+					}
+				}
+			}
+		});
+		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
+		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		
+		//produce Identity Wrapper Stream
+		DataStream<Row> identityWrapper = vertexStreamInner.map(new VertexMapIdentityWrapper());
+		Set<String> visualizedVertices = this.visualizedVertices;
+		identityWrapper = identityWrapper.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				return !(visualizedVertices.contains(value.getField(2).toString()));
+			}
+		});
+		
+		return nonIdentityWrapper.union(identityWrapper);
+	}
+	
+	@Override
+	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff) throws IOException{
+		Float topNew = topOld + yModelDiff;
+		Float rightNew = rightOld + xModelDiff;
+		Float bottomNew = bottomOld + yModelDiff;
+		Float leftNew = leftOld + xModelDiff;
+		DataStream<Row> vertexStreamInnerNewNotOld = this.vertexStream
+			.filter(new VertexFilterInnerNewNotOld(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
+		Map<String, Row> vertexMap = this.vertexMap;
+
+		//produce NonIdentity Wrapper Stream
+		DataStream<String> wrapperKeysDefNotVis = vertexStreamInnerNewNotOld.flatMap(new FlatMapFunction<Row,String>(){
+			@Override
+			public void flatMap(Row value, Collector<String> out) throws Exception {			
+				String sourceId = (String) value.getField(1);
+				Map<String,String> map = adjMatrix.get(sourceId);
+				for (Map.Entry<String, String> entry : map.entrySet()) {
+					String targetId = entry.getKey();
+					Row targetVertex = vertexMap.get(targetId);
+					Integer targetX = (Integer) targetVertex.getField(4);
+					Integer targetY = (Integer) targetVertex.getField(5);
+					if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) && 
+							((leftNew > targetX) || (targetX > rightNew) || (topNew > targetY) || (targetY > bottomNew))) {
+						out.collect(entry.getValue());
+					} else {
+						if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) 
+								&& (sourceId.compareTo(targetId) < 0)) {
+							out.collect(entry.getValue());
+						}
+					}
+				}
+			}
+		});
+		DataStream<Row> wrapperDefNotVis = wrapperKeysDefNotVis.map(new WrapperIDMapWrapper(this.wrapperMap));
+		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream
+				.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+		DataStream<String> wrapperKeysMaybeVis = vertexStreamOldInnerNotNewInner.flatMap(new FlatMapFunction<Row,String>(){
+			@Override
+			public void flatMap(Row value, Collector<String> out) throws Exception {			
+				String sourceId = (String) value.getField(1);
+				Map<String,String> map = adjMatrix.get(sourceId);
+				for (Map.Entry<String, String> entry : map.entrySet()) {
+					String targetId = entry.getKey();
+					Row targetVertex = vertexMap.get(targetId);
+					Integer targetX = (Integer) targetVertex.getField(4);
+					Integer targetY = (Integer) targetVertex.getField(5);
+					if ((leftNew <= targetX) &&  (targetX <= rightNew) && (topNew <= targetY) && (targetY <= bottomNew)) {
+						out.collect(entry.getValue());
+					} 
+				}
+			}
+		});
+		DataStream<Row> wrapperMaybeVis = wrapperKeysMaybeVis.map(new WrapperIDMapWrapper(this.wrapperMap));
+		wrapperMaybeVis = wrapperMaybeVis.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		
+		//produce Identity Wrapper Stream
+		DataStream<Row> identityWrapper = vertexStreamInnerNewNotOld.map(new VertexMapIdentityWrapper());
+		return wrapperMaybeVis.union(wrapperDefNotVis).union(identityWrapper);
 	}
 	
 	public DataStream<Row> getMaxDegreeSubset(Integer numberVertices) throws IOException{
-		DataStream<Row> vertices = this.vertexStream.filter(new FilterFunction<Row>(){
-			@Override
-			public boolean filter(Row value) throws Exception {
-				if ((Integer) value.getField(2) < numberVertices) return true;
-				else return false;
-			}
-		});
+		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterMaxDegree(numberVertices));
 		Map<String, Map<String, String>> adjMatrix = this.buildAdjacencyMatrix();
-		Map<String, Row> wrapperMap = this.buildWrapperMap();
+		this.buildWrapperMap();
 		Map<String, Row> vertexMap = this.buildVertexMap();
 		
 		//produce NonIdentity Wrapper Stream
@@ -94,16 +185,10 @@ public class AdjacencyGraphUtil implements GraphUtil{
 				}
 			}
 		});
-		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new MapFunction<String,Row>(){
-			@Override
-			public Row map(String value) throws Exception {
-				return wrapperMap.get(value);
-			}
-		});
+		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapper());
-		
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
@@ -158,164 +243,4 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		csvReader.close();
 		return this.vertexMap;
 	}
-	
-	@Override
-	public DataStream<Row> zoom(Float topModel, Float rightModel, Float bottomModel, Float leftModel) throws IOException {
-		DataStream<Row> vertexStreamInner = this.getVertexStream().filter(new FilterFunction<Row>(){
-			@Override
-			public boolean filter(Row value) throws Exception {
-				Integer x = (Integer) value.getField(4);
-				Integer y = (Integer) value.getField(5);
-				return (leftModel <= x) &&  (x <= rightModel) && (topModel <= y) && (y <= bottomModel);
-			}
-		});
-		Map<String, Map<String, String>> adjMatrix = this.buildAdjacencyMatrix();
-		Map<String, Row> wrapperMap = this.buildWrapperMap();
-		Map<String, Row> vertexMap = this.buildVertexMap();
-		
-		//produce NonIdentity Wrapper Stream
-		DataStream<String> wrapperKeys = vertexStreamInner.flatMap(new FlatMapFunction<Row,String>(){
-			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {
-				String sourceId = (String) value.getField(1);
-				Map<String,String> map = adjMatrix.get(sourceId);
-				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetId = entry.getKey();
-					Row targetVertex = vertexMap.get(targetId);
-					Integer targetX = (Integer) targetVertex.getField(4);
-					Integer targetY = (Integer) targetVertex.getField(5);
-					if ((leftModel > targetX) ||  (targetX > rightModel) || (topModel > targetY) || (targetY > bottomModel)) {
-						out.collect(entry.getValue());
-					} else {
-						if (sourceId.compareTo(targetId) < 0) {
-							out.collect(entry.getValue());
-						}
-					}
-				}
-			}
-		});
-		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
-		Set<String> visualizedWrappers = this.visualizedWrappers;
-		nonIdentityWrapper = nonIdentityWrapper.filter(new FilterFunction<Row>() {
-			@Override
-			public boolean filter(Row value) throws Exception {
-				return !(visualizedWrappers.contains(value.getField(13)));
-			}
-		});
-		
-		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = vertexStreamInner.map(new VertexMapIdentityWrapper());
-		Set<String> visualizedVertices = this.visualizedVertices;
-		identityWrapper = identityWrapper.filter(new FilterFunction<Row>() {
-			@Override
-			public boolean filter(Row value) throws Exception {
-				return !(visualizedVertices.contains(value.getField(2).toString()));
-			}
-		});
-		
-		return nonIdentityWrapper.union(identityWrapper);
-	}
-	
-	@Override
-	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff) throws IOException{
-		Float topNew = topOld + yModelDiff;
-		Float rightNew = rightOld + xModelDiff;
-		Float bottomNew = bottomOld + yModelDiff;
-		Float leftNew = leftOld + xModelDiff;
-		DataStream<Row> vertexStreamInnerNew = this.vertexStream
-			.filter(new VertexFilterInnerNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
-		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
-		Map<String, Row> wrapperMap = this.wrapperMap;
-		Map<String, Row> vertexMap = this.vertexMap;
-
-		//produce NonIdentity Wrapper Stream
-		DataStream<String> wrapperKeysDefNotVis = vertexStreamInnerNew.flatMap(new FlatMapFunction<Row,String>(){
-			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {			
-				String sourceId = (String) value.getField(1);
-				Map<String,String> map = adjMatrix.get(sourceId);
-				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetId = entry.getKey();
-					Row targetVertex = vertexMap.get(targetId);
-					Integer targetX = (Integer) targetVertex.getField(4);
-					Integer targetY = (Integer) targetVertex.getField(5);
-					if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) && 
-							((leftNew > targetX) || (targetX > rightNew) || (topNew > targetY) || (targetY > bottomNew))) {
-						out.collect(entry.getValue());
-					} else {
-						if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) 
-								&& (sourceId.compareTo(targetId) < 0)) {
-							out.collect(entry.getValue());
-						}
-					}
-				}
-			}
-		});
-		DataStream<Row> wrapperDefNotVis = wrapperKeysDefNotVis.map(new MapFunction<String,Row>(){
-			@Override
-			public Row map(String value) throws Exception {
-				return wrapperMap.get(value);
-			}
-		});
-		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream
-				.filter(new FilterFunction<Row>() {
-					@Override
-					public boolean filter(Row value) throws Exception {
-						Integer x = (Integer) value.getField(4);
-						Integer y = (Integer) value.getField(5);
-						return (leftOld <= x) && (x <= rightOld) && (topOld <= y) && (y <= bottomOld) && 
-								((leftNew > x) || (x > rightNew) || (topNew > y) || (y > bottomNew));
-					}
-				});
-		DataStream<String> wrapperKeysMaybeVis = vertexStreamOldInnerNotNewInner.flatMap(new FlatMapFunction<Row,String>(){
-			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {			
-				String sourceId = (String) value.getField(1);
-				Map<String,String> map = adjMatrix.get(sourceId);
-				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetId = entry.getKey();
-					Row targetVertex = vertexMap.get(targetId);
-					Integer targetX = (Integer) targetVertex.getField(4);
-					Integer targetY = (Integer) targetVertex.getField(5);
-					if ((leftNew <= targetX) &&  (targetX <= rightNew) && (topNew <= targetY) && (targetY <= bottomNew)) {
-						out.collect(entry.getValue());
-					} 
-				}
-			}
-		});
-		DataStream<Row> wrapperMaybeVis = wrapperKeysMaybeVis.map(new MapFunction<String,Row>(){
-			@Override
-			public Row map(String value) throws Exception {
-				return wrapperMap.get(value);
-			}
-		});
-		Set<String> visualizedWrappers = this.visualizedWrappers;
-		wrapperMaybeVis = wrapperMaybeVis.filter(new FilterFunction<Row>() {
-			@Override
-			public boolean filter(Row value) throws Exception {
-				return !(visualizedWrappers.contains(value.getField(13)));
-			}
-		});
-		
-		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = vertexStreamInnerNew.map(new VertexMapIdentityWrapper());
-		
-		return wrapperMaybeVis.union(wrapperDefNotVis).union(identityWrapper);
-	}
-
-	@Override
-	public DataStream<Row> getVertexStream() {
-		return this.vertexStream;
-	}
-
-	@Override
-	public void setVisualizedVertices(Set<String> visualizedVertices) {
-		this.visualizedVertices = visualizedVertices;
-	}
-
-	@Override
-	public void setVisualizedWrappers(Set<String> visualizedWrappers) {
-		this.visualizedWrappers = visualizedWrappers;
-	}
-
 }

@@ -370,4 +370,5 @@ function clearOperation(){
 	} else if (handler.newVerticesMap.size == 1) {
 		handler.minDegreeVertex = handler.newVerticesMap.values().next().value;
 	}
+	console.log(handler.vertexGlobalMap);
 }

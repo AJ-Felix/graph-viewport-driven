@@ -5,7 +5,7 @@ import org.apache.flink.types.Row;
 
 public class WrapperAppendSink implements SinkFunction<Row>{
 	@Override 
-	public void invoke(Row element, Context context) {
+	public void invoke(Row element, @SuppressWarnings("rawtypes") Context context) {
 		String sourceIdNumeric = element.getField(2).toString();
 		String sourceX = element.getField(4).toString();
 		String sourceY = element.getField(5).toString();

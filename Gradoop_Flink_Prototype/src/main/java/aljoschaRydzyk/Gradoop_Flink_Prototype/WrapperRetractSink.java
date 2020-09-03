@@ -6,7 +6,7 @@ import org.apache.flink.types.Row;
 
 public class WrapperRetractSink implements SinkFunction<Tuple2<Boolean,Row>>{
 	@Override 
-	public void invoke(Tuple2<Boolean, Row> element, Context context) {
+	public void invoke(Tuple2<Boolean, Row> element, @SuppressWarnings("rawtypes") Context context) {
 		String sourceIdNumeric = element.f1.getField(2).toString();
 		String sourceDegree = element.f1.getField(6).toString();
 		String sourceX = element.f1.getField(4).toString();

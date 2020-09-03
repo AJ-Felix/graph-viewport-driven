@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.table.api.Table;
 import org.apache.flink.types.Row;
 
+//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
+//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
+
 public interface GraphUtil { 
-	DataStream<Row> initializeStreams() throws Exception;
+	void initializeStreams() throws Exception;
 	DataStream<Row> getVertexStream();
 	DataStream<Row> zoom(Float topModel, Float rightModel, Float bottomModel, Float leftModel) throws IOException;
 	DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff,

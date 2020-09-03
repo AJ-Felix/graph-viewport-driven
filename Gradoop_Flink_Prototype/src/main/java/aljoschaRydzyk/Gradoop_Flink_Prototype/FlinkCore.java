@@ -1,30 +1,14 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype; 
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.RowTypeInfo;
-import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.EnvironmentSettings;
-import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
-import org.apache.flink.util.Collector;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.io.api.DataSource;
@@ -33,8 +17,6 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
 import org.gradoop.storage.hbase.impl.factory.HBaseEPGMStoreFactory;
 import org.gradoop.storage.hbase.impl.io.HBaseDataSource;
-
-import Temporary.CSVGraphUtilMap;
 
 public class FlinkCore {
 	  private ExecutionEnvironment env;
@@ -50,6 +32,9 @@ public class FlinkCore {
 	  private Float bottomModelPos;
 	  private Float leftModelPos;
 	  private Float rightModelPos;
+	  private String vertexFields;
+	  private String wrapperFields;
+	  private String filePath;
 	  
 	public  FlinkCore () {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
@@ -61,14 +46,19 @@ public class FlinkCore {
 		org.apache.flink.configuration.Configuration conf = new Configuration();
 		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
+		this.vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
+		this.wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
+				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
+				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
+		this.filePath = "/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout";
 //		TestThread thread = new TestThread("prototype", fsEnv, this);
 //		thread.start();
 		System.out.println("initiated Flink.");
 
 	}
 	
-	public void setTopModelPos(Float topModelPos2) {
-		this.topModelPos = topModelPos2;
+	public void setTopModelPos(Float topModelPos) {
+		this.topModelPos = topModelPos;
 	}
 	
 	public Float gettopModelPos() {
@@ -113,7 +103,7 @@ public class FlinkCore {
 		LogicalGraph graph;
 		try {
 			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv);
+			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}	
@@ -121,19 +111,12 @@ public class FlinkCore {
 	}
 	
 	public GraphUtil initializeCSVGraphUtilJoin() {
-		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, 
-				"/home/aljoscha/graph-viewport-driven/csvGraphs/one10thousand_sample_2_third_degrees_layout");
-		return this.graphUtil;
-	}
-	
-	public GraphUtil initializeCSVGraphUtilMap() {
-		this.graphUtil = new CSVGraphUtilMap(this.fsEnv, "/home/aljoscha/graph-viewport-driven/csvGraphs/one10thousand_sample_2_third_degrees_layout");
+		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.filePath, this.vertexFields, this.wrapperFields);
 		return this.graphUtil;
 	}
 	
 	public GraphUtil initializeAdjacencyGraphUtil() {
-		this.graphUtil = new AdjacencyGraphUtil(this.fsEnv, this.fsTableEnv, 
-				"/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout");
+		this.graphUtil = new AdjacencyGraphUtil(this.fsEnv, this.filePath);
 		return this.graphUtil;
 	}
 	
@@ -141,8 +124,8 @@ public class FlinkCore {
 		return this.graphUtil;
 	}
 	
-	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(){
-		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, 10);
+	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(Integer maxVertices){
+		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, maxVertices);
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
 			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
@@ -158,11 +141,6 @@ public class FlinkCore {
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 		graphUtil.initializeStreams();
 		return graphUtil.getMaxDegreeSubset(maxVertices);
-	}
-	
-	public DataStream<Row> buildTopViewAppendMap(){
-		CSVGraphUtilMap graphUtil = ((CSVGraphUtilMap) this.graphUtil);
-		return graphUtil.initializeStreams();	
 	}
 	
 	public DataStream<Row> buildTopViewAdjacency(Integer maxVertices) {
@@ -199,6 +177,7 @@ public class FlinkCore {
 		
 	public DataStream<Row> displayAll() {
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
-		return graphUtil.initializeStreams();
+		graphUtil.initializeStreams();
+		return graphUtil.getWrapperStream();
 	}
 }

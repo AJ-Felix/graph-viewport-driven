@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.math3.geometry.spherical.twod.Edge;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
 import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
@@ -35,16 +34,6 @@ public class GradoopToCSV {
 				return -1;
 			}
 		}
-	}
-	
-	public static class VertexDegreeComparator implements Comparator<EPGMVertex>{
-		@Override
-		public int compare(EPGMVertex v1, EPGMVertex v2) {
-			if (v1.getPropertyValue("degree").getLong() > v2.getPropertyValue("degree").getLong()) return -1;
-			else if (v1.getPropertyValue("degree").getLong() == v2.getPropertyValue("degree").getLong()) return 0;
-			else return 1;
-		}
-		
 	}
 	
 	public static void parseGradoopToCSV(LogicalGraph graph, String outPath) throws Exception {

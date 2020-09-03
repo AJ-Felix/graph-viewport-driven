@@ -3,7 +3,7 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
-public class VertexFilterInnerNew implements FilterFunction<Row>{
+public class VertexFilterOuterBoth implements FilterFunction<Row> {
 	Float leftNew;
 	Float rightNew;
 	Float topNew;
@@ -13,7 +13,7 @@ public class VertexFilterInnerNew implements FilterFunction<Row>{
 	Float topOld;
 	Float bottomOld;
 	
-	public VertexFilterInnerNew(Float leftNew, Float rightNew, Float topNew, Float bottomNew, Float leftOld, Float rightOld, Float topOld,
+	public VertexFilterOuterBoth(Float leftNew, Float rightNew, Float topNew, Float bottomNew, Float leftOld, Float rightOld, Float topOld,
 			Float bottomOld) {
 		this.leftNew = leftNew;
 		this.rightNew = rightNew;
@@ -25,12 +25,11 @@ public class VertexFilterInnerNew implements FilterFunction<Row>{
 		this.bottomOld = bottomOld;
 		
 	}
-	
 	@Override
 	public boolean filter(Row value) throws Exception {
 		Integer x = (Integer) value.getField(4);
 		Integer y = (Integer) value.getField(5);
-		return (leftNew <= x) &&  (x <= rightNew) && (topNew <= y) && (y <= bottomNew)
-				&& ((leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld));
+		return ((leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld)) && 
+				((leftNew > x) || (x > rightNew) || (topNew > y) || (y > bottomNew));
 	}
 }
