@@ -1,6 +1,7 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -91,7 +92,6 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		
 		//produce wrappers containing only the subset of vertices
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		this.wrapperStream.addSink(new FlinkRowStreamPrintSink());
 		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
 		wrapperTable = wrapperTable.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
@@ -203,4 +203,42 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				.union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo));
 		return wrapperStream;
 	}
+	
+	//Prelayout functions
+	public DataStream<Row> zoomInLayout(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+		Iterator<String> iter = this.visualizedVertices.iterator();
+		while (iter.hasNext()) {
+			String vertexId = iter.next();
+		}
+		//set of visualized vertices and their position is given
+		//new position/zoomLevel is sent by client
+		//delete those vertices from the visualizedVertices set that are newly outside the viewport
+		//from the number of remaining vertices calculate the number of new vertices, maybe this is not necessary since the client controls this
+			//filtering a specific amount of stream data is not possible
+		//produce wrapper stream of neighbour vertices from those still/already visualized
+		//when there is still space for visualization produce wrapper stream from the neighbours neighbours and so on, 
+		//hopefully this can be controlled by consecutive execution of flink jobs
+		return null;
+	}
+	
+	public DataStream<Row> zoomOutLayout() {
+		//set of visualized vertices and their position is given
+		//new position/zoomLevel is sent by client
+		//produce wrapper stream of max degree vertices that have already been layouted
+		//produce wrapper stream of max degree vertices that have not been layouted. These could be added if they are neighbours of visualized vertices which
+			//are close to a sparse region of the viewport (how can this be defined?) AND if their degree is higher than at least one of the current visualized
+			//vertices (think about this again later...)
+		return null;
+	}
+	
+	public DataStream<Row> panLayout() {
+		//set of visualized vertices and their position is given
+		//new position is sent by client
+		//produce wrapper stream of max degree vertices that have already been layouted in the new region
+		//produce wrapper stream of max degree vertices that have not been layouted which are neighbours of those vertices close to the new region
+		//produce wrapper stream of max degree vertices that have not been layouted which are neighbours of higher degree vertices that have been layouted
+			//close to the new region
+		return null;
+	}
+	
 }

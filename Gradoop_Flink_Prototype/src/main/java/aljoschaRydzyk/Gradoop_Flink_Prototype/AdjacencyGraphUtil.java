@@ -218,16 +218,12 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		int i = 0;
 		while ((row = csvReader.readLine()) != null) {
 			i += 1;
-			System.out.println(i);
-			System.out.println(this.wrapperMap.size());
 		    String[] arr = row.split(";");
 		    Row wrapper = Row.of(arr[0], arr[1], Integer.parseInt(arr[2]), arr[3], Integer.parseInt(arr[4]), Integer.parseInt(arr[5]), Long.parseLong(arr[6]),
 		    		arr[7], Integer.parseInt(arr[8]), arr[9], Integer.parseInt(arr[10]), Integer.parseInt(arr[11]), Long.parseLong(arr[12]), arr[13], arr[14]);
 		    this.wrapperMap.put(arr[13], wrapper);
 		}
 		csvReader.close();
-		System.out.println("wrapperMap size");
-		System.out.println(wrapperMap.size());
 		return this.wrapperMap;
 	}
 	

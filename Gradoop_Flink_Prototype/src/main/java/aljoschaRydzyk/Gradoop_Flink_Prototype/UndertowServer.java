@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.types.Row;
@@ -113,7 +114,11 @@ public class UndertowServer {
         			} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
-        				wrapperStream.addSink(new WrapperAppendSink());
+//        				wrapperStream.addSink(new WrapperAppendSink());
+        				//This sink will put FrontEnd functionality to BackEnd
+	        				GraphVis graphVis = new GraphVis();
+	        				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapper());
+	        				wrapperStreamWrapper.addSink(new WrapperObjectSink(graphVis));
         			} else if (arrMessageData[1].contentEquals("adjacency")) {
         				flinkCore.initializeAdjacencyGraphUtil();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);

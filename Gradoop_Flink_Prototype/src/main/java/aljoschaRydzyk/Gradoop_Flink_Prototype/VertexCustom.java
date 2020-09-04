@@ -1,4 +1,4 @@
-package Temporary;
+package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 public class VertexCustom {
 	public String idGradoop;

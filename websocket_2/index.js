@@ -110,6 +110,15 @@ ws.onmessage = function (evt) {
 		case 'removeWrapper':
 			handler.addWrapperToQueue(dataArray, false);
 			break;
+		case 'addVertexServer':
+			cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
+			break;
+		case 'addEdgeServer':
+			cy.add({group : 'edges', data: {id: dataArray[1]}, source: dataArray[2], target: dataArray[3]});
+			break;
+		case: 'removeObjectServer':
+			cy.remove(cy.$id(dataArray[1]));
+			break;
 	}
 };
 
