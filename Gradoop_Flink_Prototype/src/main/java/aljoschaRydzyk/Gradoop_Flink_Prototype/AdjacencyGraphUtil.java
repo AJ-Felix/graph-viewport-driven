@@ -57,7 +57,13 @@ public class AdjacencyGraphUtil implements GraphUtil{
 
 	@Override
 	public void setVisualizedWrappers(Set<String> visualizedWrappers) {
+		System.out.println("vis wrappers");
+		System.out.println(visualizedWrappers);
 		this.visualizedWrappers = visualizedWrappers;
+	}
+	
+	public Map<String,Map<String,String>> getAdjMatrix(){
+		return this.adjMatrix;
 	}
 	
 	@Override

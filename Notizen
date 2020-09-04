@@ -151,6 +151,10 @@ TODO: Die Adjazenzmatrix ist höchstens bei Nachbarschaftsabfragen sinnvoll, das
 	werden sollten.
 TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
 	gesendet wurden.
+NOTE: Möglicherweise wäre es besser gewesen, alle Funktionalitäten die momentan der Client übernimmt auf den Server auszulagern. Das heißt, die Wrapper nicht einfach an den Client zu senden, sondern damit eine Struktur
+	zu füttern, welche die Funktionalitäten berücksichtigt und nur noch "addVertex", "removeVertex", "addEdge" usw. Befehle an den Client sendet.
+	ISSUE: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> nochmal beim Original-UndertowServer reinschauen
+
 
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.

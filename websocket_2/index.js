@@ -116,7 +116,7 @@ ws.onmessage = function (evt) {
 		case 'addEdgeServer':
 			cy.add({group : 'edges', data: {id: dataArray[1]}, source: dataArray[2], target: dataArray[3]});
 			break;
-		case: 'removeObjectServer':
+		case 'removeObjectServer':
 			cy.remove(cy.$id(dataArray[1]));
 			break;
 	}

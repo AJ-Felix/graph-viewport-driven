@@ -43,14 +43,14 @@ public class UndertowServer {
     public static void main(final String[] args) {
     	
 //    	BasicConfigurator.configure();
-    	PrintStream fileOut = null;
-		try {
-			fileOut = new PrintStream("/home/aljoscha/out.txt");
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.setOut(fileOut);
+//    	PrintStream fileOut = null;
+//		try {
+//			fileOut = new PrintStream("/home/aljoscha/out.txt");
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		System.setOut(fileOut);
     	
         Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
                 .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
@@ -114,21 +114,26 @@ public class UndertowServer {
         			} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
-//        				wrapperStream.addSink(new WrapperAppendSink());
-        				//This sink will put FrontEnd functionality to BackEnd
-	        				GraphVis graphVis = new GraphVis();
-	        				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapper());
-	        				wrapperStreamWrapper.addSink(new WrapperObjectSink(graphVis));
+        				wrapperStream.addSink(new WrapperAppendSink());
         			} else if (arrMessageData[1].contentEquals("adjacency")) {
         				flinkCore.initializeAdjacencyGraphUtil();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
-        				wrapperStream.addSink(new WrapperAppendSink());
+//        				wrapperStream.addSink(new WrapperAppendSink());
+        				//This sink will put FrontEnd functionality to BackEnd
+        					flinkCore.getGraphUtil().setVisualizedWrappers(new HashSet<String>());
+        					flinkCore.getGraphUtil().setVisualizedVertices(new HashSet<String>());
+		    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapper());
+		    				wrapperStreamWrapper.addSink(new WrapperObjectSink(flinkCore.getGraphVis()));
         			}
         			try {
         				flinkCore.getFsEnv().execute();
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
+        				//code belongs to frontEnd to BackEnd functionality
+        				System.out.println("before clear operation");
+        				flinkCore.getGraphVis().clearOperation();
+        				System.out.println("after clear operation");
                 }
     			if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
@@ -145,6 +150,12 @@ public class UndertowServer {
 					flinkCore.setLeftModelPos(leftModelPos);
         			DataStream<Row> wrapperStream = flinkCore.zoom(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 					wrapperStream.addSink(new WrapperAppendSink());
+						//This sink will put FrontEnd functionality to BackEnd
+	    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapper());
+	    				GraphVis graphVis = flinkCore.getGraphVis();
+	    				graphVis.setOperation("zoomIn");
+	    				graphVis.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+	    				wrapperStreamWrapper.addSink(new WrapperObjectSink(graphVis));
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {

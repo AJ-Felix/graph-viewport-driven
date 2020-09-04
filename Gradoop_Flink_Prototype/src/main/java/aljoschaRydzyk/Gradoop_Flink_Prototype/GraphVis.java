@@ -3,6 +3,7 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -21,11 +22,19 @@ public class GraphVis implements Serializable{
 	VertexCustom secondMinDegreeVertex;
 	VertexCustom minDegreeVertex;
 	Integer maxNumberVertices;
-	
-	public GraphVis() {
+	Map<String,Map<String,String>> adjMatrix;
+
+	public GraphVis(Map<String,Map<String,String>> adjMatrix) {
 		this.operation = "initial";
 		this.globalVertices = new HashMap<String,Map<String,Object>>();
 		this.innerVertices = new HashMap<String,VertexCustom>();
+		this.adjMatrix = adjMatrix;
+		this.edges = new HashSet<VVEdgeWrapper>();
+		this.maxNumberVertices = 10;
+	}
+	
+	public void setOperation(String operation) {
+		this.operation = operation;
 	}
 	
 	public void prepareOperation(Float topModel, Float rightModel, Float bottomModel, Float leftModel){
@@ -41,7 +50,6 @@ public class GraphVis implements Serializable{
 				Integer targetY = wrapper.getSourceY();
 				if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
 						((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
-					//CODE THAT SENDS cy.remove(edge)
 					UndertowServer.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 				}
 			}
@@ -202,14 +210,16 @@ public class GraphVis implements Serializable{
 		} else {
 			this.newVertices.remove(vertex.getIdGradoop());
 			this.globalVertices.remove(vertex.getIdGradoop());
-				//CODE THAT SEND CY.REMOVE(ObjectID) to client
 				UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 		}
 	}
 
-	private void reduceNeighborIncidence(VertexCustom minDegreeVertex2) {
-		//Either this functionality is provided by the client and the client sends back vertex ids of all vertices whose incidence should be reduced OR
-		//the server can take this functionality
+	private void reduceNeighborIncidence(VertexCustom vertex) {
+		Set<String> neighborIds = this.getNeighborhood(vertex);
+		for (String neighbor : neighborIds) {
+			Map<String,Object> map = this.globalVertices.get(neighbor);
+			map.put("incidence", (int) map.get("incidence") - 1); 
+		}
 	}
 
 	private void addWrapperIdentity(VertexCustom vertex) {
@@ -240,6 +250,8 @@ public class GraphVis implements Serializable{
 	public void addWrapperIdentityInitial(VertexCustom vertex) {
 		boolean added = this.addVertex(vertex);
 		if (added) this.innerVertices.put(vertex.getIdGradoop(), vertex);
+		System.out.println("addWrapperIdentityinitial  " + this.innerVertices.size());
+		for (Map.Entry<String, VertexCustom> entry : this.innerVertices.entrySet()) System.out.println(entry);
 	}
 	
 	public void addNonIdentityWrapperInitial(VVEdgeWrapper wrapper) {
@@ -249,7 +261,6 @@ public class GraphVis implements Serializable{
 		if (addedSource) this.innerVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 		boolean addedTarget = this.addVertex(targetVertex);
 		if (addedTarget) this.innerVertices.put(targetVertex.getIdGradoop(), targetVertex);
-			//CODE THAT SEND CY.ADDEDGE TO CLIENT
 			this.addEdge(wrapper);
 	}
 	
@@ -260,7 +271,6 @@ public class GraphVis implements Serializable{
 			map.put("incidence", (int) 1);
 			map.put("vertex", vertex);
 			this.globalVertices.put(sourceId, map);
-				//CODE THAT SENDS CY.ADDVERTEX TO CLIENT
 				UndertowServer.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
 			return true;
 		} else {
@@ -276,32 +286,38 @@ public class GraphVis implements Serializable{
 	}
 	
 	public void clearOperation(){
+		System.out.println("in clear operation 1");
 		if (this.operation != "initial"){
 			this.innerVertices.putAll(this.newVertices); 
 			for (Map.Entry<String, Map<String,Object>> entry : this.globalVertices.entrySet()) {
 				Map<String,Object> map = entry.getValue();
 				VertexCustom vertex = (VertexCustom) map.get("vertex");
 				if ((((vertex.getX() < this.leftModel) || (this.rightModel < vertex.getX()) || (vertex.getY() < this.topModel) || 
-						(this.bottomModel < vertex.getY())) 
-						//&& node.neighborhood().length == 0
-						//This functionality has to be provided by the Server
-						) || 
-						((vertex.getX() >= this.leftModel) && (this.rightModel >= vertex.getX()) && (vertex.getY() >= this.topModel) && 
+						(this.bottomModel < vertex.getY())) && this.adjMatrix.get(vertex.getIdGradoop()).isEmpty()) || 
+							((vertex.getX() >= this.leftModel) && (this.rightModel >= vertex.getX()) && (vertex.getY() >= this.topModel) && 
 								(this.bottomModel >= vertex.getY()) && !this.innerVertices.containsKey(vertex.getIdGradoop()))) {
-						//CODE THAT Sends Cy.remove(node) to client;
-						UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 					this.globalVertices.remove(vertex.getIdGradoop());
 				} 
 			}
 		} else {
+			System.out.println(this.innerVertices.size());
+			System.out.println(this.newVertices.size());
 			this.newVertices = this.innerVertices;
 		}
 		this.operation = null;
-		
+		System.out.println("in clear operation 2");
+		System.out.println(this.newVertices.size());
 		if (this.newVertices.size() > 1) {
 			this.updateMinDegreeVertices(this.newVertices);
 		} else if (this.newVertices.size() == 1) {
 			this.minDegreeVertex = this.newVertices.values().iterator().next();
 		}
+	}
+	
+	public Set<String> getNeighborhood(VertexCustom vertex){
+		Set<String> neighborIds = new HashSet<String>();
+		for (Map.Entry<String, String> entry : this.adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
+		return neighborIds;
 	}
 }

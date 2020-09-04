@@ -1,6 +1,8 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype; 
 
 import java.io.IOException;
+import java.util.Map;
+
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -28,6 +30,7 @@ public class FlinkCore {
 	  private StreamTableEnvironment fsTableEnv;
 	  
 	  private GraphUtil graphUtil;
+	  private GraphVis graphVis;
 	  private Float topModelPos;
 	  private Float bottomModelPos;
 	  private Float leftModelPos;
@@ -116,12 +119,17 @@ public class FlinkCore {
 	}
 	
 	public GraphUtil initializeAdjacencyGraphUtil() {
-		this.graphUtil = new AdjacencyGraphUtil(this.fsEnv, this.filePath);
+		this.graphUtil =  new AdjacencyGraphUtil(this.fsEnv, this.filePath);
+		this.graphVis = new GraphVis(((AdjacencyGraphUtil) this.graphUtil).getAdjMatrix());
 		return this.graphUtil;
 	}
 	
 	public GraphUtil getGraphUtil() {
 		return this.graphUtil;
+	}
+	
+	public GraphVis getGraphVis() {
+		return this.graphVis;
 	}
 	
 	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(Integer maxVertices){
