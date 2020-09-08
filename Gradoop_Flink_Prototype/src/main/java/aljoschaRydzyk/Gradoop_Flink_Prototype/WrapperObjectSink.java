@@ -5,14 +5,14 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction.Context;
 import org.apache.flink.types.Row;
 
 public class WrapperObjectSink implements SinkFunction<VVEdgeWrapper>{
-	private GraphVis graphVis;
+//	private GraphVis graphVis;
 	
-	public WrapperObjectSink(GraphVis graphVis) {
-		this.graphVis = graphVis;
+	public WrapperObjectSink() {
+//		this.graphVis = graphVis;
 	}
 	
 	@Override 
 	public void invoke(VVEdgeWrapper element, @SuppressWarnings("rawtypes") Context context) {
-		this.graphVis.addWrapper(element);
+		UndertowServer.addWrapper(element);
 	}
 }

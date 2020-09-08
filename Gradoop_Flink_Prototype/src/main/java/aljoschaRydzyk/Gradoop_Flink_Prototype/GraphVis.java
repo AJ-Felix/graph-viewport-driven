@@ -6,44 +6,61 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 public class GraphVis implements Serializable{
-	Map<String, Map<String,Object>> globalVertices;
-	Map<String, VertexCustom> innerVertices;
-	Map<String, VertexCustom> newVertices;
-	Set<VVEdgeWrapper> edges;
-	String operation;
-	Integer capacity;
-	Float topModel;
-	Float rightModel;
-	Float bottomModel;
-	Float leftModel;
-	VertexCustom secondMinDegreeVertex;
-	VertexCustom minDegreeVertex;
-	Integer maxNumberVertices;
-	Map<String,Map<String,String>> adjMatrix;
+	private static Map<String,Map<String,Object>> globalVertices;
+	private static Map<String,VertexCustom> innerVertices;
+	private static Map<String,VertexCustom> newVertices;
+	private static Set<VVEdgeWrapper> edges;
+	private static String operation;
+	private static Integer capacity;
+	private static Float topModel;
+	private static Float rightModel;
+	private static Float bottomModel;
+	private static Float leftModel;
+	private static VertexCustom secondMinDegreeVertex;
+	private static VertexCustom minDegreeVertex;
+	private static Integer maxNumberVertices;
+//	private static Map<String,Map<String,String>> adjMatrix;
 
-	public GraphVis(Map<String,Map<String,String>> adjMatrix) {
-		this.operation = "initial";
-		this.globalVertices = new HashMap<String,Map<String,Object>>();
-		this.innerVertices = new HashMap<String,VertexCustom>();
-		this.adjMatrix = adjMatrix;
-		this.edges = new HashSet<VVEdgeWrapper>();
-		this.maxNumberVertices = 10;
+	public GraphVis() {
 	}
 	
-	public void setOperation(String operation) {
-		this.operation = operation;
+	public static void setGraphVis(Map<String,Map<String,String>> adjMatrix) {
+		operation = "initial";
+		globalVertices = new HashMap<String,Map<String,Object>>();
+		innerVertices = new HashMap<String,VertexCustom>();
+		newVertices = new HashMap<String,VertexCustom>();
+//		GraphVis.adjMatrix = adjMatrix;
+		edges = new HashSet<VVEdgeWrapper>();
+		maxNumberVertices = 10;
 	}
 	
-	public void prepareOperation(Float topModel, Float rightModel, Float bottomModel, Float leftModel){
-		this.topModel = topModel;
-		this.rightModel = rightModel;
-		this.bottomModel = bottomModel;
-		this.leftModel = leftModel;
-		if (this.operation != "zoomOut"){
-			for (VVEdgeWrapper wrapper : this.edges) {
+//	public static Map<String,Map<String,String>> getAdjMatrix(){
+//		return adjMatrix;
+//	}
+	
+	public static Map<String,VertexCustom> getInnerVertices() {
+		return innerVertices;
+	}
+	
+	public static Map<String,Map<String,Object>> getGlobalVertices(){
+		return globalVertices;
+	}
+	
+	public static void setOperation(String operation) {
+		GraphVis.operation = operation;
+	}
+	
+	public static void prepareOperation(Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+		GraphVis.topModel = topModel;
+		GraphVis.rightModel = rightModel;
+		GraphVis.bottomModel = bottomModel;
+		GraphVis.leftModel = leftModel;
+		if (operation != "zoomOut"){
+			for (VVEdgeWrapper wrapper : edges) {
 				Integer sourceX = wrapper.getSourceX();
 				Integer sourceY = wrapper.getSourceY();
 				Integer targetX = wrapper.getTargetX();
@@ -53,271 +70,279 @@ public class GraphVis implements Serializable{
 					UndertowServer.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 				}
 			}
-			for (Map.Entry<String, VertexCustom> entry : this.innerVertices.entrySet()) {
+			Iterator<Map.Entry<String,VertexCustom>> iter = innerVertices.entrySet().iterator();
+			while (iter.hasNext()) {
+				Map.Entry<String,VertexCustom> entry = iter.next();
 				VertexCustom vertex = entry.getValue();
 				if ((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || (bottomModel < vertex.getY()))
-					this.innerVertices.remove(entry.getKey());
+					iter.remove();
 			}
-			this.capacity = this.maxNumberVertices - this.innerVertices.size();
+//			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
+//				VertexCustom vertex = entry.getValue();
+//				if ((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || (bottomModel < vertex.getY()))
+//					innerVertices.remove(entry.getKey());
+//			}
+			capacity = maxNumberVertices - innerVertices.size();
 		} else {
-			this.capacity = 0;
+			capacity = 0;
 		}
-		if (this.operation.equals("pan") || this.operation.equals("zoomOut")) {
-			this.newVertices = this.innerVertices;
+		if (operation.equals("pan") || operation.equals("zoomOut")) {
+			newVertices = innerVertices;
 		} else {
-			this.newVertices = new HashMap<String,VertexCustom>();
+			newVertices = new HashMap<String,VertexCustom>();
 		}
 	}
 	
-	public void addWrapper(VVEdgeWrapper wrapper) {
+	public static void addWrapper(VVEdgeWrapper wrapper) {
 		System.out.println(wrapper);
-		if (this.operation.equals("initial")) {
+		System.out.println("global Vertices " + globalVertices.size());
+		if (operation.equals("initial")) {
 			if (wrapper.getEdgeLabel().equals("identityEdge")) {
-				this.addWrapperIdentityInitial(wrapper.getSourceVertex());
+				addWrapperIdentityInitial(wrapper.getSourceVertex());
 			} else {
-				this.addNonIdentityWrapperInitial(wrapper);
+				addNonIdentityWrapperInitial(wrapper);
 			}
 		} else {
 			if (wrapper.getEdgeLabel().equals("identityEdge")) {
-				this.addWrapperIdentity(wrapper.getSourceVertex());
+				addWrapperIdentity(wrapper.getSourceVertex());
 			} else {
-				this.addNonIdentityWrapper(wrapper);
+				addNonIdentityWrapper(wrapper);
 			}
 		}
 	}
 	
-	private void addNonIdentityWrapper(VVEdgeWrapper wrapper) {
+	private static void addNonIdentityWrapper(VVEdgeWrapper wrapper) {
 		VertexCustom sourceVertex = wrapper.getSourceVertex();
 		VertexCustom targetVertex = wrapper.getTargetVertex();
-		if (this.capacity > 1) {
-			boolean addedSource = this.addVertex(sourceVertex);
-			if ((sourceVertex.getX() >= this.leftModel) && (this.rightModel >= sourceVertex.getX()) && (sourceVertex.getY() >= this.topModel) && 
-					(this.bottomModel >= sourceVertex.getY()) && addedSource){
-				this.updateMinDegreeVertex(sourceVertex);
-				this.newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-				this.capacity -= 1;
+		if (capacity > 1) {
+			boolean addedSource = addVertex(sourceVertex);
+			if ((sourceVertex.getX() >= leftModel) && (rightModel >= sourceVertex.getX()) && (sourceVertex.getY() >= topModel) && 
+					(bottomModel >= sourceVertex.getY()) && addedSource){
+				updateMinDegreeVertex(sourceVertex);
+				newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+				capacity -= 1;
 			}
-			boolean addedTarget = this.addVertex(targetVertex);
-			if ((targetVertex.getX() >= this.leftModel) && (this.rightModel >= targetVertex.getX()) && (targetVertex.getY() >= this.topModel) 
-					&& (this.bottomModel >= targetVertex.getY()) && addedTarget){
-				this.updateMinDegreeVertex(targetVertex);
-				this.newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-				this.capacity -= 1;
+			boolean addedTarget = addVertex(targetVertex);
+			if ((targetVertex.getX() >= leftModel) && (rightModel >= targetVertex.getX()) && (targetVertex.getY() >= topModel) 
+					&& (bottomModel >= targetVertex.getY()) && addedTarget){
+				updateMinDegreeVertex(targetVertex);
+				newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+				capacity -= 1;
 			}
-			this.addEdge(wrapper);
+			addEdge(wrapper);
 		} else {
 			boolean sourceIn = true;
 			boolean targetIn = true;
-			if ((sourceVertex.getX() < this.leftModel) || (this.rightModel < sourceVertex.getX()) || (sourceVertex.getY() < this.topModel) || 
-					(this.bottomModel < sourceVertex.getY())){
+			if ((sourceVertex.getX() < leftModel) || (rightModel < sourceVertex.getX()) || (sourceVertex.getY() < topModel) || 
+					(bottomModel < sourceVertex.getY())){
 				sourceIn = false;
 			}
-			if ((targetVertex.getX() < this.leftModel) || (this.rightModel < targetVertex.getX()) || (targetVertex.getY() < this.topModel) || 
-					(this.bottomModel < targetVertex.getY())){
+			if ((targetVertex.getX() < leftModel) || (rightModel < targetVertex.getX()) || (targetVertex.getY() < topModel) || 
+					(bottomModel < targetVertex.getY())){
 				targetIn = false;
 			}
-			if ((sourceIn && targetIn) && (sourceVertex.getDegree() > this.secondMinDegreeVertex.getDegree()) && 
-					(targetVertex.getDegree()> this.secondMinDegreeVertex.getDegree())) {
-				boolean addedSource = this.addVertex(sourceVertex);
-				boolean addedTarget = this.addVertex(targetVertex);
-				this.addEdge(wrapper);
+			if ((sourceIn && targetIn) && (sourceVertex.getDegree() > secondMinDegreeVertex.getDegree()) && 
+					(targetVertex.getDegree()> secondMinDegreeVertex.getDegree())) {
+				boolean addedSource = addVertex(sourceVertex);
+				boolean addedTarget = addVertex(targetVertex);
+				addEdge(wrapper);
 				if (addedSource && addedTarget) {
-					this.reduceNeighborIncidence(this.minDegreeVertex);
-					this.reduceNeighborIncidence(this.secondMinDegreeVertex);
-					this.removeVertex(this.secondMinDegreeVertex);
-					this.removeVertex(this.minDegreeVertex);
-					this.newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					this.newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-					this.updateMinDegreeVertices(this.newVertices);
+					reduceNeighborIncidence(minDegreeVertex);
+					reduceNeighborIncidence(secondMinDegreeVertex);
+					removeVertex(secondMinDegreeVertex);
+					removeVertex(minDegreeVertex);
+					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+					updateMinDegreeVertices(newVertices);
 				} else if (addedSource || addedTarget) {
-					this.reduceNeighborIncidence(this.minDegreeVertex);
-					this.removeVertex(this.minDegreeVertex);
-					if (this.newVertices.size() > 1) {
-						this.updateMinDegreeVertices(this.newVertices);
+					reduceNeighborIncidence(minDegreeVertex);
+					removeVertex(minDegreeVertex);
+					if (newVertices.size() > 1) {
+						updateMinDegreeVertices(newVertices);
 					} else if (addedSource) {
-						this.minDegreeVertex = sourceVertex;
+						minDegreeVertex = sourceVertex;
 					} else if (addedTarget) {
-						this.minDegreeVertex = targetVertex;
+						minDegreeVertex = targetVertex;
 					}
-					if (addedSource) this.newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					if (addedTarget) this.newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+					if (addedSource) newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+					if (addedTarget) newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 				}
-			} else if (sourceIn && !(targetIn) && sourceVertex.getDegree() > this.minDegreeVertex.getDegree()) {
-				boolean addedSource = this.addVertex(sourceVertex);
-				this.addVertex(targetVertex);
-				this.addEdge(wrapper);
+			} else if (sourceIn && !(targetIn) && sourceVertex.getDegree() > minDegreeVertex.getDegree()) {
+				boolean addedSource = addVertex(sourceVertex);
+				addVertex(targetVertex);
+				addEdge(wrapper);
 				if (addedSource) {
-					this.reduceNeighborIncidence(this.minDegreeVertex);
-					this.removeVertex(this.minDegreeVertex);
-					if (this.newVertices.size() > 1) {
-						this.updateMinDegreeVertices(this.newVertices);
+					reduceNeighborIncidence(minDegreeVertex);
+					removeVertex(minDegreeVertex);
+					if (newVertices.size() > 1) {
+						updateMinDegreeVertices(newVertices);
 					} else {
-						this.minDegreeVertex = sourceVertex;
+						minDegreeVertex = sourceVertex;
 					} 
-					this.newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 				}
-			} else if (targetIn && !(sourceIn) && targetVertex.getDegree() > this.minDegreeVertex.getDegree()) {
-				this.addVertex(sourceVertex);
-				boolean addedTarget = this.addVertex(targetVertex);
-				this.addEdge(wrapper);
+			} else if (targetIn && !(sourceIn) && targetVertex.getDegree() > minDegreeVertex.getDegree()) {
+				addVertex(sourceVertex);
+				boolean addedTarget = addVertex(targetVertex);
+				addEdge(wrapper);
 				if (addedTarget) {
-					this.reduceNeighborIncidence(this.minDegreeVertex);
-					this.removeVertex(this.minDegreeVertex);
-					if (this.newVertices.size() > 1) {
-						this.updateMinDegreeVertices(this.newVertices);
+					reduceNeighborIncidence(minDegreeVertex);
+					removeVertex(minDegreeVertex);
+					if (newVertices.size() > 1) {
+						updateMinDegreeVertices(newVertices);
 					} else {
-						this.minDegreeVertex = targetVertex;
+						minDegreeVertex = targetVertex;
 					} 
-					this.newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 				}
 			}
 		}
 	}
 	
-	private void updateMinDegreeVertex(VertexCustom vertex) {
-		if (vertex.getDegree() < this.minDegreeVertex.getDegree()) {
-			this.secondMinDegreeVertex = this.minDegreeVertex;
-			this.minDegreeVertex = vertex;
-		} else if (vertex.getDegree() < this.secondMinDegreeVertex.getDegree()) {
-			this.secondMinDegreeVertex = vertex;
+	private static void updateMinDegreeVertex(VertexCustom vertex) {
+		if (vertex.getDegree() < minDegreeVertex.getDegree()) {
+			secondMinDegreeVertex = minDegreeVertex;
+			minDegreeVertex = vertex;
+		} else if (vertex.getDegree() < secondMinDegreeVertex.getDegree()) {
+			secondMinDegreeVertex = vertex;
 		}		
 	}
 
-	private void updateMinDegreeVertices(Map<String, VertexCustom> map) {
+	private static void updateMinDegreeVertices(Map<String, VertexCustom> map) {
 		Collection<VertexCustom> collection = map.values();
 		Iterator<VertexCustom> iter = collection.iterator();
-		this.minDegreeVertex = iter.next();
-		this.secondMinDegreeVertex = iter.next();
-		if (this.secondMinDegreeVertex.getDegree() < this.minDegreeVertex.getDegree()) {
-			VertexCustom temp = this.minDegreeVertex;
-			this.minDegreeVertex = this.secondMinDegreeVertex;
-			this.secondMinDegreeVertex = temp;
+		minDegreeVertex = iter.next();
+		secondMinDegreeVertex = iter.next();
+		if (secondMinDegreeVertex.getDegree() < minDegreeVertex.getDegree()) {
+			VertexCustom temp = minDegreeVertex;
+			minDegreeVertex = secondMinDegreeVertex;
+			secondMinDegreeVertex = temp;
 		}
 		for (Map.Entry<String, VertexCustom> entry : map.entrySet()) {
 			VertexCustom vertex = entry.getValue();
-			if (vertex.getDegree() < this.minDegreeVertex.getDegree() && vertex.getIdGradoop() != this.secondMinDegreeVertex.getIdGradoop()) {
-				this.secondMinDegreeVertex = this.minDegreeVertex;
-				this.minDegreeVertex = vertex;
-			} else if (vertex.getDegree() < this.secondMinDegreeVertex.getDegree() && vertex.getIdGradoop() != this.minDegreeVertex.getIdGradoop())  {
-				this.secondMinDegreeVertex = vertex;
+			if (vertex.getDegree() < minDegreeVertex.getDegree() && vertex.getIdGradoop() != secondMinDegreeVertex.getIdGradoop()) {
+				secondMinDegreeVertex = minDegreeVertex;
+				minDegreeVertex = vertex;
+			} else if (vertex.getDegree() < secondMinDegreeVertex.getDegree() && vertex.getIdGradoop() != minDegreeVertex.getIdGradoop())  {
+				secondMinDegreeVertex = vertex;
 			}
 		}
 	}
 
-	private void removeVertex(VertexCustom vertex) {	
-		if (!this.globalVertices.containsKey(vertex.getIdGradoop())) {
+	private static void removeVertex(VertexCustom vertex) {	
+		if (!globalVertices.containsKey(vertex.getIdGradoop())) {
 			System.out.println("cannot remove vertex because not in vertexGlobalMap, id: " + vertex.getIdGradoop());
 		} else {
-			this.newVertices.remove(vertex.getIdGradoop());
-			this.globalVertices.remove(vertex.getIdGradoop());
+			newVertices.remove(vertex.getIdGradoop());
+			globalVertices.remove(vertex.getIdGradoop());
 				UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 		}
 	}
 
-	private void reduceNeighborIncidence(VertexCustom vertex) {
-		Set<String> neighborIds = this.getNeighborhood(vertex);
+	private static void reduceNeighborIncidence(VertexCustom vertex) {
+		Set<String> neighborIds = getNeighborhood(vertex);
 		for (String neighbor : neighborIds) {
-			Map<String,Object> map = this.globalVertices.get(neighbor);
+			Map<String,Object> map = globalVertices.get(neighbor);
 			map.put("incidence", (int) map.get("incidence") - 1); 
 		}
 	}
 
-	private void addWrapperIdentity(VertexCustom vertex) {
-		if (this.capacity > 0) {
-			boolean added = this.addVertex(vertex);
+	private static void addWrapperIdentity(VertexCustom vertex) {
+		if (capacity > 0) {
+			boolean added = addVertex(vertex);
 			if (added) {
-				this.newVertices.put(vertex.getIdGradoop(), vertex);
-				this.updateMinDegreeVertex(vertex);
-				this.capacity -= 1;
+				newVertices.put(vertex.getIdGradoop(), vertex);
+				updateMinDegreeVertex(vertex);
+				capacity -= 1;
 			}
 		} else {
-			if (vertex.getDegree() > this.minDegreeVertex.getDegree()) {
-				boolean added = this.addVertex(vertex);
+			if (vertex.getDegree() > minDegreeVertex.getDegree()) {
+				boolean added = addVertex(vertex);
 				if (added) {
-					this.newVertices.put(vertex.getIdGradoop(), vertex);
-					this.reduceNeighborIncidence(this.minDegreeVertex);
-					this.removeVertex(this.minDegreeVertex);
-					if (this.newVertices.size() > 1) {
-						this.updateMinDegreeVertices(this.newVertices);
-					} else if (this.newVertices.size() == 1) {
-						this.minDegreeVertex = vertex;
+					newVertices.put(vertex.getIdGradoop(), vertex);
+					reduceNeighborIncidence(minDegreeVertex);
+					removeVertex(minDegreeVertex);
+					if (newVertices.size() > 1) {
+						updateMinDegreeVertices(newVertices);
+					} else if (newVertices.size() == 1) {
+						minDegreeVertex = vertex;
 					}
 				}
 			} 
 		}
 	}
 
-	public void addWrapperIdentityInitial(VertexCustom vertex) {
-		boolean added = this.addVertex(vertex);
-		if (added) this.innerVertices.put(vertex.getIdGradoop(), vertex);
-		System.out.println("addWrapperIdentityinitial  " + this.innerVertices.size());
-		for (Map.Entry<String, VertexCustom> entry : this.innerVertices.entrySet()) System.out.println(entry);
+	public static void addWrapperIdentityInitial(VertexCustom vertex) {
+		boolean added = addVertex(vertex);
+		if (added) innerVertices.put(vertex.getIdGradoop(), vertex);
+		System.out.println("addWrapperIdentityinitial  " + innerVertices.size());
+		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println(entry);
 	}
 	
-	public void addNonIdentityWrapperInitial(VVEdgeWrapper wrapper) {
+	public static void addNonIdentityWrapperInitial(VVEdgeWrapper wrapper) {
 		VertexCustom sourceVertex = wrapper.getSourceVertex();
 		VertexCustom targetVertex = wrapper.getTargetVertex();
-		boolean addedSource = this.addVertex(sourceVertex);
-		if (addedSource) this.innerVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-		boolean addedTarget = this.addVertex(targetVertex);
-		if (addedTarget) this.innerVertices.put(targetVertex.getIdGradoop(), targetVertex);
-			this.addEdge(wrapper);
+		boolean addedSource = addVertex(sourceVertex);
+		if (addedSource) innerVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+		boolean addedTarget = addVertex(targetVertex);
+		if (addedTarget) innerVertices.put(targetVertex.getIdGradoop(), targetVertex);
+			addEdge(wrapper);
 	}
 	
-	public boolean addVertex(VertexCustom vertex) {
+	public static boolean addVertex(VertexCustom vertex) {
 		String sourceId = vertex.getIdGradoop();
-		if (!(this.globalVertices.containsKey(sourceId))) {
+		if (!(globalVertices.containsKey(sourceId))) {
 			Map<String,Object> map = new HashMap<String,Object>();
 			map.put("incidence", (int) 1);
 			map.put("vertex", vertex);
-			this.globalVertices.put(sourceId, map);
+			globalVertices.put(sourceId, map);
 				UndertowServer.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
 			return true;
 		} else {
-			Map<String,Object> map = this.globalVertices.get(sourceId);
+			Map<String,Object> map = globalVertices.get(sourceId);
 			map.put("incidence", (int) map.get("incidence") + 1);
 			return false;
 		}		
 	}
 	
-	public void addEdge(VVEdgeWrapper wrapper) {
-		this.edges.add(wrapper);
+	public static void addEdge(VVEdgeWrapper wrapper) {
+		edges.add(wrapper);
 		UndertowServer.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdNumeric() + ";" + wrapper.getTargetIdNumeric());
 	}
 	
 	public void clearOperation(){
 		System.out.println("in clear operation 1");
-		if (this.operation != "initial"){
-			this.innerVertices.putAll(this.newVertices); 
-			for (Map.Entry<String, Map<String,Object>> entry : this.globalVertices.entrySet()) {
+		if (operation != "initial"){
+			innerVertices.putAll(newVertices); 
+			for (Map.Entry<String, Map<String,Object>> entry : globalVertices.entrySet()) {
 				Map<String,Object> map = entry.getValue();
 				VertexCustom vertex = (VertexCustom) map.get("vertex");
-				if ((((vertex.getX() < this.leftModel) || (this.rightModel < vertex.getX()) || (vertex.getY() < this.topModel) || 
-						(this.bottomModel < vertex.getY())) && this.adjMatrix.get(vertex.getIdGradoop()).isEmpty()) || 
-							((vertex.getX() >= this.leftModel) && (this.rightModel >= vertex.getX()) && (vertex.getY() >= this.topModel) && 
-								(this.bottomModel >= vertex.getY()) && !this.innerVertices.containsKey(vertex.getIdGradoop()))) {
+				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
+						(bottomModel < vertex.getY())) && adjMatrix.get(vertex.getIdGradoop()).isEmpty()) || 
+							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && 
+								(bottomModel >= vertex.getY()) && !innerVertices.containsKey(vertex.getIdGradoop()))) {
 					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
-					this.globalVertices.remove(vertex.getIdGradoop());
+					globalVertices.remove(vertex.getIdGradoop());
 				} 
 			}
 		} else {
-			System.out.println(this.innerVertices.size());
-			System.out.println(this.newVertices.size());
-			this.newVertices = this.innerVertices;
+			System.out.println("innerVertices" + innerVertices.size());
+			System.out.println("newVertices" + newVertices.size());
+			newVertices = innerVertices;
 		}
-		this.operation = null;
+		operation = null;
 		System.out.println("in clear operation 2");
-		System.out.println(this.newVertices.size());
-		if (this.newVertices.size() > 1) {
-			this.updateMinDegreeVertices(this.newVertices);
-		} else if (this.newVertices.size() == 1) {
-			this.minDegreeVertex = this.newVertices.values().iterator().next();
+		System.out.println(newVertices.size());
+		if (newVertices.size() > 1) {
+			updateMinDegreeVertices(newVertices);
+		} else if (newVertices.size() == 1) {
+			minDegreeVertex = newVertices.values().iterator().next();
 		}
 	}
 	
-	public Set<String> getNeighborhood(VertexCustom vertex){
+	public static Set<String> getNeighborhood(VertexCustom vertex){
 		Set<String> neighborIds = new HashSet<String>();
-		for (Map.Entry<String, String> entry : this.adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
+		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
 		return neighborIds;
 	}
 }

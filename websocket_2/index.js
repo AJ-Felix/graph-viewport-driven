@@ -7,120 +7,86 @@ ws.onopen = function() {
     ws.send("Hello Server");
 };
 
-// class MapHandler{
-	// vertexDegreeMap = new Map();
-	// edgePotentialSource;
-	// edgePotentialTarget;
-	
-	// constructor(vertexCountMax){
-		// this.vertexCountMax = vertexCountMax;
-	// }
-	
-	// resetMap(){
-		// this.vertexDegreeMap = new Map();
-	// }
-	
-	// addVertexHelper(vertexId, vertexX, vertexY, vertexDegree){
-		// var edgePotential = false;
-		// if (this.vertexDegreeMap.has(vertexId)) {
-			// edgePotential = true;
-		// } else if (this.vertexDegreeMap.size < this.vertexCountMax){
-			// cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
-			// this.vertexDegreeMap.set(vertexId, vertexDegree);
-			// edgePotential = true;
-		// } else {
-			// let removalCandidateKey = -1;
-			// let removalCandidateDegree =  Infinity;
-			// for (const [key, value] of this.vertexDegreeMap.entries()){
-				// if ((parseInt(value) < removalCandidateDegree) || (parseInt(value) == removalCandidateDegree && key > removalCandidateKey)){
-					// removalCandidateKey = key;
-					// removalCandidateDegree = value;
-				// }
-			// }
-			// if ((vertexDegree > removalCandidateDegree) || (vertexDegree == removalCandidateDegree && vertexId < removalCandidateKey)){
-				// cy.remove(cy.$id(removalCandidateKey));
-				// cy.add({group : 'nodes', data: {id: vertexId}, position: {x: parseInt(vertexX) , y: parseInt(vertexY)}});
-				// this.vertexDegreeMap.delete(removalCandidateKey);
-				// this.vertexDegreeMap.set(vertexId, vertexDegree);
-				// edgePotential = true;
-			// }
-		// }
-		// return edgePotential;
-	// }
-		
-	// addWrapper(dataArray){
-		// this.edgePotentialSource = false;
-		// this.edgePotentialTarget = false;
-		// const sourceVertexId = dataArray[1];
-		// const sourceVertexX = dataArray[2];
-		// const sourceVertexY = dataArray[3];
-		// const sourceVertexDegree = parseInt(dataArray[4]);
-		// const targetVertexId = dataArray[5];
-		// const targetVertexX = dataArray[6];
-		// const targetVertexY = dataArray[7];
-		// const targetVertexDegree = parseInt(dataArray[8]);
-		// const edgeIdGradoop = dataArray[9];
-		// this.edgePotentialSource = this.addVertexHelper(sourceVertexId, sourceVertexX, sourceVertexY, sourceVertexDegree);
-		// this.edgePotentialTarget = this.addVertexHelper(targetVertexId, targetVertexX, targetVertexY, targetVertexDegree);
-		// if (this.edgePotentialSource && this.edgePotentialTarget){
-			// cy.add({group : 'edges', data: {id: edgeIdGradoop, source: sourceVertexId , target: targetVertexId}});
-		// }
-	// }
+let messageQueue = new Array();
+let messageProcessing;
 
-// }
+function addMessageToQueue(dataArray){
+		messageQueue.push(dataArray);
+		if (!messageProcessing) {
+			messageProcessing = true;
+			processMessage(); 
+		}
+	}
 
 ws.onmessage = function (evt) {
 	console.log(evt.data);
 	const dataArray = evt.data.split(";");
-	switch (dataArray[0]){
-		case 'clearGraph':
-			console.log('clearing graph');
-			cy.elements().remove();
-			break;
-		case 'layout':
-			var layout = cy.layout({name: 'fcose', ready: () => {console.log("Layout ready")}, stop: () => {console.log("Layout stopped")}});
-			layout.run();
-			break;
-		case 'fitGraph':
-			// cy.fit();
-			cy.zoom(0.25);
-			cy.pan({x:0, y:0});
-			break;
-		case 'positioning':
-			console.log('position viewport!');
-			cy.zoom(parseFloat(dataArray[1]));
-			cy.pan({x:parseInt(dataArray[2]), y:parseInt(dataArray[3])});
-			break;
-		// case 'pan':
-			// console.log('panning');
-			// cy.pan({x:parseInt(dataArray[1]), y:parseInt(dataArray[2])});
-			// break;
-		case 'addVertex':
-			handler.addVertex(dataArray);
-			break;
-		case 'removeVertex':
-			handler.removeVertex(dataArray);
-			break;
-		case 'addEdge':
-			handler.addEdge(dataArray);
-			break;
-		case 'addWrapper':
-			handler.addWrapperToQueue(dataArray, true);
-			break;
-		case 'removeWrapper':
-			handler.addWrapperToQueue(dataArray, false);
-			break;
-		case 'addVertexServer':
-			cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
-			break;
-		case 'addEdgeServer':
-			cy.add({group : 'edges', data: {id: dataArray[1]}, source: dataArray[2], target: dataArray[3]});
-			break;
-		case 'removeObjectServer':
-			cy.remove(cy.$id(dataArray[1]));
-			break;
+	addMessageToQueue(dataArray);
+}
+	
+async function processMessage(){
+	if (messageQueue.length > 0){
+		let dataArray = messageQueue.shift();
+		let promise = new Promise((resolve, reject) => {
+			switch (dataArray[0]){
+				case 'clearGraph':
+					console.log('clearing graph');
+					cy.elements().remove();
+					break;
+				case 'layout':
+					var layout = cy.layout({name: 'fcose', ready: () => {console.log("Layout ready")}, stop: () => {console.log("Layout stopped")}});
+					layout.run();
+					break;
+				case 'fitGraph':
+					// cy.fit();
+					cy.zoom(0.25);
+					cy.pan({x:0, y:0});
+					break;
+				case 'positioning':
+					console.log('position viewport!');
+					cy.zoom(parseFloat(dataArray[1]));
+					cy.pan({x:parseInt(dataArray[2]), y:parseInt(dataArray[3])});
+					break;
+				// case 'pan':
+					// console.log('panning');
+					// cy.pan({x:parseInt(dataArray[1]), y:parseInt(dataArray[2])});
+					// break;
+				case 'addVertex':
+					handler.addVertex(dataArray);
+					break;
+				case 'removeVertex':
+					handler.removeVertex(dataArray);
+					break;
+				case 'addEdge':
+					handler.addEdge(dataArray);
+					break;
+				case 'addWrapper':
+					handler.addWrapperToQueue(dataArray, true);
+					break;
+				case 'removeWrapper':
+					handler.addWrapperToQueue(dataArray, false);
+					break;
+				case 'addVertexServer':
+					cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
+					break;
+				case 'addEdgeServer':
+					console.log(dataArray[1]);
+					console.log(dataArray[2]);
+					console.log(dataArray[3]);
+					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
+					break;
+				case 'removeObjectServer':
+					cy.remove(cy.$id(dataArray[1]));
+					break;
+			}
+			resolve(true);
+		});
+		await promise;
+		processMessage();
+	} else {
+		messageProcessing = false;
 	}
-};
+}
 
 ws.onclose = function() {
     console.log("Closed!");

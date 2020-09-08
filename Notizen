@@ -153,11 +153,20 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 	gesendet wurden.
 NOTE: Möglicherweise wäre es besser gewesen, alle Funktionalitäten die momentan der Client übernimmt auf den Server auszulagern. Das heißt, die Wrapper nicht einfach an den Client zu senden, sondern damit eine Struktur
 	zu füttern, welche die Funktionalitäten berücksichtigt und nur noch "addVertex", "removeVertex", "addEdge" usw. Befehle an den Client sendet.
-	ISSUE: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> nochmal beim Original-UndertowServer reinschauen
+	ISSUE: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. 
+TODO: Zoom und Panning noch für serverseitige graph-semantik implementieren und dann Code putzen!!!
+	
+Serverseitige Graph-Semantik:
+	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).
+	Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren.
+	Möglicherweise ein Parallelitätsproblem
 
 
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
+
+
+
 
 
 

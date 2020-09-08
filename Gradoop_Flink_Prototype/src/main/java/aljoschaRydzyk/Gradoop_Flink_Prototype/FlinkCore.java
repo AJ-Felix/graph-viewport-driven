@@ -120,7 +120,8 @@ public class FlinkCore {
 	
 	public GraphUtil initializeAdjacencyGraphUtil() {
 		this.graphUtil =  new AdjacencyGraphUtil(this.fsEnv, this.filePath);
-		this.graphVis = new GraphVis(((AdjacencyGraphUtil) this.graphUtil).getAdjMatrix());
+//		graphVis = new GraphVis();
+//		GraphVis.setGraphVis(((AdjacencyGraphUtil) this.graphUtil).getAdjMatrix());
 		return this.graphUtil;
 	}
 	
@@ -128,9 +129,9 @@ public class FlinkCore {
 		return this.graphUtil;
 	}
 	
-	public GraphVis getGraphVis() {
-		return this.graphVis;
-	}
+//	public GraphVis getGraphVis() {
+//		return this.graphVis;
+//	}
 	
 	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(Integer maxVertices){
 		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, maxVertices);
