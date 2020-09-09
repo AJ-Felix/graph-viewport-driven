@@ -36,6 +36,8 @@ public class UndertowServer {
     
     private static Integer maxVertices = 10;
     
+    private static String graphOperationLogic = "serverSide";
+    
     private static Float viewportPixelX = (float) 1000;
     private static Float viewportPixelY = (float) 1000;
     private static float zoomLevel = 1;
@@ -64,14 +66,14 @@ public class UndertowServer {
     public static void main(final String[] args) {
     	
 //    	BasicConfigurator.configure();
-//    	PrintStream fileOut = null;
-//		try {
-//			fileOut = new PrintStream("/home/aljoscha/out.txt");
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		System.setOut(fileOut);
+    	PrintStream fileOut = null;
+		try {
+			fileOut = new PrintStream("/home/aljoscha/out.txt");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.setOut(fileOut);
     	
         Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
                 .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
@@ -93,8 +95,6 @@ public class UndertowServer {
 //    	
 //    }
     
-    
-    
     /**
      * helper function to Undertow server
      */
@@ -107,68 +107,68 @@ public class UndertowServer {
                     System.out.println(messageData);
                     WebSockets.sendText(messageData, session, null);
                 }
-                if (messageData.startsWith("TestThread")){
+                if (messageData.equals("serverSideLogic")) {
+                	graphOperationLogic = "serverSide";
+                } else if (messageData.equals("clientSideLogic")) {
+                	graphOperationLogic = "clientSide";
+                } else if (messageData.startsWith("TestThread")){
                 	TestThread thread = new TestThread("prototype");
             		thread.start();
-                }
-                if (messageData.startsWith("edgeIdString")) {
+                } else if (messageData.startsWith("edgeIdString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
                 	Set<String> visualizedWrappers = new HashSet<String>(list);
                 	flinkCore.getGraphUtil().setVisualizedWrappers(visualizedWrappers);
-                }
-                if (messageData.startsWith("vertexIdString")) {
+                } else if (messageData.startsWith("vertexIdString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
                 	Set<String> visualizedVertices = new HashSet<String>(list);
                 	flinkCore.getGraphUtil().setVisualizedVertices(visualizedVertices);
-                }
-                if (messageData.startsWith("buildTopView")) {
+                } else if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore();
                 	String[] arrMessageData = messageData.split(";");
-        				if (arrMessageData[1].equals("retract")) {
+                	if (arrMessageData[1].equals("retract")) {
 	        			flinkCore.initializeGradoopGraphUtil();
-	        			DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract(maxVertices);
-	        			wrapperStream.addSink(new WrapperRetractSink());
-        			} else if (arrMessageData[1].equals("appendJoin")) {
+        				DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract(maxVertices);
+	        			if (graphOperationLogic.equals("serverSide")) {
+		    				initializeGraphRepresentation();
+	        				DataStream<Tuple2<Boolean,VVEdgeWrapper>> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperRetract());
+	        				wrapperStreamWrapper.addSink(new WrapperObjectSinkRetract()).setParallelism(1);
+	        			} else {
+	        				wrapperStream.addSink(new WrapperRetractSink());
+	        			}
+                	} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
-        				wrapperStream.addSink(new WrapperAppendSink());
+        				if (graphOperationLogic.equals("serverSide")) {
+        					initializeGraphRepresentation();
+            				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
+		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+        				} else {
+            				wrapperStream.addSink(new WrapperAppendSink());
+        				}
         			} else if (arrMessageData[1].contentEquals("adjacency")) {
         				flinkCore.initializeAdjacencyGraphUtil();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
-//        				wrapperStream.addSink(new WrapperAppendSink());
-        				//This sink will put FrontEnd functionality to BackEnd
-        					flinkCore.getGraphUtil().setVisualizedWrappers(new HashSet<String>());
-        					flinkCore.getGraphUtil().setVisualizedVertices(new HashSet<String>());
-		    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapper());
-//		    				graphVis = new GraphVis(((AdjacencyGraphUtil) flinkCore.getGraphUtil()).getAdjMatrix());
-//		    				System.out.println(flinkCore.getGraphVis());
-		    				UndertowServer.setGraphVis();
-		    				wrapperStreamWrapper.addSink(new WrapperObjectSink()).setParallelism(1);
-//		    				System.out.println(flinkCore.getGraphVis());
-//		    				System.out.println(GraphVis.getInnerVertices());
-//		    				System.out.println(GraphVis.getInnerVertices().size());
-//		    				System.out.println(GraphVis.getGlobalVertices().size());
+        				if (graphOperationLogic.equals("serverSide")) {
+        					initializeGraphRepresentation();
+        					DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
+    	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+        				} else {
+            				wrapperStream.addSink(new WrapperAppendSink());
+        				}
         			}
-        			try {
+                	try {
         				flinkCore.getFsEnv().execute();
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
-        				//code belongs to frontEnd to BackEnd functionality
-//        				System.out.println(flinkCore.getGraphVis());
-//        				System.out.println(flinkCore.getGraphVis().getInnerVertices());
-//    					System.out.println(flinkCore.getGraphVis().getInnerVertices().size());
-//    					System.out.println(flinkCore.getGraphVis().getGlobalVertices().size());
-        				System.out.println("before clear operation");
-//        				flinkCore.getGraphVis().clearOperation();
-        				UndertowServer.clearOperation();
-        				System.out.println("after clear operation");
-                }
-    			if (messageData.startsWith("zoom")) {
+                	if (graphOperationLogic.equals("serverSide")) {
+                		clearOperation();
+                	}
+                } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
         			Float xRenderPos = Float.parseFloat(arrMessageData[1]);
         			Float yRenderPos = Float.parseFloat(arrMessageData[2]);
@@ -182,45 +182,61 @@ public class UndertowServer {
 					flinkCore.setBottomModelPos(bottomModelPos);
 					flinkCore.setLeftModelPos(leftModelPos);
         			DataStream<Row> wrapperStream = flinkCore.zoom(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-//					wrapperStream.addSink(new WrapperAppendSink());
-						//This sink will put FrontEnd functionality to BackEnd
-	    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapper());
-//	    				GraphVis graphVis = flinkCore.getGraphVis();
-//	    				GraphVis.setOperation("zoomIn");
-//	    				GraphVis.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-	    				UndertowServer.setOperation("zoomIn");
+                	if (graphOperationLogic.equals("clientSide")) {
+                		wrapperStream.addSink(new WrapperAppendSink());
+                	} else {
+	        			if (messageData.startsWith("zoomIn")) {
+		    				UndertowServer.setOperation("zoomIn");
+	        			} else {
+	        				UndertowServer.setOperation("zoomOut");
+	        			}
+	    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
 	    				UndertowServer.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-	    				Map<String,Map<String,String>> adjMatrix = ((AdjacencyGraphUtil) flinkCore.getGraphUtil()).getAdjMatrix();
-	    				System.out.println("adjMatrix " + adjMatrix);
-	    				wrapperStreamWrapper.addSink(new WrapperObjectSink());
+	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend());
+                	}
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-    			}
-    			if (messageData.startsWith("pan")) {
+					if (graphOperationLogic.equals("serverSide")) {
+                		clearOperation();
+                	}
+    			} else if (messageData.startsWith("pan")) {
         			String[] arrMessageData = messageData.split(";");
-        			Float topModelPos = flinkCore.gettopModelPos();
-        			Float bottomModelPos = flinkCore.getBottomModelPos();
-        			Float leftModelPos = flinkCore.getLeftModelPos();
-        			Float rightModelPos = flinkCore.getRightModelPos();
+        			Float topModelOld = flinkCore.gettopModelPos();
+        			Float bottomModelOld = flinkCore.getBottomModelPos();
+        			Float leftModelOld = flinkCore.getLeftModelPos();
+        			Float rightModelOld = flinkCore.getRightModelPos();
         			Float xModelDiff = Float.parseFloat(arrMessageData[1]); 
         			Float yModelDiff = Float.parseFloat(arrMessageData[2]);
-					DataStream<Row> wrapperStream = flinkCore.pan(topModelPos, rightModelPos, bottomModelPos, leftModelPos, xModelDiff, yModelDiff);
-					flinkCore.setTopModelPos(topModelPos + yModelDiff);
-					flinkCore.setBottomModelPos(bottomModelPos + yModelDiff);
-					flinkCore.setLeftModelPos(leftModelPos + xModelDiff);
-					flinkCore.setRightModelPos(rightModelPos + xModelDiff);
-					wrapperStream.addSink(new WrapperAppendSink());
+					DataStream<Row> wrapperStream = flinkCore.pan(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
+					Float topModelNew = topModelOld + yModelDiff;
+					Float bottomModelNew = bottomModelOld + yModelDiff;
+					Float leftModelNew = leftModelOld + xModelDiff;
+					Float rightModelNew = rightModelOld + xModelDiff;
+					flinkCore.setTopModelPos(topModelNew);
+					flinkCore.setBottomModelPos(bottomModelNew);
+					flinkCore.setLeftModelPos(leftModelNew);
+					flinkCore.setRightModelPos(rightModelNew);
+                	if (graphOperationLogic.equals("clientSide")) {
+                		wrapperStream.addSink(new WrapperAppendSink());
+                	} else {
+                		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
+    					UndertowServer.setOperation("pan");
+	    				UndertowServer.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend());
+                	}
 					try {
 						flinkCore.getFsEnv().execute();
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-    			}
-    			if (messageData.equals("displayAll")) {
+					if (graphOperationLogic.equals("serverSide")) {
+                		clearOperation();
+                	}
+				} else if (messageData.equals("displayAll")) {
     		        flinkCore = new FlinkCore();
         			flinkCore.initializeCSVGraphUtilJoin();
         			DataStream<Row> wrapperStream = flinkCore.displayAll();
@@ -232,8 +248,7 @@ public class UndertowServer {
 					}
 					UndertowServer.sendToAll("fitGraph");
 //					UndertowServer.sendToAll("layout");
-    			}
-    			if (messageData.startsWith("cancel")){
+    			} else if (messageData.startsWith("cancel")){
     				String[] arr = messageData.split(";");
     				String jobID = arr[1];
     				System.out.println("Cancelling " + jobID);
@@ -258,7 +273,7 @@ public class UndertowServer {
         }
     }
     
-    public static void setGraphVis() {
+    public static void initializeGraphRepresentation() {
 		operation = "initial";
 		globalVertices = new HashMap<String,Map<String,Object>>();
 		innerVertices = new HashMap<String,VertexCustom>();
@@ -281,7 +296,16 @@ public class UndertowServer {
 				Integer sourceX = wrapper.getSourceX();
 				Integer sourceY = wrapper.getSourceY();
 				Integer targetX = wrapper.getTargetX();
-				Integer targetY = wrapper.getSourceY();
+				Integer targetY = wrapper.getTargetY();
+//				System.out.println(wrapper.getEdgeIdGradoop());
+//				System.out.println(rightModel);
+//				System.out.println(sourceX);
+//				System.out.println(targetX);
+//				System.out.println(leftModel);
+//				System.out.println(topModel);
+//				System.out.println(sourceY);
+//				System.out.println(targetY);
+//				System.out.println(bottomModel);
 				if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
 						((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
 					UndertowServer.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
@@ -300,6 +324,7 @@ public class UndertowServer {
 		}
 		if (operation.equals("pan") || operation.equals("zoomOut")) {
 			newVertices = innerVertices;
+			System.out.println(newVertices.size());
 		} else {
 			newVertices = new HashMap<String,VertexCustom>();
 		}
@@ -319,6 +344,10 @@ public class UndertowServer {
 				addNonIdentityWrapper(wrapper);
 			}
 		}
+	}
+	
+	public static void removeWrapper(VVEdgeWrapper wrapper) {
+		
 	}
 	
 	private static void addNonIdentityWrapper(VVEdgeWrapper wrapper) {
@@ -487,8 +516,6 @@ public class UndertowServer {
 	public static void addWrapperIdentityInitial(VertexCustom vertex) {
 		boolean added = addVertex(vertex);
 		if (added) innerVertices.put(vertex.getIdGradoop(), vertex);
-		System.out.println("addWrapperIdentityinitial  " + innerVertices.size());
-		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println(entry);
 	}
 	
 	public static void addNonIdentityWrapperInitial(VVEdgeWrapper wrapper) {
@@ -523,37 +550,71 @@ public class UndertowServer {
 	}
 	
 	public static void clearOperation(){
+		System.out.println("in clear operation");
 		if (operation != "initial"){
 			Map<String,Map<String,String>> adjMatrix = ((AdjacencyGraphUtil) flinkCore.getGraphUtil()).getAdjMatrix();
 			innerVertices.putAll(newVertices); 
-			for (Map.Entry<String, Map<String,Object>> entry : globalVertices.entrySet()) {
-				Map<String,Object> map = entry.getValue();
-				VertexCustom vertex = (VertexCustom) map.get("vertex");
+			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
+				System.out.println(entry);
+			}
+			System.out.println("global...");
+			Iterator<Map.Entry<String, Map<String,Object>>> iter = globalVertices.entrySet().iterator();
+			while (iter.hasNext()) {
+				VertexCustom vertex = (VertexCustom) iter.next().getValue().get("vertex");
+				System.out.println(vertex.getIdGradoop());
+				System.out.println(vertex.getX());
+				System.out.println(vertex.getY());
+				System.out.println(topModel);
+				System.out.println(rightModel);
+				System.out.println(bottomModel);
+				System.out.println(leftModel);
 				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
-						(bottomModel < vertex.getY())) && adjMatrix.get(vertex.getIdGradoop()).isEmpty()) || 
-							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && 
-								(bottomModel >= vertex.getY()) && !innerVertices.containsKey(vertex.getIdGradoop()))) {
+						(bottomModel < vertex.getY())) && !hasVisualizedNeighbors(vertex)) ||
+							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && (bottomModel >= vertex.getY()) 
+									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
 					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
-					globalVertices.remove(vertex.getIdGradoop());
+					iter.remove();
 				} 
 			}
+//			for (Map.Entry<String, Map<String,Object>> entry : globalVertices.entrySet()) {
+//				System.out.println(entry);
+//				Map<String,Object> map = entry.getValue();
+//				VertexCustom vertex = (VertexCustom) map.get("vertex");
+//				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
+//						(bottomModel < vertex.getY())) && hasVisualizedNeighbors(vertex)) ||
+//							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && (bottomModel >= vertex.getY()) 
+//									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
+//					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+//					globalVertices.remove(vertex.getIdGradoop());
+//				} 
+//			}
 		} else {
 			newVertices = innerVertices;
 		}
 		operation = null;
+		System.out.println("before updatemindegreevertices in clear operation");
 		if (newVertices.size() > 1) {
 			updateMinDegreeVertices(newVertices);
 		} else if (newVertices.size() == 1) {
 			minDegreeVertex = newVertices.values().iterator().next();
 		}
+		System.out.println("global size "+ globalVertices.size());
 	}
 	
 	public static Set<String> getNeighborhood(VertexCustom vertex){
 		Set<String> neighborIds = new HashSet<String>();
 		Map<String,Map<String,String>> adjMatrix = ((AdjacencyGraphUtil) flinkCore.getGraphUtil()).getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
-//		System.out.println(neighborIds);
-//		for (Map.Entry<String, Map<String,Object>> entry: globalVertices.entrySet()) System.out.println(entry.getKey());
 		return neighborIds;
+	}
+	
+	public static boolean hasVisualizedNeighbors(VertexCustom vertex) {
+		Set<String> neighborIds = getNeighborhood(vertex);
+		for (String neighborId : neighborIds) {
+			if (globalVertices.containsKey(neighborId)){
+				return true;
+			}
+		}
+		return false;
 	}
 }

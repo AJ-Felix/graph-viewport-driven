@@ -99,15 +99,15 @@ cyto.addEventListener("mouseup", function(e){
 	const zoomLevel = cy.zoom();
 	const xModelDiff = - (xRenderDiff / zoomLevel);
 	const yModelDiff = - (yRenderDiff / zoomLevel);
-	const pan = cy.pan();
-	const xRenderPos = pan.x;
-	const yRenderPos = pan.y;
-	const topModelPos= - yRenderPos / zoomLevel;
-	const leftModelPos = - xRenderPos / zoomLevel;
-	const bottomModelPos = topModelPos + vPix / zoomLevel;
-	const rightModelPos = leftModelPos + vPix / zoomLevel
-	handler.operation = "pan";
-	handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+	// const pan = cy.pan();
+	// const xRenderPos = pan.x;
+	// const yRenderPos = pan.y;
+	// const topModelPos= - yRenderPos / zoomLevel;
+	// const leftModelPos = - xRenderPos / zoomLevel;
+	// const bottomModelPos = topModelPos + vPix / zoomLevel;
+	// const rightModelPos = leftModelPos + vPix / zoomLevel
+	// handler.operation = "pan";
+	// handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	ws.send("pan;" + xModelDiff + ";" + yModelDiff);
 });
 
@@ -134,24 +134,24 @@ cyto.addEventListener("wheel", function(e) {
 		cy.pan({x:-vPixHalf + zFactor * pan.x + (vPixHalf - cytoX) * zFactor, y:-vPixHalf + zFactor * pan.y + (vPixHalf - cytoY) * zFactor});
 		pan = cy.pan();
 		const zoomLevel = cy.zoom();
-		const topModelPos = - pan.y / zoomLevel;
-		const leftModelPos = - pan.x / zoomLevel;
-		const bottomModelPos = topModelPos + vPix / zoomLevel;
-		const rightModelPos = leftModelPos + vPix / zoomLevel;
-		handler.operation = "zoomIn";
-		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+		// const topModelPos = - pan.y / zoomLevel;
+		// const leftModelPos = - pan.x / zoomLevel;
+		// const bottomModelPos = topModelPos + vPix / zoomLevel;
+		// const rightModelPos = leftModelPos + vPix / zoomLevel;
+		// handler.operation = "zoomIn";
+		// handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	} else {
 		cy.zoom(cy.zoom() / zFactor);
 		cy.pan({x:vPixHalf + pan.x - (vPixHalf + pan.x) / zFactor - (cytoX - vPixHalf) / zFactor, y:vPixHalf + pan.y - (vPixHalf + pan.y) / zFactor - (cytoY - vPixHalf) / zFactor});
 		pan = cy.pan();
 		const zoomLevel = cy.zoom();
-		const topModelPos = - pan.y / zoomLevel;
-		const leftModelPos = - pan.x / zoomLevel;
-		const bottomModelPos = topModelPos + vPix / zoomLevel;
-		const rightModelPos = leftModelPos + vPix / zoomLevel;
-		handler.operation = "zoomOut";
-		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+		// const topModelPos = - pan.y / zoomLevel;
+		// const leftModelPos = - pan.x / zoomLevel;
+		// const bottomModelPos = topModelPos + vPix / zoomLevel;
+		// const rightModelPos = leftModelPos + vPix / zoomLevel;
+		// handler.operation = "zoomOut";
+		// handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 		ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	}
 });

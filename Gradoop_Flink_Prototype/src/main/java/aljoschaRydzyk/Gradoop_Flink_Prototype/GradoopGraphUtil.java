@@ -3,6 +3,7 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,6 +55,8 @@ public class GradoopGraphUtil implements GraphUtil{
 		this.fsTableEnv = fsTableEnv;
 		this.vertexFields = vertexFields;
 		this.wrapperFields = wrapperFields;
+		this.visualizedWrappers = new HashSet<String>();
+		this.visualizedVertices = new HashSet<String>();
 		this.wrapperFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
 				Types.STRING, Types.STRING};

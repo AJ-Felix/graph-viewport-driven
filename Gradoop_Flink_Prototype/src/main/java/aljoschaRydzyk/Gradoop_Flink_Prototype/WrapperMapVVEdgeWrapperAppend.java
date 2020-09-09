@@ -3,7 +3,7 @@ package aljoschaRydzyk.Gradoop_Flink_Prototype;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.types.Row;
 
-public class WrapperMapVVEdgeWrapper implements MapFunction<Row,VVEdgeWrapper> {
+public class WrapperMapVVEdgeWrapperAppend implements MapFunction<Row,VVEdgeWrapper> {
 	@Override
 	public VVEdgeWrapper map(Row value) throws Exception {
 		VertexCustom sourceVertex = new VertexCustom(value.getField(1).toString(), value.getField(3).toString(), 

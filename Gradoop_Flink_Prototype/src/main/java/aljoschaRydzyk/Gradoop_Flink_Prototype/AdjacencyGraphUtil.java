@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,6 +35,8 @@ public class AdjacencyGraphUtil implements GraphUtil{
 	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, String inPath) {
 		this.fsEnv = fsEnv;
 		this.inPath = inPath;
+		this.visualizedWrappers = new HashSet<String>();
+		this.visualizedVertices = new HashSet<String>();
 	}
 
 	@Override

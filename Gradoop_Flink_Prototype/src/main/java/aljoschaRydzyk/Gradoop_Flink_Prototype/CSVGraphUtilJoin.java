@@ -1,6 +1,7 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -37,6 +38,8 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		this.fsTableEnv = fsTableEnv;
 		this.inPath = inPath;
 		this.vertexFields = vertexFields;
+		this.visualizedWrappers = new HashSet<String>();
+		this.visualizedVertices = new HashSet<String>();
 		this.wrapperFields = wrapperFields;
 		this.wrapperFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,

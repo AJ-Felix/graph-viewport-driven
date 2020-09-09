@@ -70,13 +70,15 @@ async function processMessage(){
 					cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 					break;
 				case 'addEdgeServer':
-					console.log(dataArray[1]);
-					console.log(dataArray[2]);
-					console.log(dataArray[3]);
+					// console.log(dataArray[1]);
+					// console.log(dataArray[2]);
+					// console.log(dataArray[3]);
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
 					break;
 				case 'removeObjectServer':
+					console.log(cy.$id(dataArray[1]));
 					cy.remove(cy.$id(dataArray[1]));
+					console.log(cy.$id(dataArray[1]));
 					break;
 			}
 			resolve(true);
@@ -116,9 +118,9 @@ function sendSignalAppendMap(){
 }
 
 function sendSignalAdjacency(){
-	handler = new AppendHandler();
-	handler.operation = "initial";
-	handler.newVerticesMap = new Map();
+	// handler = new AppendHandler();
+	// handler.operation = "initial";
+	// handler.newVerticesMap = new Map();
 	ws.send("buildTopView;adjacency");
 }
 
