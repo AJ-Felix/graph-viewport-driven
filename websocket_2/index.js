@@ -61,10 +61,12 @@ async function processMessage(){
 					handler.addEdge(dataArray);
 					break;
 				case 'addWrapper':
-					handler.addWrapperToQueue(dataArray, true);
+					// handler.addWrapperToQueue(dataArray, true);
+					handler.addWrapper(dataArray);
 					break;
 				case 'removeWrapper':
-					handler.addWrapperToQueue(dataArray, false);
+					// handler.addWrapperToQueue(dataArray, false);
+					handler.removeWrapper(dataArray);
 					break;
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
@@ -110,11 +112,6 @@ function sendSignalAppendJoin(){
 	handler.operation = "initial";
 	handler.newVerticesMap = new Map();
 	ws.send("buildTopView;appendJoin");
-}
-
-function sendSignalAppendMap(){
-	handler = new MapHandler(50);
-	ws.send("buildTopView;appendMap");
 }
 
 function sendSignalAdjacency(){
@@ -206,6 +203,10 @@ function cancelJob(){
 function testThread(){
 	handler = new AppendHandler();
 	ws.send("TestThread");
+}
+
+function clientSideLogic(){
+	ws.send("clientSideLogic");
 }
 
 let header1 = document.getElementById('header1');

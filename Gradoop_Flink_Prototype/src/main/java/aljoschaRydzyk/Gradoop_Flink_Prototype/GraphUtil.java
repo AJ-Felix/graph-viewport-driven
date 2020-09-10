@@ -1,6 +1,7 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -17,4 +18,6 @@ public interface GraphUtil {
 			Float yModelDiff) throws IOException;
 	void setVisualizedVertices(Set<String> visualizedVertices);
 	void setVisualizedWrappers(Set<String> visualizedWrappers);
+	Map<String,Map<String,String>> buildAdjacencyMatrix() throws Exception;
+	Map<String, Map<String, String>> getAdjMatrix();
 }

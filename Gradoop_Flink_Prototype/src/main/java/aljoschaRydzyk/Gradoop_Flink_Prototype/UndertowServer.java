@@ -127,14 +127,16 @@ public class UndertowServer {
                 	Set<String> visualizedVertices = new HashSet<String>(list);
                 	flinkCore.getGraphUtil().setVisualizedVertices(visualizedVertices);
                 } else if (messageData.startsWith("buildTopView")) {
-                	flinkCore = new FlinkCore();
+                	flinkCore = new FlinkCore(graphOperationLogic);
                 	String[] arrMessageData = messageData.split(";");
                 	if (arrMessageData[1].equals("retract")) {
 	        			flinkCore.initializeGradoopGraphUtil();
         				DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract(maxVertices);
+        				wrapperStream.print().setParallelism(1);
 	        			if (graphOperationLogic.equals("serverSide")) {
 		    				initializeGraphRepresentation();
-	        				DataStream<Tuple2<Boolean,VVEdgeWrapper>> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperRetract());
+	        				DataStream<Tuple2<Boolean,VVEdgeWrapper>> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperRetract()).setParallelism(1);
+//	        				wrapperStreamWrapper.addSink(new FlinkRowPrintSinkRetract());
 	        				wrapperStreamWrapper.addSink(new WrapperObjectSinkRetract()).setParallelism(1);
 	        			} else {
 	        				wrapperStream.addSink(new WrapperRetractSink());
@@ -237,7 +239,7 @@ public class UndertowServer {
                 		clearOperation();
                 	}
 				} else if (messageData.equals("displayAll")) {
-    		        flinkCore = new FlinkCore();
+    		        flinkCore = new FlinkCore(graphOperationLogic);
         			flinkCore.initializeCSVGraphUtilJoin();
         			DataStream<Row> wrapperStream = flinkCore.displayAll();
 					wrapperStream.addSink(new WrapperAppendSink());
@@ -324,6 +326,7 @@ public class UndertowServer {
 		}
 		if (operation.equals("pan") || operation.equals("zoomOut")) {
 			newVertices = innerVertices;
+			innerVertices = new HashMap<String,VertexCustom>();
 			System.out.println(newVertices.size());
 		} else {
 			newVertices = new HashMap<String,VertexCustom>();
@@ -338,6 +341,12 @@ public class UndertowServer {
 				addNonIdentityWrapperInitial(wrapper);
 			}
 		} else {
+			System.out.println(wrapper.getSourceIdNumeric());
+			System.out.println("Size of innerVertices: " + innerVertices.size());
+			System.out.println("Size of newVertices: " + newVertices.size());
+			System.out.println("ID minDegreeVertex: " + minDegreeVertex.getIdNumeric());
+			System.out.println("ID secondMinDegreeVertex: " + secondMinDegreeVertex.getIdNumeric());
+			System.out.println("Capacity: " + capacity);
 			if (wrapper.getEdgeLabel().equals("identityEdge")) {
 				addWrapperIdentity(wrapper.getSourceVertex());
 			} else {
@@ -347,7 +356,28 @@ public class UndertowServer {
 	}
 	
 	public static void removeWrapper(VVEdgeWrapper wrapper) {
-		
+		if (wrapper.getEdgeIdGradoop() != "identityEdge") {
+			String targetId = wrapper.getTargetIdGradoop();
+			int targetIncidence = (int) globalVertices.get(targetId).get("incidence");
+			if (targetIncidence == 1) {
+				globalVertices.remove(targetId);
+				if (innerVertices.containsKey(targetId)) innerVertices.remove(targetId);
+				if (newVertices.containsKey(targetId)) newVertices.remove(targetId);
+				UndertowServer.sendToAll("removeObjectServer;" + wrapper.getTargetIdNumeric());
+			} else {
+				globalVertices.get(targetId).put("incidence", targetIncidence - 1);
+			}
+		}
+		String sourceId = wrapper.getSourceIdGradoop();
+		int sourceIncidence = (int) globalVertices.get(sourceId).get("incidence");
+		if (sourceIncidence == 1) {
+			globalVertices.remove(sourceId);
+			if (innerVertices.containsKey(sourceId)) innerVertices.remove(sourceId);
+			if (newVertices.containsKey(sourceId)) newVertices.remove(sourceId);
+			UndertowServer.sendToAll("removeObjectServer;" + wrapper.getSourceIdNumeric());
+		} else {
+			globalVertices.get(sourceId).put("incidence", sourceIncidence - 1);
+		}
 	}
 	
 	private static void addNonIdentityWrapper(VVEdgeWrapper wrapper) {
@@ -474,7 +504,7 @@ public class UndertowServer {
 		} else {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
-				UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+			UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 		}
 	}
 
@@ -489,17 +519,21 @@ public class UndertowServer {
 	}
 
 	private static void addWrapperIdentity(VertexCustom vertex) {
+		if (vertex.getIdNumeric() == 0) System.out.println("zero is in identity!");
 		if (capacity > 0) {
 			boolean added = addVertex(vertex);
 			if (added) {
+				if (vertex.getIdNumeric() == 0) System.out.println("zero is in identity and added!");
 				newVertices.put(vertex.getIdGradoop(), vertex);
 				updateMinDegreeVertex(vertex);
 				capacity -= 1;
 			}
 		} else {
 			if (vertex.getDegree() > minDegreeVertex.getDegree()) {
+				if (vertex.getIdNumeric() == 0) System.out.println("comparison works");
 				boolean added = addVertex(vertex);
-				if (added) {
+				if (!newVertices.containsKey(vertex.getIdGradoop())) {
+					if (vertex.getIdNumeric() == 0) System.out.println("zero is in identity and added!");
 					newVertices.put(vertex.getIdGradoop(), vertex);
 					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
@@ -552,26 +586,26 @@ public class UndertowServer {
 	public static void clearOperation(){
 		System.out.println("in clear operation");
 		if (operation != "initial"){
-			Map<String,Map<String,String>> adjMatrix = ((AdjacencyGraphUtil) flinkCore.getGraphUtil()).getAdjMatrix();
 			innerVertices.putAll(newVertices); 
 			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
-				System.out.println(entry);
+				System.out.println("innerVertex " + entry.getValue().getIdNumeric());
 			}
 			System.out.println("global...");
 			Iterator<Map.Entry<String, Map<String,Object>>> iter = globalVertices.entrySet().iterator();
 			while (iter.hasNext()) {
 				VertexCustom vertex = (VertexCustom) iter.next().getValue().get("vertex");
-				System.out.println(vertex.getIdGradoop());
-				System.out.println(vertex.getX());
-				System.out.println(vertex.getY());
-				System.out.println(topModel);
-				System.out.println(rightModel);
-				System.out.println(bottomModel);
-				System.out.println(leftModel);
+//				System.out.println(vertex.getIdGradoop());
+//				System.out.println(vertex.getX());
+//				System.out.println(vertex.getY());
+//				System.out.println(topModel);
+//				System.out.println(rightModel);
+//				System.out.println(bottomModel);
+//				System.out.println(leftModel);
 				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
 						(bottomModel < vertex.getY())) && !hasVisualizedNeighbors(vertex)) ||
 							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && (bottomModel >= vertex.getY()) 
 									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
+					System.out.println("removing in clear operation " + vertex.getIdNumeric());
 					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 					iter.remove();
 				} 
@@ -603,8 +637,15 @@ public class UndertowServer {
 	
 	public static Set<String> getNeighborhood(VertexCustom vertex){
 		Set<String> neighborIds = new HashSet<String>();
-		Map<String,Map<String,String>> adjMatrix = ((AdjacencyGraphUtil) flinkCore.getGraphUtil()).getAdjMatrix();
-		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
+		Map<String,Map<String,String>> adjMatrix = flinkCore.getGraphUtil().getAdjMatrix();
+//		System.out.println("new vertex neighborhood");
+//		System.out.println(adjMatrix.get(vertex.getIdGradoop()));
+//		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) {
+//			System.out.println("adjmatrix entry" + entry);
+//		}
+		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) {
+			neighborIds.add(entry.getKey());
+		}
 		return neighborIds;
 	}
 	

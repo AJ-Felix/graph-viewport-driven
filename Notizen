@@ -155,7 +155,10 @@ NOTE: Möglicherweise wäre es besser gewesen, alle Funktionalitäten die moment
 	zu füttern, welche die Funktionalitäten berücksichtigt und nur noch "addVertex", "removeVertex", "addEdge" usw. Befehle an den Client sendet.
 	ISSUE: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. 
 TODO: Code putzen!!!
-TODO: removeWrapper implementieren
+TODO: ServerSide Adj 
+	debugging bei zoomOut (manchmal zu viele Knoten)
+	debugging bei pan (löscht Knoten mit IdNumeric 0, wahrscheinlich weil  nicht in newVertices hinzugefügt, weil bereits in cy hinzugefügt)
+	
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).

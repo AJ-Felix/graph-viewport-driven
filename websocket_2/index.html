@@ -43,29 +43,17 @@
 	<div id="cy" style="border:10px solid #cecece;" >
 	</div>
 
-	<form class="well form-inline" onsubmit="return false;">
-		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
-		<button type="submit" onClick="sendSignalRetract()" class="btn" id="send">buildTopViewRetract</button>
-	</form>
-	<form class="well form-inline" onsubmit="return false;">
-		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
-		<button type="submit" onClick="sendSignalAppendJoin()" class="btn" id="send">buildTopViewAppendJoin</button>
-	</form>
-	<form class="well form-inline" onsubmit="return false;">
-		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
-		<button type="submit" onClick="sendSignalAppendMap()" class="btn" id="send">buildTopViewAppendMap</button>
-	</form>
-	<form class="well form-inline" onsubmit="return false;">
-		<input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
-		<button type="submit" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button>
-	</form>
 	<div id="buttons" >
+		<button type="button" onClick="sendSignalRetract()" class="btn" id="send">buildTopViewRetract</button>
+		<button type="button" onClick="sendSignalAppendJoin()" class="btn" id="send">buildTopViewAppendJoin</button>
+		<button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button>
 		<button type="button" onClick="zoomIn()" class="btn" id="send">zoomIn</button>
 		<button type="button" onClick="zoomOut()" class="btn" id="send">zoomOut</button>
 		<button type="button" onClick="pan()" class="btn" id="send">panRight</button>
 		<button type="button" onClick="displayAll()" class="btn" id="send">diplayAll</button>
 		<button type="button" onClick="cancelJob()" class="btn" id="send">cancel</button>
 		<button type="button" onClick="testThread()" class="btn" id="send">TestThread</button>
+		<button type="button" onClick="clientSideLogic()" class="btn" id="send">clientSideLogic</button>
 	</div>
 	<form>
 		<input name="name" type="text"/>

@@ -47,6 +47,7 @@ public class GradoopGraphUtil implements GraphUtil{
 	private String wrapperFields;
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] wrapperFormatTypeInfo;
+	private Map<String,Map<String,String>> adjMatrix;
 	
 	public GradoopGraphUtil (LogicalGraph graph, StreamExecutionEnvironment fsEnv, StreamTableEnvironment fsTableEnv, String vertexFields, 
 			String wrapperFields) {
@@ -276,5 +277,28 @@ public class GradoopGraphUtil implements GraphUtil{
 				.union(wrapperStreamOldInNewIn)
 				.union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo));
 		return wrapperStream;
+	}
+
+	@Override
+	public Map<String, Map<String, String>> buildAdjacencyMatrix() throws Exception {
+		this.adjMatrix = new HashMap<String,Map<String,String>>();
+		List<EPGMVertex> vertices = this.graph.getVertices().collect();
+		for (EPGMVertex vertex : vertices) this.adjMatrix.put(vertex.getId().toString(), new HashMap<String,String>());
+		List<EPGMEdge> edges = this.graph.getEdges().collect();
+		for (EPGMEdge edge : edges) {
+			String sourceId = edge.getSourceId().toString();
+			String targetId = edge.getTargetId().toString();
+			String edgeId = edge.getId().toString();
+			this.adjMatrix.get(sourceId).put(targetId, edgeId);
+			this.adjMatrix.get(targetId).put(sourceId, edgeId);
+		}
+		System.out.println("adjMatrix built");
+		for (Map.Entry<String, Map<String, String>> entry : this.adjMatrix.entrySet()) System.out.println(entry);
+		return this.adjMatrix;
+	}
+	
+	@Override
+	public Map<String, Map<String, String>> getAdjMatrix() {
+		return this.adjMatrix;
 	}
 }

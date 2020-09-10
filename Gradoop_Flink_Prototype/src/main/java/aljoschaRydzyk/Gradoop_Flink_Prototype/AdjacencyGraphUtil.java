@@ -201,6 +201,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
+	@Override
 	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws IOException {
 		this.adjMatrix = new HashMap<String, Map<String,String>>();
 		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_adjacency"));

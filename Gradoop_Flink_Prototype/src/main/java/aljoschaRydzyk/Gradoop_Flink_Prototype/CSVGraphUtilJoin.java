@@ -1,8 +1,14 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -32,6 +38,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	private TypeInformation[] wrapperFormatTypeInfo;
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] vertexFormatTypeInfo;
+	private Map<String,Map<String,String>> adjMatrix;
 	
 	public CSVGraphUtilJoin(StreamExecutionEnvironment fsEnv, StreamTableEnvironment fsTableEnv, String inPath, String vertexFields, String wrapperFields) {
 		this.fsEnv = fsEnv;
@@ -207,6 +214,31 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
+	@Override
+	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws IOException {
+		this.adjMatrix = new HashMap<String, Map<String,String>>();
+		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_adjacency"));
+		String row;
+		while ((row = csvReader.readLine()) != null) {
+		    String[] arr = row.split(";");
+		    String vertexIdRow = arr[0];
+		    String[] vertexRows = Arrays.copyOfRange(arr, 1, arr.length);
+		    Map<String,String> map = new HashMap<String,String>();
+		    for (String column: vertexRows) {
+		    	String[] entry = column.split(","); 
+		    	map.put(entry[0], entry[1]);
+		    }
+		    this.adjMatrix.put(vertexIdRow, map);
+		}
+		csvReader.close();
+		return this.adjMatrix;
+	}
+	
+	@Override
+	public Map<String, Map<String, String>> getAdjMatrix() {
+		return this.adjMatrix;
+	}
+	
 	//Prelayout functions
 	public DataStream<Row> zoomInLayout(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
 		Iterator<String> iter = this.visualizedVertices.iterator();
@@ -243,5 +275,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 			//close to the new region
 		return null;
 	}
+
+
 	
 }

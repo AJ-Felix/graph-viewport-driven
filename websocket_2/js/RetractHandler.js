@@ -223,26 +223,27 @@ class RetractHandler{
 
 	}
 		
-	addWrapperToQueue(dataArray, bool){
-		let list = [dataArray, bool];
-		this.wrapperQueue.push(list);
-		if (!this.addWrapperRunning) {
-			this.addWrapperRunning = true;
-			this.addWrapper(); 
-		}
-	}
+	// addWrapperToQueue(dataArray, bool){
+		// let list = [dataArray, bool];
+		// this.wrapperQueue.push(list);
+		// if (!this.addWrapperRunning) {
+			// this.addWrapperRunning = true;
+			// this.addWrapper(); 
+		// }
+	// }
 	
-	async addWrapper(){
-		if (this.wrapperQueue.length > 0) {
-			let list = this.wrapperQueue.shift();
-			let dataArray = list[0];
-			let bool = list[1];
-			let promise = new Promise((resolve, reject) => {
+	// async 
+	addWrapper(dataArray){
+		// if (this.wrapperQueue.length > 0) {
+			// let list = this.wrapperQueue.shift();
+			// let dataArray = list[0];
+			// let bool = list[1];
+			// let promise = new Promise((resolve, reject) => {
 				const edgeId = dataArray[1];
 				const edgeLabel = dataArray[2];
 				const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5], dataArray[6]);
 				const targetVertex = new Vertex(dataArray[7], dataArray[8], dataArray[9], dataArray[10]);
-				if (bool) {
+				// if (bool) {
 					if (this.operation == "initial") {
 						if (edgeLabel == "identityEdge") {
 							this.addIdentityWrapperInitial(sourceVertex);
@@ -256,22 +257,26 @@ class RetractHandler{
 							this.addNonIdentityWrapper(edgeId, edgeLabel, sourceVertex, targetVertex);
 						}
 					}
-				} else {
-					this.removeWrapper(edgeId, edgeLabel, sourceVertex, targetVertex);
-				}
+				// } else {
+					// this.removeWrapper(edgeId, edgeLabel, sourceVertex, targetVertex);
+				// }
 				clearTimeout(this.timeOut);
 				this.timeOut = setTimeout(clearOperation, 500);
-				resolve(true);
-			});
-			await promise;
-			this.addWrapper();
-		} else {
-			this.addWrapperRunning = false;
-		}
+				// resolve(true);
+			// });
+			// await promise;
+			// this.addWrapper();
+		// } else {
+			// this.addWrapperRunning = false;
+		// }
 	}
 	
-	removeWrapper(edgeId, edgeLabel, sourceVertex, targetVertex){
+	removeWrapper(dataArray){
 		console.log("removing wrapper");
+		const edgeId = dataArray[1];
+		const edgeLabel = dataArray[2];
+		const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5], dataArray[6]);
+		const targetVertex = new Vertex(dataArray[7], dataArray[8], dataArray[9], dataArray[10]);
 		if (edgeLabel != "identityEdge"){
 			cy.remove(cy.$id(edgeId));
 			let targetMap = this.vertexGlobalMap.get(targetVertex.id);

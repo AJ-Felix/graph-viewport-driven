@@ -31,6 +31,7 @@ public class FlinkCore {
 	  
 	  private GraphUtil graphUtil;
 	  private GraphVis graphVis;
+	  private String graphOperationLogic;
 	  private Float topModelPos;
 	  private Float bottomModelPos;
 	  private Float leftModelPos;
@@ -39,7 +40,8 @@ public class FlinkCore {
 	  private String wrapperFields;
 	  private String filePath;
 	  
-	public  FlinkCore () {
+	  
+	public  FlinkCore (String graphOperationLogic) {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
 	    this.graflink_cfg = GradoopFlinkConfig.createConfig(env);
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
@@ -56,6 +58,7 @@ public class FlinkCore {
 		this.filePath = "/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout";
 //		TestThread thread = new TestThread("prototype", fsEnv, this);
 //		thread.start();
+		this.graphOperationLogic = graphOperationLogic;
 		System.out.println("initiated Flink.");
 
 	}
@@ -107,7 +110,10 @@ public class FlinkCore {
 		try {
 			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
 			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
-		} catch (IOException e) {
+			if (graphOperationLogic.equals("serverSide")) {
+				this.graphUtil.buildAdjacencyMatrix();
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 		}	
 		return this.graphUtil;
@@ -115,6 +121,13 @@ public class FlinkCore {
 	
 	public GraphUtil initializeCSVGraphUtilJoin() {
 		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.filePath, this.vertexFields, this.wrapperFields);
+		if (graphOperationLogic.equals("serverSide")) {
+			try {
+				this.graphUtil.buildAdjacencyMatrix();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 		return this.graphUtil;
 	}
 	

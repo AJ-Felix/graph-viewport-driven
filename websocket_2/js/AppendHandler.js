@@ -221,18 +221,19 @@ class AppendHandler{
 		}
 	}
 		
-	addWrapperToQueue(dataArray){
-		this.wrapperQueue.push(dataArray);
-		if (!this.addWrapperRunning) {
-			this.addWrapperRunning = true;
-			this.addWrapper(); 
-		}
-	}
+	// addWrapperToQueue(dataArray){
+		// this.wrapperQueue.push(dataArray);
+		// if (!this.addWrapperRunning) {
+			// this.addWrapperRunning = true;
+			// this.addWrapper(); 
+		// }
+	// }
 	
-	async addWrapper(){
-		if (this.wrapperQueue.length > 0) {
-			let dataArray = this.wrapperQueue.shift();
-			let promise = new Promise((resolve, reject) => {
+	// async 
+	addWrapper(dataArray){
+		// if (this.wrapperQueue.length > 0) {
+			// let dataArray = this.wrapperQueue.shift();
+			// let promise = new Promise((resolve, reject) => {
 				const edgeId = dataArray[1];
 				const edgeLabel = dataArray[2];
 				const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5], dataArray[6]);
@@ -252,13 +253,13 @@ class AppendHandler{
 				}
 				clearTimeout(this.timeOut);
 				this.timeOut = setTimeout(clearOperation, 500);
-				resolve(true);
-			});
-			await promise;
-			this.addWrapper();
-		} else {
-			this.addWrapperRunning = false;
-		}
+				// resolve(true);
+			// });
+			// await promise;
+			// this.addWrapper();
+		// } else {
+			// this.addWrapperRunning = false;
+		// }
 	}
 	
 	addVertex(vertex){
