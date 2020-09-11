@@ -158,7 +158,8 @@ TODO: Code putzen!!!
 TODO: ServerSide Adj 
 	debugging bei zoomOut (manchmal zu viele Knoten)
 	debugging bei pan (löscht Knoten mit IdNumeric 0, wahrscheinlich weil  nicht in newVertices hinzugefügt, weil bereits in cy hinzugefügt)
-	
+TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
+	Überlegung, ob if (addedSource) nicht eher durch if (nicht in newVertices/innerVertices enthalten) ausgetauscht werden müsste!!!
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).
@@ -170,6 +171,12 @@ Serverseitige Graph-Semantik:
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
 
+AddNonIdentityWrapper:
+	Case: Capacity == 1
+	sourceIn
+	targetIn
+	sourceVisualized
+	targetVisualized
 
 
 

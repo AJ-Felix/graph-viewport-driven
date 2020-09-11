@@ -35,8 +35,6 @@ public class AdjacencyGraphUtil implements GraphUtil{
 	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, String inPath) {
 		this.fsEnv = fsEnv;
 		this.inPath = inPath;
-		this.visualizedWrappers = new HashSet<String>();
-		this.visualizedVertices = new HashSet<String>();
 	}
 
 	@Override
