@@ -181,12 +181,14 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		DataStream<String> wrapperKeys = vertices.flatMap(new FlatMapFunction<Row,String>(){
 			@Override
 			public void flatMap(Row value, Collector<String> out) throws Exception {
-				String sourceId = (String) value.getField(1);
-				Map<String,String> map = adjMatrix.get(sourceId);
+				String sourceIdGradoop = (String) value.getField(1);
+				Integer sourceIdNumeric = (Integer) value.getField(2);
+				Map<String,String> map = adjMatrix.get(sourceIdGradoop);
 				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetId = entry.getKey();
-					Row targetVertex = vertexMap.get(targetId);
-					if ((Integer) targetVertex.getField(2) < numberVertices) {
+					String targetIdGradoop = entry.getKey();
+					Row targetVertex = vertexMap.get(targetIdGradoop);
+					Integer targetIdNumeric = (Integer) targetVertex.getField(2);
+					if (targetIdNumeric < numberVertices && sourceIdNumeric > targetIdNumeric) {
 						out.collect(entry.getValue());
 					} 
 				}

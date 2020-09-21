@@ -1,6 +1,6 @@
-var ws = new WebSocket("ws://localhost:8887/graphData");
+let ws = new WebSocket("ws://localhost:8887/graphData");
 
-var handler;
+let handler;
 
 ws.onopen = function() {
     console.log("Opened!");
@@ -9,6 +9,7 @@ ws.onopen = function() {
 
 let messageQueue = new Array();
 let messageProcessing;
+let graphOperationLogic = "serverSide";
 
 function addMessageToQueue(dataArray){
 		messageQueue.push(dataArray);
@@ -115,9 +116,11 @@ function sendSignalAppendJoin(){
 }
 
 function sendSignalAdjacency(){
-	// handler = new AppendHandler();
-	// handler.operation = "initial";
-	// handler.newVerticesMap = new Map();
+	if (graphOperationLogic == "clientSide"){		
+		handler = new AppendHandler();
+		handler.operation = "initial";
+		handler.newVerticesMap = new Map();
+	}
 	ws.send("buildTopView;adjacency");
 }
 
@@ -206,6 +209,7 @@ function testThread(){
 }
 
 function clientSideLogic(){
+	graphOperationLogic = "clientSide";
 	ws.send("clientSideLogic");
 }
 

@@ -114,6 +114,7 @@ class AppendHandler{
 	}
 	
 	addIdentityWrapper(vertex){
+		console.log("in identityWrapper with vertex: " + vertex.id);
 		if (this.capacity > 0) {
 			const added = this.addVertex(vertex);
 			if (added) {
@@ -238,6 +239,9 @@ class AppendHandler{
 				const edgeLabel = dataArray[2];
 				const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5], dataArray[6]);
 				const targetVertex = new Vertex(dataArray[7], dataArray[8], dataArray[9], dataArray[10]);
+				// console.log("sourceId: " + sourceVertex.id + ", targetId: " + targetVertex.id + ", edgeId: " + edgeId);
+				// if (this.minDegreeVertex != null) console.log("minDegreeVertexId: " + this.minDegreeVertex.id + ", secondMinDegreeVertexId: " + this.secondMinDegreeVertex.id)
+				// console.log("capacity: " + this.capacity)
 				if (this.operation == "initial") {
 					if (edgeLabel == "identityEdge"){
 						this.addIdentityWrapperInitial(sourceVertex);

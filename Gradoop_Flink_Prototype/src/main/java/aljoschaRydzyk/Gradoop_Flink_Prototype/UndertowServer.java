@@ -56,9 +56,7 @@ public class UndertowServer {
 	private static Float bottomModel;
 	private static Float leftModel;
 	private static VertexCustom secondMinDegreeVertex;
-	private static VertexCustom minDegreeVertex;
-	private static Integer maxNumberVertices;
-    
+	private static VertexCustom minDegreeVertex;    
 //    private static FlinkApi api = new FlinkApi();
     
 //    private static JobID jobId;
@@ -158,6 +156,7 @@ public class UndertowServer {
         					initializeGraphRepresentation();
         					DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
     	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+    	    				wrapperStream.addSink(new FlinkRowStreamPrintSink()).setParallelism(1);
         				} else {
             				wrapperStream.addSink(new WrapperAppendSink());
         				}
@@ -281,7 +280,6 @@ public class UndertowServer {
 		innerVertices = new HashMap<String,VertexCustom>();
 		newVertices = new HashMap<String,VertexCustom>();
 		edges = new HashMap<String,VVEdgeWrapper>();
-		maxNumberVertices = 10;
 	}
 	
 	public static void setOperation(String operation) {
@@ -300,15 +298,6 @@ public class UndertowServer {
 				Integer sourceY = wrapper.getSourceY();
 				Integer targetX = wrapper.getTargetX();
 				Integer targetY = wrapper.getTargetY();
-//				System.out.println(wrapper.getEdgeIdGradoop());
-//				System.out.println(rightModel);
-//				System.out.println(sourceX);
-//				System.out.println(targetX);
-//				System.out.println(leftModel);
-//				System.out.println(topModel);
-//				System.out.println(sourceY);
-//				System.out.println(targetY);
-//				System.out.println(bottomModel);
 				if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
 						((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
 					UndertowServer.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
@@ -326,7 +315,7 @@ public class UndertowServer {
 				}
 			}
 			System.out.println("innerVertices size after removing in prepareOPeration: " + innerVertices.size());
-			capacity = maxNumberVertices - innerVertices.size();
+			capacity = maxVertices - innerVertices.size();
 		} else {
 			capacity = 0;
 		}
@@ -391,20 +380,34 @@ public class UndertowServer {
 		}
 	}
 	
+	private static void registerInside(VertexCustom vertex) {
+		newVertices.put(vertex.getIdGradoop(), vertex);
+		if (newVertices.size() > 1) {
+			updateMinDegreeVertices(newVertices);
+		} else {
+			minDegreeVertex = vertex;
+		}
+	}
+	
+	
 	private static void addNonIdentityWrapper(VVEdgeWrapper wrapper) {
 		VertexCustom sourceVertex = wrapper.getSourceVertex();
 		VertexCustom targetVertex = wrapper.getTargetVertex();
+		String sourceId = sourceVertex.getIdGradoop();
+		String targetId = targetVertex.getIdGradoop();
+		boolean sourceIsRegisteredInside = newVertices.containsKey(sourceId) || innerVertices.containsKey(sourceId);
+		boolean targetIsRegisteredInside = newVertices.containsKey(targetId) || innerVertices.containsKey(targetId);
 		if (capacity > 1) {
-			boolean addedSource = addVertex(sourceVertex);
+			addVertex(sourceVertex);
 			if ((sourceVertex.getX() >= leftModel) && (rightModel >= sourceVertex.getX()) && (sourceVertex.getY() >= topModel) && 
-					(bottomModel >= sourceVertex.getY()) && addedSource){
+					(bottomModel >= sourceVertex.getY()) && !sourceIsRegisteredInside){
 				updateMinDegreeVertex(sourceVertex);
 				newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 				capacity -= 1;
 			}
-			boolean addedTarget = addVertex(targetVertex);
+			addVertex(targetVertex);
 			if ((targetVertex.getX() >= leftModel) && (rightModel >= targetVertex.getX()) && (targetVertex.getY() >= topModel) 
-					&& (bottomModel >= targetVertex.getY()) && addedTarget){
+					&& (bottomModel >= targetVertex.getY()) && !targetIsRegisteredInside){
 				updateMinDegreeVertex(targetVertex);
 				newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 				capacity -= 1;
@@ -424,68 +427,52 @@ public class UndertowServer {
 			System.out.println("In addNonIdentityWrapper, capacity == 1, sourceID: " + sourceVertex.getIdNumeric() + ", sourceIn: " + sourceIn + 
 					", targetID: " + targetVertex.getIdNumeric() + ", targetIn: " + targetIn);
 			if (sourceIn && targetIn) {
-				boolean addedSource = false;
-				boolean addedTarget = false;
+				boolean sourceAdmission = false;
+				boolean targetAdmission = false;
 				if (sourceVertex.getDegree() > targetVertex.getDegree()) {
-					addedSource = addVertex(sourceVertex);
-					if (targetVertex.getDegree() > minDegreeVertex.getDegree() || !addedSource) {
-						addedTarget = addVertex(targetVertex);
+					addVertex(sourceVertex);
+					sourceAdmission = true;
+					if (targetVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
+						addVertex(targetVertex);
+						targetAdmission = true;
 						addEdge(wrapper);
 					}
 				} else {
-					addedTarget = addVertex(targetVertex);
-					if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || !addedTarget) {
-						addedSource = addVertex(sourceVertex);
+					addVertex(targetVertex);
+					targetAdmission = true;
+					if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
+						addVertex(sourceVertex);
+						sourceAdmission = true;
 						addEdge(wrapper);
 					}
 				}
-				if (addedSource && addedTarget) {
+				if (!sourceIsRegisteredInside && sourceAdmission && !targetIsRegisteredInside && targetAdmission) {
 					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 					updateMinDegreeVertices(newVertices);
-				} else if (addedSource) {
-					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else {
-						minDegreeVertex = sourceVertex;
-					}
-				} else if (addedTarget) {
-					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else {
-						minDegreeVertex = targetVertex;
-					}
+				} else if (!sourceIsRegisteredInside && sourceAdmission) {
+					registerInside(sourceVertex);
+				} else if (!targetIsRegisteredInside && targetAdmission) {
+					registerInside(targetVertex);
 				}
 				capacity -= 1 ;
 			} else if (sourceIn) {
-				boolean addedSource = addVertex(sourceVertex);
+				addVertex(sourceVertex);
 				addVertex(targetVertex);
 				addEdge(wrapper);
-				if (addedSource) {
+				if (!sourceIsRegisteredInside) {
 					capacity -= 1 ;
-					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else {
-						minDegreeVertex = sourceVertex;
-					}
+					registerInside(sourceVertex);
 				}
 			} else if (targetIn) {
-				boolean addedTarget = addVertex(targetVertex);
+				addVertex(targetVertex);
 				addVertex(sourceVertex);
 				addEdge(wrapper);
-				if (addedTarget) {
+				if (!targetIsRegisteredInside) {
 					capacity -= 1 ;
-					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else {
-						minDegreeVertex = targetVertex;
-					}
+					registerInside(targetVertex);
 				}
 			}
 		} else {
@@ -500,11 +487,11 @@ public class UndertowServer {
 				targetIn = false;
 			}
 			if (sourceIn && targetIn && (sourceVertex.getDegree() > secondMinDegreeVertex.getDegree()) && 
-					(targetVertex.getDegree()> secondMinDegreeVertex.getDegree())) {
-				boolean addedSource = addVertex(sourceVertex);
-				boolean addedTarget = addVertex(targetVertex);
+					(targetVertex.getDegree() > secondMinDegreeVertex.getDegree())) {
+				addVertex(sourceVertex);
+				addVertex(targetVertex);
 				addEdge(wrapper);
-				if (addedSource && addedTarget) {
+				if (!sourceIsRegisteredInside && !targetIsRegisteredInside) {
 					reduceNeighborIncidence(minDegreeVertex);
 					reduceNeighborIncidence(secondMinDegreeVertex);
 					removeVertex(secondMinDegreeVertex);
@@ -512,48 +499,34 @@ public class UndertowServer {
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 					updateMinDegreeVertices(newVertices);
-				} else if (addedSource || addedTarget) {
+				} else if (!sourceIsRegisteredInside) {
 					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
-					if (addedSource) newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					if (addedTarget) newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else if (addedSource) {
-						minDegreeVertex = sourceVertex;
-					} else if (addedTarget) {
-						minDegreeVertex = targetVertex;
-					}
+					registerInside(sourceVertex);
+				} else if (!targetIsRegisteredInside) {
+					reduceNeighborIncidence(minDegreeVertex);
+					removeVertex(minDegreeVertex);
+					registerInside(targetVertex);
 				}
 			} else if (sourceIn && !(targetIn) && (sourceVertex.getDegree() > minDegreeVertex.getDegree() 
 					|| newVertices.containsKey(sourceVertex.getIdGradoop()) || innerVertices.containsKey(sourceVertex.getIdGradoop()))) {
-				boolean addedSource = addVertex(sourceVertex);
+				addVertex(sourceVertex);
 				addVertex(targetVertex);
 				addEdge(wrapper);
-				if (addedSource) {
+				if (!sourceIsRegisteredInside) {
 					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
-					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else {
-						minDegreeVertex = sourceVertex;
-					} 
+					registerInside(sourceVertex);
 				}
 			} else if (targetIn && !(sourceIn) && (targetVertex.getDegree() > minDegreeVertex.getDegree()
 					|| newVertices.containsKey(targetVertex.getIdGradoop()) || innerVertices.containsKey(targetVertex.getIdGradoop()))) {
 				addVertex(sourceVertex);
-				boolean addedTarget = addVertex(targetVertex);
+				addVertex(targetVertex);
 				addEdge(wrapper);
-				if (addedTarget) {
+				if (!targetIsRegisteredInside) {
 					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
-					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else {
-						minDegreeVertex = targetVertex;
-					} 
+					registerInside(targetVertex);
 				}
 			}
 		}
@@ -619,9 +592,11 @@ public class UndertowServer {
 	private static void addWrapperIdentity(VertexCustom vertex) {
 		System.out.println("In addWrapperIdentity");
 		if (vertex.getIdNumeric() == 0) System.out.println("zero is in identity!");
+		String vertexId = vertex.getIdGradoop();
+		boolean vertexIsRegisteredInside = newVertices.containsKey(vertexId) || innerVertices.containsKey(vertexId);
 		if (capacity > 0) {
-			boolean added = addVertex(vertex);
-			if (!newVertices.containsKey(vertex.getIdGradoop()) && !innerVertices.containsKey(vertex.getIdGradoop())) {
+			addVertex(vertex);
+			if (!vertexIsRegisteredInside) {
 				if (vertex.getIdNumeric() == 0) System.out.println("zero is in identity and added!");
 				newVertices.put(vertex.getIdGradoop(), vertex);
 				updateMinDegreeVertex(vertex);
@@ -631,17 +606,12 @@ public class UndertowServer {
 			System.out.println("In addWrapperIdentity, declined capacity > 0");
 			if (vertex.getDegree() > minDegreeVertex.getDegree()) {
 				if (vertex.getIdNumeric() == 0) System.out.println("comparison works");
-				boolean added = addVertex(vertex);
-				if (!newVertices.containsKey(vertex.getIdGradoop()) && !innerVertices.containsKey(vertex.getIdGradoop())) {
+				addVertex(vertex);
+				if (!vertexIsRegisteredInside) {
 					if (vertex.getIdNumeric() == 0) System.out.println("zero is in identity and added!");
-					newVertices.put(vertex.getIdGradoop(), vertex);
 					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
-					if (newVertices.size() > 1) {
-						updateMinDegreeVertices(newVertices);
-					} else if (newVertices.size() == 1) {
-						minDegreeVertex = vertex;
-					}
+					registerInside(vertex);
 				}
 			} else {
 				System.out.println("In addWrapperIdentity, declined vertexDegree > minDegreeVertexDegree");
@@ -690,26 +660,15 @@ public class UndertowServer {
 	public static void clearOperation(){
 		System.out.println("in clear operation");
 		if (operation != "initial"){
-			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
-				System.out.println("innerVertex " + entry.getValue().getIdNumeric());
-			}
+			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println("innerVertex " + entry.getValue().getIdNumeric());
 			innerVertices.putAll(newVertices); 
-			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
-				System.out.println("innerVertex " + entry.getValue().getIdNumeric());
-			}
+			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println("innerVertex " + entry.getValue().getIdNumeric());
 			System.out.println("global...");
 			Iterator<Map.Entry<String, Map<String,Object>>> iter = globalVertices.entrySet().iterator();
 			while (iter.hasNext()) {
 				VertexCustom vertex = (VertexCustom) iter.next().getValue().get("vertex");
-//				System.out.println(vertex.getIdGradoop());
-//				System.out.println(vertex.getX());
-//				System.out.println(vertex.getY());
-//				System.out.println(topModel);
-//				System.out.println(rightModel);
-//				System.out.println(bottomModel);
-//				System.out.println(leftModel);
 				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
-						(bottomModel < vertex.getY())) && !hasVisualizedNeighbors(vertex)) ||
+						(bottomModel < vertex.getY())) && !hasVisualizedNeighborsInside(vertex)) ||
 							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && (bottomModel >= vertex.getY()) 
 									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
 					System.out.println("removing in clear operation " + vertex.getIdNumeric());
@@ -720,38 +679,27 @@ public class UndertowServer {
 					while (edgesIterator.hasNext()) if (vertexNeighborMap.values().contains(edgesIterator.next().getKey())) edgesIterator.remove();
 				} 
 			}
-//			for (Map.Entry<String, Map<String,Object>> entry : globalVertices.entrySet()) {
-//				System.out.println(entry);
-//				Map<String,Object> map = entry.getValue();
-//				VertexCustom vertex = (VertexCustom) map.get("vertex");
-//				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
-//						(bottomModel < vertex.getY())) && hasVisualizedNeighbors(vertex)) ||
-//							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && (bottomModel >= vertex.getY()) 
-//									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
-//					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
-//					globalVertices.remove(vertex.getIdGradoop());
-//				} 
-//			}
 		} else {
 			newVertices = innerVertices;
+			if (newVertices.size() > 1) {
+				updateMinDegreeVertices(newVertices);
+			} else if (newVertices.size() == 1) {
+				minDegreeVertex = newVertices.values().iterator().next();
+			}
 		}
 		operation = null;
 		System.out.println("before updatemindegreevertices in clear operation");
-		if (newVertices.size() > 1) {
-			updateMinDegreeVertices(newVertices);
-		} else if (newVertices.size() == 1) {
-			minDegreeVertex = newVertices.values().iterator().next();
-		}
+//		if (newVertices.size() > 1) {
+//			updateMinDegreeVertices(newVertices);
+//		} else if (newVertices.size() == 1) {
+//			minDegreeVertex = newVertices.values().iterator().next();
+//		}
 		Set<String> visualizedVertices = new HashSet<String>();
-		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
-			visualizedVertices.add(entry.getKey());
-		}
+		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
+		Set<String> visualizedWrappers = new HashSet<String>();
+		for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) visualizedWrappers.add(entry.getKey());
 		GraphUtil graphUtil =  flinkCore.getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
-		Set<String> visualizedWrappers = new HashSet<String>();
-		for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) {
-			visualizedWrappers.add(entry.getKey());
-		}
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
 		System.out.println("global size "+ globalVertices.size());
 	}
@@ -759,24 +707,13 @@ public class UndertowServer {
 	public static Set<String> getNeighborhood(VertexCustom vertex){
 		Set<String> neighborIds = new HashSet<String>();
 		Map<String,Map<String,String>> adjMatrix = flinkCore.getGraphUtil().getAdjMatrix();
-//		System.out.println("new vertex neighborhood");
-//		System.out.println(adjMatrix.get(vertex.getIdGradoop()));
-//		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) {
-//			System.out.println("adjmatrix entry" + entry);
-//		}
-		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) {
-			neighborIds.add(entry.getKey());
-		}
+		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
 		return neighborIds;
 	}
 	
-	public static boolean hasVisualizedNeighbors(VertexCustom vertex) {
-		Set<String> neighborIds = getNeighborhood(vertex);
-		for (String neighborId : neighborIds) {
-			if (globalVertices.containsKey(neighborId)){
-				return true;
-			}
-		}
+	public static boolean hasVisualizedNeighborsInside(VertexCustom vertex) {
+		Map<String,Map<String,String>> adjMatrix = flinkCore.getGraphUtil().getAdjMatrix();
+		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
 		return false;
 	}
 }

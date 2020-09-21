@@ -144,29 +144,21 @@ Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welc
 TODO: PreLayout-WrappersCSV: WrapperCSV in kleinere Stücke geordnet nach Koordinaten aufteilen, um eine Vorfilterung für Zoom- und Pan-Operationen zu realisieren
 	- aber ebenfalls die ungestückelte Variante implementiert lassen für den Vergleich
 TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem subset an Knoten durchführen, möglicherweise ist das hilfreich
-TODO: Die Inzidenz wird bei Zoom-Out nicht verringert!!! Inwiefern könnte das problematisch werden. Inwiefern ist das Inzidenzkonzept überhaupt notwendig?
+TODO: Die Inzidenz wird bei Zoom-Out nicht verringert!!! Inwiefern könnte das problematisch werden. Inwiefern ist das Inzidenzkonzept überhaupt notwendig? --> Das Inzidenzkonzept ist nur für buildTopViewRetract notwendig...
 TODO: Überlegung, ob eine Adjazenzmatrix nicht in jeder Art und Weise der BackEnd-Speicherung sinnvoll ist, weil Nachbarschaftsbeziehungen immer abgefragt werden müssen. Momentan wird dies über einen Vergleich mit bereits
 	visualisierten Kanten getan, diese Kantenmenge kann jedoch sehr groß werden.
 TODO: Die Adjazenzmatrix ist höchstens bei Nachbarschaftsabfragen sinnvoll, das heißt wenn z.B. ein Layout ad-hoc erstellt werden soll oder wenn geprüft werden soll, ob Nachbarknoten außerhalb des Zielbereichs dargestellt
 	werden sollten.
 TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
 	gesendet wurden.
-NOTE: Möglicherweise wäre es besser gewesen, alle Funktionalitäten die momentan der Client übernimmt auf den Server auszulagern. Das heißt, die Wrapper nicht einfach an den Client zu senden, sondern damit eine Struktur
-	zu füttern, welche die Funktionalitäten berücksichtigt und nur noch "addVertex", "removeVertex", "addEdge" usw. Befehle an den Client sendet.
-	ISSUE: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. 
-TODO: Code putzen!!!
-TODO: ServerSide Adj 
-	debugging bei zoomOut (manchmal zu viele Knoten)
-	debugging bei pan (löscht Knoten mit IdNumeric 0, wahrscheinlich weil  nicht in newVertices hinzugefügt, weil bereits in cy hinzugefügt)
+
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
-	Überlegung, ob if (addedSource) nicht eher durch if (nicht in newVertices/innerVertices enthalten) ausgetauscht werden müsste!!!
+TODO: ClientSide an ServerSide anpassen!
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).
-	Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren.
-	Möglicherweise ein Parallelitätsproblem
-
-
+	ISSUE: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem
+	
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
