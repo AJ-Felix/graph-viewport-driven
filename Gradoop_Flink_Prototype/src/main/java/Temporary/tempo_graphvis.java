@@ -1,4 +1,4 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
 
 import java.io.Serializable;
 import java.util.Collection;

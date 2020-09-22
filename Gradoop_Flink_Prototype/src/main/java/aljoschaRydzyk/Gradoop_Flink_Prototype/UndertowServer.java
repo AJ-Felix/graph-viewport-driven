@@ -20,10 +20,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.types.Row;
+
+import Temporary.TestThread;
 
 public class UndertowServer {
 	
@@ -34,16 +35,13 @@ public class UndertowServer {
     private static int webSocketListenPort = 8887;
     private static String webSocketHost = "localhost";
     
-    private static Integer maxVertices = 10;
+    private static Integer maxVertices = 100;
     
     private static String graphOperationLogic = "serverSide";
     
     private static Float viewportPixelX = (float) 1000;
     private static Float viewportPixelY = (float) 1000;
-    private static float zoomLevel = 1;
-    
-//    private static transient GraphVis graphVis;
-    
+    private static float zoomLevel = 1;    
     
     private static Map<String,Map<String,Object>> globalVertices;
 	private static Map<String,VertexCustom> innerVertices;
@@ -109,7 +107,10 @@ public class UndertowServer {
                 	graphOperationLogic = "serverSide";
                 } else if (messageData.equals("clientSideLogic")) {
                 	graphOperationLogic = "clientSide";
-                } else if (messageData.startsWith("TestThread")){
+                } else if (messageData.startsWith("maxVertices")) {
+                	String[] arrMessageData = messageData.split(";");
+                	maxVertices = Integer.parseInt(arrMessageData[1]);
+            	} else if (messageData.startsWith("TestThread")){
                 	TestThread thread = new TestThread("prototype");
             		thread.start();
                 } else if (messageData.startsWith("edgeIdString")) {
@@ -315,10 +316,8 @@ public class UndertowServer {
 				}
 			}
 			System.out.println("innerVertices size after removing in prepareOPeration: " + innerVertices.size());
-			capacity = maxVertices - innerVertices.size();
-		} else {
-			capacity = 0;
 		}
+		capacity = maxVertices - innerVertices.size();
 		if (operation.equals("pan") || operation.equals("zoomOut")) {
 			newVertices = innerVertices;
 			innerVertices = new HashMap<String,VertexCustom>();
@@ -508,8 +507,7 @@ public class UndertowServer {
 					removeVertex(minDegreeVertex);
 					registerInside(targetVertex);
 				}
-			} else if (sourceIn && !(targetIn) && (sourceVertex.getDegree() > minDegreeVertex.getDegree() 
-					|| newVertices.containsKey(sourceVertex.getIdGradoop()) || innerVertices.containsKey(sourceVertex.getIdGradoop()))) {
+			} else if (sourceIn && !(targetIn) && (sourceVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside)) {
 				addVertex(sourceVertex);
 				addVertex(targetVertex);
 				addEdge(wrapper);
@@ -518,8 +516,7 @@ public class UndertowServer {
 					removeVertex(minDegreeVertex);
 					registerInside(sourceVertex);
 				}
-			} else if (targetIn && !(sourceIn) && (targetVertex.getDegree() > minDegreeVertex.getDegree()
-					|| newVertices.containsKey(targetVertex.getIdGradoop()) || innerVertices.containsKey(targetVertex.getIdGradoop()))) {
+			} else if (targetIn && !(sourceIn) && (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside)) {
 				addVertex(sourceVertex);
 				addVertex(targetVertex);
 				addEdge(wrapper);
@@ -631,7 +628,7 @@ public class UndertowServer {
 		if (addedSource) innerVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 		boolean addedTarget = addVertex(targetVertex);
 		if (addedTarget) innerVertices.put(targetVertex.getIdGradoop(), targetVertex);
-			addEdge(wrapper);
+		addEdge(wrapper);
 	}
 	
 	public static boolean addVertex(VertexCustom vertex) {
@@ -642,7 +639,7 @@ public class UndertowServer {
 			map.put("incidence", (int) 1);
 			map.put("vertex", vertex);
 			globalVertices.put(sourceId, map);
-				UndertowServer.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
+			UndertowServer.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
 			return true;
 		} else {
 			System.out.println("In addVertex, declined because ID contained in globalVertices");

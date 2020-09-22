@@ -1,4 +1,4 @@
-class AppendHandler{
+class RetractHandler{
 	vertexGlobalMap;
 	vertexInnerMap;
 	newVerticesMap;
@@ -12,12 +12,14 @@ class AppendHandler{
 	operation;
 	timeOut;
 	maxVertices;
+	// wrapperQueue;
+	// wrapperRunning;
 	
-	constructor(maxNumberVertices){
+	constructor(){
 		this.vertexGlobalMap = new Map();
 		this.vertexInnerMap = new Map();
 		this.newVerticesMap = new Map();
-		this.maxVertices = maxNumberVertices;
+		this.maxVertices = 100;
 		this.wrapperQueue = new Array();
 		this.minDegreeVertex = null;
 		this.secondMinDegreeVertex = null;
@@ -270,26 +272,81 @@ class AppendHandler{
 		}
 	}
 		
+	// addWrapperToQueue(dataArray){
+		// this.wrapperQueue.push(dataArray);
+		// if (!this.addWrapperRunning) {
+			// this.addWrapperRunning = true;
+			// this.addWrapper(); 
+		// }
+	// }
+	
+	// async 
 	addWrapper(dataArray){
+		// if (this.wrapperQueue.length > 0) {
+			// let dataArray = this.wrapperQueue.shift();
+			// let promise = new Promise((resolve, reject) => {
+				const edgeId = dataArray[1];
+				const edgeLabel = dataArray[2];
+				const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5], dataArray[6]);
+				const targetVertex = new Vertex(dataArray[7], dataArray[8], dataArray[9], dataArray[10]);
+				// console.log("sourceId: " + sourceVertex.id + ", targetId: " + targetVertex.id + ", edgeId: " + edgeId);
+				// if (this.minDegreeVertex != null) console.log("minDegreeVertexId: " + this.minDegreeVertex.id + ", secondMinDegreeVertexId: " + this.secondMinDegreeVertex.id)
+				// console.log("this.capacity: " + this.capacity)
+				if (this.operation == "initial") {
+					if (edgeLabel == "identityEdge"){
+						this.addIdentityWrapperInitial(sourceVertex);
+					} else {
+						this.addNonIdentityWrapperInitial(edgeId, edgeLabel, sourceVertex, targetVertex);
+					}
+				} else {
+					if (edgeLabel == "identityEdge"){
+						this.addIdentityWrapper(sourceVertex);
+					} else {
+						this.addNonIdentityWrapper(edgeId, edgeLabel, sourceVertex, targetVertex);
+					}
+				}
+				clearTimeout(this.timeOut);
+				this.timeOut = setTimeout(clearOperation, 500);
+				// resolve(true);
+			// });
+			// await promise;
+			// this.addWrapper();
+		// } else {
+			// this.addWrapperRunning = false;
+		// }
+	}
+	
+	removeWrapper(dataArray){
+		console.log("removing wrapper");
 		const edgeId = dataArray[1];
 		const edgeLabel = dataArray[2];
 		const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5], dataArray[6]);
 		const targetVertex = new Vertex(dataArray[7], dataArray[8], dataArray[9], dataArray[10]);
-		if (this.operation == "initial") {
-			if (edgeLabel == "identityEdge"){
-				this.addIdentityWrapperInitial(sourceVertex);
+		if (edgeLabel != "identityEdge"){
+			cy.remove(cy.$id(edgeId));
+			let targetMap = this.vertexGlobalMap.get(targetVertex.id);
+			let targetIncidence = targetMap.get("incidence");
+			if (targetIncidence == 1) {
+				cy.remove(cy.$id(targetVertex.id));
+				this.vertexGlobalMap.delete(targetVertex.id);
+				if (this.newVerticesMap.has(targetVertex.id)) this.newVerticesMap.delete(targetVertex.id);
+				if (this.vertexInnerMap.has(targetVertex.id)) this.vertexInnerMap.delete(targetVertex.id);
+				console.log("deleted target vertex");
 			} else {
-				this.addNonIdentityWrapperInitial(edgeId, edgeLabel, sourceVertex, targetVertex);
+				targetMap.set("incidence", targetIncidence - 1);
 			}
+		} 
+		let sourceMap = this.vertexGlobalMap.get(sourceVertex.id);
+		let sourceIncidence = sourceMap.get("incidence");
+		if (sourceIncidence == 1) {
+			cy.remove(cy.$id(sourceVertex.id));
+			this.vertexGlobalMap.delete(sourceVertex.id);
+			if (this.newVerticesMap.has(sourceVertex.id)) this.newVerticesMap.delete(sourceVertex.id);
+			if (this.vertexInnerMap.has(sourceVertex.id)) this.vertexInnerMap.delete(sourceVertex.id);
+			console.log("deleted sourcevertex");
 		} else {
-			if (edgeLabel == "identityEdge"){
-				this.addIdentityWrapper(sourceVertex);
-			} else {
-				this.addNonIdentityWrapper(edgeId, edgeLabel, sourceVertex, targetVertex);
-			}
+			sourceMap.set("incidence", sourceIncidence - 1);
 		}
-		clearTimeout(this.timeOut);
-		this.timeOut = setTimeout(clearOperation, 500);
 	}
 	
 	addVertex(vertex){
@@ -328,6 +385,10 @@ function clearOperation(){
 		cy.nodes().forEach( 
 			function(node){
 				const pos = node.position();
+				//Welche Abfragen sind hier wirklich notwendig?
+				//Ein Knoten wird entfernt, wenn er außerhalb des Zielbereichs liegt UND keinen Nachbarn hat
+				//Ein Knoten wird entfernt, wenn er innerhalb des Zielbereichs liegt, aber nicht Teil der vertexInnerMap ist
+				//Ein Knoten wird entfernt, wenn alle add/delete-Operationen sich gegenseitig aufgehoben haben (i.e. Inzidenz == 0)
 				if ((((pos.x < this.leftModel) || (this.rightModel < pos.x) || (pos.y < this.topModel) || (this.bottomModel < pos.y)) && node.neighborhood().length == 0) || 
 						((pos.x >= this.leftModel) && (this.rightModel >= pos.x) && (pos.y >= this.topModel) && (this.bottomModel >= pos.y) && !this.vertexInnerMap.has(node.data('id')))) {
 					cy.remove(node);
@@ -358,4 +419,9 @@ function clearOperation(){
 	handler.operation = null;
 	ws.send("edgeIdString" + edgeIdString);
 	ws.send("vertexIdString" + vertexIdString);
+	// if (handler.newVerticesMap.size > 1) {
+		// handler.updateMinDegreeVertices(handler.newVerticesMap);
+	// } else if (handler.newVerticesMap.size == 1) {
+		// handler.minDegreeVertex = handler.newVerticesMap.values().next().value;
+	// }
 }

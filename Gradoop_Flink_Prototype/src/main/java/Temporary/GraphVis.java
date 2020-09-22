@@ -1,4 +1,4 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -7,6 +7,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import aljoschaRydzyk.Gradoop_Flink_Prototype.UndertowServer;
+import aljoschaRydzyk.Gradoop_Flink_Prototype.VVEdgeWrapper;
+import aljoschaRydzyk.Gradoop_Flink_Prototype.VertexCustom;
+
 import java.util.Set;
 
 public class GraphVis implements Serializable{

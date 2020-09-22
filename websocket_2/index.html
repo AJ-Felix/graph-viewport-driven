@@ -44,20 +44,23 @@
 	</div>
 
 	<div id="buttons" >
+		<button type="button" onClick="resetVisualization()" class="btn" id="send">Reset</button>
 		<button type="button" onClick="sendSignalRetract()" class="btn" id="send">buildTopViewRetract</button>
 		<button type="button" onClick="sendSignalAppendJoin()" class="btn" id="send">buildTopViewAppendJoin</button>
 		<button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button>
-		<button type="button" onClick="zoomIn()" class="btn" id="send">zoomIn</button>
-		<button type="button" onClick="zoomOut()" class="btn" id="send">zoomOut</button>
-		<button type="button" onClick="pan()" class="btn" id="send">panRight</button>
-		<button type="button" onClick="displayAll()" class="btn" id="send">diplayAll</button>
-		<button type="button" onClick="cancelJob()" class="btn" id="send">cancel</button>
-		<button type="button" onClick="testThread()" class="btn" id="send">TestThread</button>
+		<!-- <button type="button" onClick="zoomIn()" class="btn" id="send">zoomIn</button> -->
+		<!-- <button type="button" onClick="zoomOut()" class="btn" id="send">zoomOut</button> -->
+		<!-- <button type="button" onClick="pan()" class="btn" id="send">panRight</button> -->
+		<!-- <button type="button" onClick="displayAll()" class="btn" id="send">diplayAll</button> -->
+		<!-- <button type="button" onClick="cancelJob()" class="btn" id="send">cancel</button> -->
+		<!-- <button type="button" onClick="testThread()" class="btn" id="send">TestThread</button> -->
 		<button type="button" onClick="clientSideLogic()" class="btn" id="send">clientSideLogic</button>
+		<button type="button" onClick="serverSideLogic()" class="btn" id="send">serverSideLogic</button>
+		
 	</div>
 	<form>
-		<input name="name" type="text"/>
-		<button type="submit"> Send </button>
+		<input id="maxVerticesInput" type="number"/>
+		<button type="button" onclick="sendMaxVertices(document.getElementById('maxVerticesInput').value)"> Maximal Number of Vertices in Viewport</button>
 	</form>
 	
     <script src="js/moment.min.js" type="script"></script>

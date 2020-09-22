@@ -1,7 +1,6 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype; 
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -30,7 +29,6 @@ public class FlinkCore {
 	  private StreamTableEnvironment fsTableEnv;
 	  
 	  private GraphUtil graphUtil;
-	  private GraphVis graphVis;
 	  private String graphOperationLogic;
 	  private Float topModelPos;
 	  private Float bottomModelPos;

@@ -1,10 +1,13 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction.Context;
 import org.apache.flink.types.Row;
+
+import aljoschaRydzyk.Gradoop_Flink_Prototype.FlinkCore;
+import aljoschaRydzyk.Gradoop_Flink_Prototype.UndertowServer;
 
 public class TestThread implements Runnable{
 	private String threadName;
