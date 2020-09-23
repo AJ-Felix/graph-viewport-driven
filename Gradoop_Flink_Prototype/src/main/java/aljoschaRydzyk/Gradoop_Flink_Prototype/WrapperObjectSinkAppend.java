@@ -7,6 +7,6 @@ import org.apache.flink.types.Row;
 public class WrapperObjectSinkAppend implements SinkFunction<VVEdgeWrapper>{
 	@Override 
 	public void invoke(VVEdgeWrapper element, @SuppressWarnings("rawtypes") Context context) {
-		UndertowServer.addWrapper(element);
+		Main.addWrapper(element);
 	}
 }

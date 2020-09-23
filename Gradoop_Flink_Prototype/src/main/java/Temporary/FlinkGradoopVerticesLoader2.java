@@ -1,5 +1,5 @@
 package Temporary;
-ackage aljoschaRydzyk.Gradoop_Flink_Prototype;
+
 
 import java.nio.ByteBuffer;
 
@@ -48,6 +48,7 @@ public class FlinkGradoopVerticesLoader2 {
 				byte[] arr = (byte[]) ((Row) value.f1.getField(1)).getField(0);
 				ByteBuffer wrapped = ByteBuffer.wrap(arr);
 				long degree = wrapped.getLong();
+				return value;
 			}
 		}).returns(tupleInfo).setParallelism(1);
 		return vertexStreamOutput;

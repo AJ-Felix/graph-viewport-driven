@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import aljoschaRydzyk.Gradoop_Flink_Prototype.UndertowServer;
+import aljoschaRydzyk.Gradoop_Flink_Prototype.Main;
 import aljoschaRydzyk.Gradoop_Flink_Prototype.VVEdgeWrapper;
 import aljoschaRydzyk.Gradoop_Flink_Prototype.VertexCustom;
 
@@ -72,7 +72,7 @@ public class GraphVis implements Serializable{
 				Integer targetY = wrapper.getSourceY();
 				if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
 						((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
-					UndertowServer.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
+					Main.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 				}
 			}
 			Iterator<Map.Entry<String,VertexCustom>> iter = innerVertices.entrySet().iterator();
@@ -240,12 +240,13 @@ public class GraphVis implements Serializable{
 		} else {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
-				UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+				Main.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 		}
 	}
 
 	private static void reduceNeighborIncidence(VertexCustom vertex) {
-		Set<String> neighborIds = getNeighborhood(vertex);
+//		Set<String> neighborIds = getNeighborhood(vertex);
+		Set<String> neighborIds = null;
 		for (String neighbor : neighborIds) {
 			Map<String,Object> map = globalVertices.get(neighbor);
 			map.put("incidence", (int) map.get("incidence") - 1); 
@@ -301,7 +302,7 @@ public class GraphVis implements Serializable{
 			map.put("incidence", (int) 1);
 			map.put("vertex", vertex);
 			globalVertices.put(sourceId, map);
-				UndertowServer.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
+				Main.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
 			return true;
 		} else {
 			Map<String,Object> map = globalVertices.get(sourceId);
@@ -312,42 +313,42 @@ public class GraphVis implements Serializable{
 	
 	public static void addEdge(VVEdgeWrapper wrapper) {
 		edges.add(wrapper);
-		UndertowServer.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdNumeric() + ";" + wrapper.getTargetIdNumeric());
+		Main.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdNumeric() + ";" + wrapper.getTargetIdNumeric());
 	}
 	
-	public void clearOperation(){
-		System.out.println("in clear operation 1");
-		if (operation != "initial"){
-			innerVertices.putAll(newVertices); 
-			for (Map.Entry<String, Map<String,Object>> entry : globalVertices.entrySet()) {
-				Map<String,Object> map = entry.getValue();
-				VertexCustom vertex = (VertexCustom) map.get("vertex");
-				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
-						(bottomModel < vertex.getY())) && adjMatrix.get(vertex.getIdGradoop()).isEmpty()) || 
-							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && 
-								(bottomModel >= vertex.getY()) && !innerVertices.containsKey(vertex.getIdGradoop()))) {
-					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
-					globalVertices.remove(vertex.getIdGradoop());
-				} 
-			}
-		} else {
-			System.out.println("innerVertices" + innerVertices.size());
-			System.out.println("newVertices" + newVertices.size());
-			newVertices = innerVertices;
-		}
-		operation = null;
-		System.out.println("in clear operation 2");
-		System.out.println(newVertices.size());
-		if (newVertices.size() > 1) {
-			updateMinDegreeVertices(newVertices);
-		} else if (newVertices.size() == 1) {
-			minDegreeVertex = newVertices.values().iterator().next();
-		}
-	}
-	
-	public static Set<String> getNeighborhood(VertexCustom vertex){
-		Set<String> neighborIds = new HashSet<String>();
-		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
-		return neighborIds;
-	}
+//	public void clearOperation(){
+//		System.out.println("in clear operation 1");
+//		if (operation != "initial"){
+//			innerVertices.putAll(newVertices); 
+//			for (Map.Entry<String, Map<String,Object>> entry : globalVertices.entrySet()) {
+//				Map<String,Object> map = entry.getValue();
+//				VertexCustom vertex = (VertexCustom) map.get("vertex");
+//				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
+//						(bottomModel < vertex.getY())) && adjMatrix.get(vertex.getIdGradoop()).isEmpty()) || 
+//							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && 
+//								(bottomModel >= vertex.getY()) && !innerVertices.containsKey(vertex.getIdGradoop()))) {
+//					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+//					globalVertices.remove(vertex.getIdGradoop());
+//				} 
+//			}
+//		} else {
+//			System.out.println("innerVertices" + innerVertices.size());
+//			System.out.println("newVertices" + newVertices.size());
+//			newVertices = innerVertices;
+//		}
+//		operation = null;
+//		System.out.println("in clear operation 2");
+//		System.out.println(newVertices.size());
+//		if (newVertices.size() > 1) {
+//			updateMinDegreeVertices(newVertices);
+//		} else if (newVertices.size() == 1) {
+//			minDegreeVertex = newVertices.values().iterator().next();
+//		}
+//	}
+//	
+//	public static Set<String> getNeighborhood(VertexCustom vertex){
+//		Set<String> neighborIds = new HashSet<String>();
+//		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
+//		return neighborIds;
+//	}
 }

@@ -129,8 +129,7 @@ KDEVTMPFSI:
 	---> Does not work... maybe restart after
 
 
-Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert)
-
+Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert). Hat nicht funktioniert, weil für Flink SinkFunction alle Objekte in der invoke() serialisierbar sein müssen.
 Konversion from table to stream always produces row-typed streams --> without mapping operator streams of custom objects can not be generated from tables!!!
 
 Aus irgendeinem Grund muss man Flink für buildTopView-Operationen zwingend neu initialisieren, wenn die Anfrage vom Client kommt, während die displayAll-Operation auch bei Flink-Initialisation am Programmstart funktioniert...
@@ -153,6 +152,8 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 	gesendet wurden.
 
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
+
+TODO: ausführbare Jar-File erstellen!
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).

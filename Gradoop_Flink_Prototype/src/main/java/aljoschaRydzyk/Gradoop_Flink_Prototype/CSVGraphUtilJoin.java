@@ -240,20 +240,40 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	//Prelayout functions
-	public DataStream<Row> zoomInLayout(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
-		Iterator<String> iter = this.visualizedVertices.iterator();
-		while (iter.hasNext()) {
-			String vertexId = iter.next();
+	public DataStream<Row> zoomInLayout(Map<String, VertexCustom> innerVertices, Set<String> layoutedVerticesIds) {
+		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
+		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+		
+		Set<String> NotVisualizedNeighboursIds = new HashSet<String>();
+		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
+			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(innerVerticesEntry.getKey()).entrySet()) {
+				String notVisualizedVertexId = adjEntry.getKey();
+				if (!innerVertices.containsKey(notVisualizedVertexId)) NotVisualizedNeighboursIds.add(notVisualizedVertexId);
+			}
 		}
-		//set of visualized vertices and their position is given
+		DataStream<String> layoutedVertices = fsEnv.fromCollection(layoutedVerticesIds);
+		DataStream<String> neighbourCandidates = fsEnv.fromCollection(NotVisualizedNeighboursIds);
+		Table layoutedVerticesTable = fsTableEnv.fromDataStream(layoutedVertices).as("vertexIdGradoop");
+		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(neighbourCandidates).as("vertexIdGradoop");
+		Table wrapperTableNewOld = wrapperTable.join(neighbourCandidatesTable).where("vertexIdGradoop = sourceVertexIdGradoop").as(this.wrapperFields);
+		wrapperTableNewOld = wrapperTableNewOld.join(layoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").as(this.wrapperFields);
+		Table wrapperTableOldNew = wrapperTable.join(layoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").as(this.wrapperFields);
+		wrapperTableOldNew = wrapperTableOldNew.join(neighbourCandidatesTable).where("vertexIdGradoop = targetVertexIdGradoop").as(this.wrapperFields);
+		
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableOldNew, wrapperRowTypeInfo)
+				.union(fsTableEnv.toAppendStream(wrapperTableNewOld, wrapperRowTypeInfo));
+		return wrapperStream;
+		
+		
+		//map of innerVertices and their position is given
+		//set of layouted vertices and their position is given
 		//new position/zoomLevel is sent by client
-		//delete those vertices from the visualizedVertices set that are newly outside the viewport
-		//from the number of remaining vertices calculate the number of new vertices, maybe this is not necessary since the client controls this
-			//filtering a specific amount of stream data is not possible
-		//produce wrapper stream of neighbour vertices from those still/already visualized
-		//when there is still space for visualization produce wrapper stream from the neighbours neighbours and so on, 
-		//hopefully this can be controlled by consecutive execution of flink jobs
-		return null;
+		//delete those vertices from the innerVertices map that are newly outside the viewport, this is done in prepareOperation()
+		//after prepareOperation() this function
+			//produce vertex stream of neighbour vertices from those still/already visualized
+				//produce wrapper stream of candidates to vertices already layouted 
+			//when there is still space for visualization produce wrapper stream from the neighbours neighbours and so on, 
+			//hopefully this can be controlled by consecutive execution of flink jobs
 	}
 	
 	public DataStream<Row> zoomOutLayout() {

@@ -24,9 +24,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.types.Row;
 
-import Temporary.TestThread;
-
-public class UndertowServer {
+public class Main {
 	
 	private static FlinkCore flinkCore;
 	
@@ -38,6 +36,7 @@ public class UndertowServer {
     private static Integer maxVertices = 100;
     
     private static String graphOperationLogic = "serverSide";
+    private static boolean layout = true;
     
     private static Float viewportPixelX = (float) 1000;
     private static Float viewportPixelY = (float) 1000;
@@ -76,8 +75,8 @@ public class UndertowServer {
                     channels.add(channel);
                     channel.getReceiveSetter().set(getListener());
                     channel.resumeReceives();
-                })).addPrefixPath("/", resource(new ClassPathResourceManager(UndertowServer.class.getClassLoader(),
-                        UndertowServer.class.getPackage())).addWelcomeFiles("index.html")/*.setDirectoryListingEnabled(true)*/))
+                })).addPrefixPath("/", resource(new ClassPathResourceManager(Main.class.getClassLoader(),
+                        Main.class.getPackage())).addWelcomeFiles("index.html")/*.setDirectoryListingEnabled(true)*/))
                 .build();
         server.start();
         System.out.println("Server started!");
@@ -107,12 +106,16 @@ public class UndertowServer {
                 	graphOperationLogic = "serverSide";
                 } else if (messageData.equals("clientSideLogic")) {
                 	graphOperationLogic = "clientSide";
+                } else if (messageData.equals("preLayout")) {
+                	layout = false;
+                } else if (messageData.equals("postLayout")) {
+                	layout = true;
                 } else if (messageData.startsWith("maxVertices")) {
                 	String[] arrMessageData = messageData.split(";");
                 	maxVertices = Integer.parseInt(arrMessageData[1]);
-            	} else if (messageData.startsWith("TestThread")){
-                	TestThread thread = new TestThread("prototype");
-            		thread.start();
+//            	} else if (messageData.startsWith("TestThread")){
+//                	TestThread thread = new TestThread("prototype");
+//            		thread.start();
                 } else if (messageData.startsWith("edgeIdString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
@@ -188,12 +191,12 @@ public class UndertowServer {
                 		wrapperStream.addSink(new WrapperAppendSink());
                 	} else {
 	        			if (messageData.startsWith("zoomIn")) {
-		    				UndertowServer.setOperation("zoomIn");
+		    				Main.setOperation("zoomIn");
 	        			} else {
-	        				UndertowServer.setOperation("zoomOut");
+	        				Main.setOperation("zoomOut");
 	        			}
 	    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-	    				UndertowServer.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+	    				Main.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
                 	}
 					try {
@@ -204,6 +207,24 @@ public class UndertowServer {
 					if (graphOperationLogic.equals("serverSide")) {
                 		clearOperation();
                 	}
+                } else if (messageData.startsWith("layoutZoom")) {
+                	String[] arrMessageData = messageData.split(";");
+        			Float xRenderPos = Float.parseFloat(arrMessageData[1]);
+        			Float yRenderPos = Float.parseFloat(arrMessageData[2]);
+        			zoomLevel = Float.parseFloat(arrMessageData[3]);
+        			Float topModelPos = (- yRenderPos / zoomLevel);
+        			Float leftModelPos = (- xRenderPos /zoomLevel);
+        			Float bottomModelPos = (topModelPos + viewportPixelY / zoomLevel);
+        			Float rightModelPos = (leftModelPos + viewportPixelX / zoomLevel);
+					flinkCore.setTopModelPos(topModelPos);
+					flinkCore.setRightModelPos(rightModelPos);
+					flinkCore.setBottomModelPos(bottomModelPos);
+					flinkCore.setLeftModelPos(leftModelPos);
+					Main.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+					Set<String> layoutedVerticesIds = null;
+					DataStream<Row> wrapperStream = flinkCore.zoomInLayout(innerVertices, layoutedVerticesIds);
+    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
+    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
     			} else if (messageData.startsWith("pan")) {
         			String[] arrMessageData = messageData.split(";");
         			Float topModelOld = flinkCore.gettopModelPos();
@@ -225,8 +246,8 @@ public class UndertowServer {
                 		wrapperStream.addSink(new WrapperAppendSink());
                 	} else {
                 		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-    					UndertowServer.setOperation("pan");
-	    				UndertowServer.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+    					Main.setOperation("pan");
+	    				Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
 	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
                 	}
 					try {
@@ -248,7 +269,7 @@ public class UndertowServer {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-					UndertowServer.sendToAll("fitGraph");
+					Main.sendToAll("fitGraph");
 //					UndertowServer.sendToAll("layout");
     			} else if (messageData.startsWith("cancel")){
     				String[] arr = messageData.split(";");
@@ -284,14 +305,14 @@ public class UndertowServer {
 	}
 	
 	public static void setOperation(String operation) {
-		UndertowServer.operation = operation;
+		Main.operation = operation;
 	}
 	
 	public static void prepareOperation(Float topModel, Float rightModel, Float bottomModel, Float leftModel){
-		UndertowServer.topModel = topModel;
-		UndertowServer.rightModel = rightModel;
-		UndertowServer.bottomModel = bottomModel;
-		UndertowServer.leftModel = leftModel;
+		Main.topModel = topModel;
+		Main.rightModel = rightModel;
+		Main.bottomModel = bottomModel;
+		Main.leftModel = leftModel;
 		if (operation != "zoomOut"){
 			for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) {
 				VVEdgeWrapper wrapper = entry.getValue();
@@ -301,7 +322,7 @@ public class UndertowServer {
 				Integer targetY = wrapper.getTargetY();
 				if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
 						((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
-					UndertowServer.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
+					Main.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 					System.out.println("Removing Object in prepareOperation, ID: " + wrapper.getEdgeIdGradoop());
 				}
 			}			
@@ -361,7 +382,7 @@ public class UndertowServer {
 				if (innerVertices.containsKey(targetId)) innerVertices.remove(targetId);
 				if (newVertices.containsKey(targetId)) newVertices.remove(targetId);
 				System.out.println("removing object in removeWrapper, ID: " + wrapper.getTargetIdNumeric());
-				UndertowServer.sendToAll("removeObjectServer;" + wrapper.getTargetIdNumeric());
+				Main.sendToAll("removeObjectServer;" + wrapper.getTargetIdNumeric());
 			} else {
 				globalVertices.get(targetId).put("incidence", targetIncidence - 1);
 			}
@@ -372,7 +393,7 @@ public class UndertowServer {
 			globalVertices.remove(sourceId);
 			if (innerVertices.containsKey(sourceId)) innerVertices.remove(sourceId);
 			if (newVertices.containsKey(sourceId)) newVertices.remove(sourceId);
-			UndertowServer.sendToAll("removeObjectServer;" + wrapper.getSourceIdNumeric());
+			Main.sendToAll("removeObjectServer;" + wrapper.getSourceIdNumeric());
 			System.out.println("removing object in removeWrapper, ID: " + wrapper.getSourceIdNumeric());
 		} else {
 			globalVertices.get(sourceId).put("incidence", sourceIncidence - 1);
@@ -568,7 +589,7 @@ public class UndertowServer {
 		} else {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
-			UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+			Main.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 			Map<String,String> vertexNeighborMap = flinkCore.getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
 			Iterator<Map.Entry<String, VVEdgeWrapper>> iter = edges.entrySet().iterator();
 			while (iter.hasNext()) if (vertexNeighborMap.values().contains(iter.next().getKey())) iter.remove();
@@ -639,7 +660,7 @@ public class UndertowServer {
 			map.put("incidence", (int) 1);
 			map.put("vertex", vertex);
 			globalVertices.put(sourceId, map);
-			UndertowServer.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
+			Main.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
 			return true;
 		} else {
 			System.out.println("In addVertex, declined because ID contained in globalVertices");
@@ -651,7 +672,7 @@ public class UndertowServer {
 	
 	public static void addEdge(VVEdgeWrapper wrapper) {
 		edges.put(wrapper.getEdgeIdGradoop(), wrapper);
-		UndertowServer.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdNumeric() + ";" + wrapper.getTargetIdNumeric());
+		Main.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdNumeric() + ";" + wrapper.getTargetIdNumeric());
 	}
 	
 	public static void clearOperation(){
@@ -669,7 +690,7 @@ public class UndertowServer {
 							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && (bottomModel >= vertex.getY()) 
 									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
 					System.out.println("removing in clear operation " + vertex.getIdNumeric());
-					UndertowServer.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+					Main.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 					iter.remove();
 					Map<String,String> vertexNeighborMap = flinkCore.getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
 					Iterator<Map.Entry<String, VVEdgeWrapper>> edgesIterator = edges.entrySet().iterator();
@@ -686,11 +707,6 @@ public class UndertowServer {
 		}
 		operation = null;
 		System.out.println("before updatemindegreevertices in clear operation");
-//		if (newVertices.size() > 1) {
-//			updateMinDegreeVertices(newVertices);
-//		} else if (newVertices.size() == 1) {
-//			minDegreeVertex = newVertices.values().iterator().next();
-//		}
 		Set<String> visualizedVertices = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();

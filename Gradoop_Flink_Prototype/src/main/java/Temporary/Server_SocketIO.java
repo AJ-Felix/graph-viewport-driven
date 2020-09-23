@@ -1,46 +1,46 @@
 package Temporary;
 
 
-import java.util.Iterator;
-import java.util.List;
-
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamUtils;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.types.Row;
-import org.apache.flink.util.Collector;
-import org.apache.log4j.BasicConfigurator;
-import com.corundumstudio.socketio.*;
-import com.corundumstudio.socketio.listener.*;
-
-import aljoschaRydzyk.Gradoop_Flink_Prototype.FlinkCore;
-
-
-public class Server_SocketIO {
-
-    public static void main(String[] args) throws Exception {
-    	
-//    	BasicConfigurator.configure();
-		
-		com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
-        config.setHostname("localhost");
-        config.setPort(9092);
-
-        final SocketIOServer server = new SocketIOServer(config);
-		        
-        server.addEventListener("buildTopView", String.class, new DataListener<String>() {
-
-			@Override
-			public void onData(SocketIOClient client, String data, AckRequest ackSender) throws Exception {
-				FlinkCore flinkCore = new FlinkCore();
-				List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = flinkCore.buildTopViewRetract();
-				DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
-				DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
+//import java.util.Iterator;
+//import java.util.List;
+//
+//import org.apache.flink.api.java.tuple.Tuple2;
+//import org.apache.flink.streaming.api.datastream.DataStream;
+//import org.apache.flink.streaming.api.datastream.DataStreamUtils;
+//import org.apache.flink.streaming.api.functions.ProcessFunction;
+//import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+//import org.apache.flink.types.Row;
+//import org.apache.flink.util.Collector;
+//import org.apache.log4j.BasicConfigurator;
+//import com.corundumstudio.socketio.*;
+//import com.corundumstudio.socketio.listener.*;
+//
+//import aljoschaRydzyk.Gradoop_Flink_Prototype.FlinkCore;
+//
+//
+//public class Server_SocketIO {
+//
+//    public static void main(String[] args) throws Exception {
+//    	
+////    	BasicConfigurator.configure();
+//		
+//		com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
+//        config.setHostname("localhost");
+//        config.setPort(9092);
+//
+//        final SocketIOServer server = new SocketIOServer(config);
+//		        
+//        server.addEventListener("buildTopView", String.class, new DataListener<String>() {
+//
+//			@Override
+//			public void onData(SocketIOClient client, String data, AckRequest ackSender) throws Exception {
+//				FlinkCore flinkCore = new FlinkCore();
+//				List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = flinkCore.buildTopViewRetract();
+//				DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
+//				DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
 //				Iterator<Tuple2<Boolean,Row>> iterator_vertices = DataStreamUtils.collect(stream_vertices);
 //				Iterator<Tuple2<Boolean,Row>> iterator_edges = DataStreamUtils.collect(stream_edges);
-				System.out.println("test");
+//				System.out.println("test");
 //				System.out.println(iterator_edges.next());
 //				
 //				while (iterator_vertices.hasNext()) {
@@ -107,23 +107,23 @@ public class Server_SocketIO {
 //						}
 //					}
 //				});
-				stream_edges.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
-
-					private static final long serialVersionUID = -8999956705061275432L;
-					@Override 
-					public void invoke(Tuple2<Boolean, Row> element, Context context){
-						server.getBroadcastOperations().sendEvent("addEdge", new EdgeObject(element.f0.toString(), element.f1.getField(0).toString(), 
-								element.f1.getField(1).toString(), element.f1.getField(2).toString()));
-					}
-				});
-				flinkCore.getFsEnv().execute();
-			}
-        });
-
-        server.start();
-        System.out.println("Hit enter to stop:...");
-        System.in.read();
-        server.stop();
-         
-    }
-}
+//				stream_edges.addSink(new SinkFunction<Tuple2<Boolean, Row>>() {
+//
+//					private static final long serialVersionUID = -8999956705061275432L;
+//					@Override 
+//					public void invoke(Tuple2<Boolean, Row> element, Context context){
+//						server.getBroadcastOperations().sendEvent("addEdge", new EdgeObject(element.f0.toString(), element.f1.getField(0).toString(), 
+//								element.f1.getField(1).toString(), element.f1.getField(2).toString()));
+//					}
+//				});
+//				flinkCore.getFsEnv().execute();
+//			}
+//        });
+//
+//        server.start();
+//        System.out.println("Hit enter to stop:...");
+//        System.in.read();
+//        server.stop();
+//         
+//    }
+//}

@@ -8,9 +8,9 @@ public class WrapperObjectSinkRetract implements SinkFunction<Tuple2<Boolean, VV
 	@Override 
 	public void invoke(Tuple2<Boolean, VVEdgeWrapper> element, @SuppressWarnings("rawtypes") Context context) {
 		if (element.f0) {
-			UndertowServer.addWrapper(element.f1);
+			Main.addWrapper(element.f1);
 		} else {
-			UndertowServer.removeWrapper(element.f1);
+			Main.removeWrapper(element.f1);
 		}
 	}
 }

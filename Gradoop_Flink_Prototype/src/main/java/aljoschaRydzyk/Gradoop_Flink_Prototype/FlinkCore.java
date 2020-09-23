@@ -1,6 +1,8 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype; 
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -183,6 +185,10 @@ public class FlinkCore {
 			e.printStackTrace();
 		}
 		return stream;
+	}
+	
+	public DataStream<Row> zoomInLayout(Map<String, VertexCustom> innerVertices, Set<String> layoutedVerticesIds){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayout(innerVertices, layoutedVerticesIds);
 	}
 	
 	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){

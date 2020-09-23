@@ -26,7 +26,7 @@ import aljoschaRydzyk.Gradoop_Flink_Prototype.FlinkCore;
 
 public class WebSocketServerTest extends WebSocketServer {
 	
-	private static transient CytoGraph<Object, Object> cytograph = new CytoGraph<>();
+	private static transient CytoGraph cytograph = new CytoGraph();
 
 	public WebSocketServerTest( int port ) throws UnknownHostException {
 		super( new InetSocketAddress( port ) );
@@ -67,8 +67,8 @@ public class WebSocketServerTest extends WebSocketServer {
 				e.printStackTrace();
 			}
 			
-			FlinkCore flinkCore = new FlinkCore();
-			List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = flinkCore.buildTopViewRetract();
+			FlinkCore flinkCore = new FlinkCore(cytoAddString);
+			List<DataStream<Tuple2<Boolean, Row>>> graph_data_streams = (List<DataStream<Tuple2<Boolean, Row>>>) flinkCore.buildTopViewRetract(null);
 			DataStream<Tuple2<Boolean, Row>> stream_vertices = graph_data_streams.get(0);
 			DataStream<Tuple2<Boolean, Row>> stream_edges = graph_data_streams.get(1);
 			stream_vertices

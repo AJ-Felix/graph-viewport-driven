@@ -7,7 +7,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction.Context;
 import org.apache.flink.types.Row;
 
 import aljoschaRydzyk.Gradoop_Flink_Prototype.FlinkCore;
-import aljoschaRydzyk.Gradoop_Flink_Prototype.UndertowServer;
+import aljoschaRydzyk.Gradoop_Flink_Prototype.Main;
 
 public class TestThread implements Runnable{
 	private String threadName;
@@ -31,11 +31,11 @@ public class TestThread implements Runnable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		flinkCore = new FlinkCore();
+		flinkCore = new FlinkCore(threadName);
 		DataStream<String> datastream = flinkCore.getFsEnv().socketTextStream("localhost", 9999);
 		datastream.addSink(new SinkFunction<String>() {
 			public void invoke(String element, Context context) {
-				UndertowServer.sendToAll(element);
+				Main.sendToAll(element);
 			}
 		});
 		flinkCore.initializeCSVGraphUtilJoin();
@@ -51,12 +51,12 @@ public class TestThread implements Runnable{
 				String targetIdNumeric = element.getField(8).toString();
 				String targetX = element.getField(10).toString();
 				String targetY = element.getField(11).toString();
-				UndertowServer.sendToAll("addVertex;" + sourceIdNumeric + 
+				Main.sendToAll("addVertex;" + sourceIdNumeric + 
 					";" + sourceX + ";" + sourceY);
 				if (!edgeIdGradoop.equals("identityEdge")) {
-				UndertowServer.sendToAll("addVertex;" + targetIdNumeric + 
+				Main.sendToAll("addVertex;" + targetIdNumeric + 
 					";" + targetX + ";" + targetY);
-				UndertowServer.sendToAll("addEdge;" + edgeIdGradoop + 
+				Main.sendToAll("addEdge;" + edgeIdGradoop + 
 					";" + sourceIdNumeric + ";" + targetIdNumeric);
 				}
 			}
@@ -67,7 +67,7 @@ public class TestThread implements Runnable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		UndertowServer.sendToAll("fitGraph");
+		Main.sendToAll("fitGraph");
 		System.out.println("Thread " + threadName + " exiting!");
 	} 
 	
