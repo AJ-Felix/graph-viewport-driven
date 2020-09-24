@@ -5,10 +5,8 @@ class Vertex{
 	x;
 	y;
 	
-	constructor(id, degree, x, y){
+	constructor(id, degree){
 		this.id = id;
 		this.degree = parseInt(degree);
-		this.x = parseInt(x);
-		this.y = parseInt(y);
 	}
 }

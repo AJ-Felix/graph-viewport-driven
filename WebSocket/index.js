@@ -57,6 +57,9 @@ async function processMessage(){
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 					break;
+				case 'addVertexServerLayout':
+					addVertexToLayoutBase(dataArray);
+					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
 					break;
@@ -197,6 +200,14 @@ function sendMaxVertices(maxVertices){
 
 function resetVisualization(){
 	cy.elements().remove();
+}
+
+function preLayout(){
+	ws.send("preLayout");
+}
+
+function postLayout(){
+	ws.send("postLayout");
 }
 
 let header1 = document.getElementById('header1');

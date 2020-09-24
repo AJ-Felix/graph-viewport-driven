@@ -240,7 +240,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	//Prelayout functions
-	public DataStream<Row> zoomInLayout(Map<String, VertexCustom> innerVertices, Set<String> layoutedVerticesIds) {
+	public DataStream<Row> zoomInLayout(Map<String, VertexCustom> innerVertices, Map<Integer, VertexCustom> layoutedVertices) {
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 		
@@ -251,9 +251,9 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				if (!innerVertices.containsKey(notVisualizedVertexId)) NotVisualizedNeighboursIds.add(notVisualizedVertexId);
 			}
 		}
-		DataStream<String> layoutedVertices = fsEnv.fromCollection(layoutedVerticesIds);
+		DataStream<Integer> layoutedVerticesStream = fsEnv.fromCollection(layoutedVertices.keySet());
 		DataStream<String> neighbourCandidates = fsEnv.fromCollection(NotVisualizedNeighboursIds);
-		Table layoutedVerticesTable = fsTableEnv.fromDataStream(layoutedVertices).as("vertexIdGradoop");
+		Table layoutedVerticesTable = fsTableEnv.fromDataStream(layoutedVerticesStream).as("vertexIdGradoop");
 		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(neighbourCandidates).as("vertexIdGradoop");
 		Table wrapperTableNewOld = wrapperTable.join(neighbourCandidatesTable).where("vertexIdGradoop = sourceVertexIdGradoop").as(this.wrapperFields);
 		wrapperTableNewOld = wrapperTableNewOld.join(layoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").as(this.wrapperFields);

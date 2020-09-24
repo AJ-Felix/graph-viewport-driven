@@ -21,6 +21,12 @@ public class VertexCustom {
 		this.degree = degree;
 	}
 	
+	public VertexCustom(Integer idNumeric, Integer x, Integer y) {
+		this.idNumeric = idNumeric;
+		this.x = x;
+		this.y = y;
+	}
+	
 	public String getIdGradoop() {
 		return this.idGradoop;
 	}

@@ -153,7 +153,7 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
 
-TODO: ausführbare Jar-File erstellen!
+TODO: Client Id auf GradoopId umstellen!
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).

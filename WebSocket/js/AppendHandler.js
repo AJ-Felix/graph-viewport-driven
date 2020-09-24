@@ -273,8 +273,12 @@ class AppendHandler{
 	addWrapper(dataArray){
 		const edgeId = dataArray[1];
 		const edgeLabel = dataArray[2];
-		const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5], dataArray[6]);
-		const targetVertex = new Vertex(dataArray[7], dataArray[8], dataArray[9], dataArray[10]);
+		const sourceVertex = new Vertex(dataArray[3], dataArray[4]);
+		sourceVertex.x = parseInt(dataArray[5]);
+		sourceVertex.y = parseInt(dataArray[6]);
+		const targetVertex = new Vertex(dataArray[7], dataArray[8]);
+		targetVertex.x = parseInt(dataArray[9]);
+		targetVertex.y = parseInt(dataArray[10]);
 		if (this.operation == "initial") {
 			if (edgeLabel == "identityEdge"){
 				this.addIdentityWrapperInitial(sourceVertex);

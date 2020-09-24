@@ -75,8 +75,33 @@ var cy = cytoscape({
  */  pixelRatio: 'auto'
 });
 
+let layoutBase = cy.collection();
+
 let xRenderDiff = 0;
 let yRenderDiff = 0;
+
+function addVertexToLayoutBase(dataArray){
+	cy.add({group : 'nodes', data: {id: dataArray[1]}});
+	const vertexId = cy.$id(dataArray[1])
+	console.log(vertexId);
+	layoutBase = layoutBase.add(vertexId);
+	layoutBaseIdString += ";" + vertexId;
+	clearTimeout(this.timeOut);
+	this.timeOut = setTimeout(performLayout, 500);
+}
+
+function performLayout(){
+	console.log("performing layout!");
+	let layout = layoutBase.layout({name: "random"});
+	layout.run();
+	console.log("layout performed");
+	let layoutBaseString;
+	layoutBase.forEach(function(node){
+		let pos = node.position();
+		layoutBaseString + = ";" node.data("id") + "," + pos.x + "," + pos.y;
+	})
+	ws.send("layoutBaseString" + layoutBaseString);
+}
 
 let cyto = document.getElementById('cy');
 cyto.addEventListener('mousedown', function(e){
