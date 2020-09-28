@@ -240,7 +240,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	//Prelayout functions
-	public DataStream<Row> zoomInLayout(Map<String, VertexCustom> innerVertices, Map<Integer, VertexCustom> layoutedVertices) {
+	public DataStream<Row> zoomInLayout(Map<String, VertexCustom> innerVertices, Map<String, VertexCustom> layoutedVertices) {
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 		
@@ -251,7 +251,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				if (!innerVertices.containsKey(notVisualizedVertexId)) NotVisualizedNeighboursIds.add(notVisualizedVertexId);
 			}
 		}
-		DataStream<Integer> layoutedVerticesStream = fsEnv.fromCollection(layoutedVertices.keySet());
+		DataStream<String> layoutedVerticesStream = fsEnv.fromCollection(layoutedVertices.keySet());
 		DataStream<String> neighbourCandidates = fsEnv.fromCollection(NotVisualizedNeighboursIds);
 		Table layoutedVerticesTable = fsTableEnv.fromDataStream(layoutedVerticesStream).as("vertexIdGradoop");
 		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(neighbourCandidates).as("vertexIdGradoop");

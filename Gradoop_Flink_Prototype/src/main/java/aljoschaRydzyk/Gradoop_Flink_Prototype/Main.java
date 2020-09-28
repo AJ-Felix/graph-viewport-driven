@@ -46,7 +46,7 @@ public class Main {
 	private static Map<String,VertexCustom> innerVertices;
 	private static Map<String,VertexCustom> newVertices;
 	private static Map<String,VVEdgeWrapper> edges;
-	private static Map<Integer,VertexCustom> layoutedVertices;
+	private static Map<String,VertexCustom> layoutedVertices;
 	private static String operation;
 	private static Integer capacity;
 	private static Float topModel;
@@ -115,12 +115,15 @@ public class Main {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
+                	Map<String,VertexCustom> map = new HashMap<String,VertexCustom>();
                 	for (String vertexData : list) {
                 		String[] arrVertexData = vertexData.split(",");
                 		Integer vertexIdNumeric = Integer.parseInt(arrVertexData[0]);
-                		layoutedVertices.put(vertexIdNumeric, new VertexCustom(vertexIdNumeric, Integer.parseInt(arrVertexData[1]), 
-                				Integer.parseInt(arrVertexData[2])));
+                		Integer x = Integer.parseInt(arrVertexData[1]) * 4;
+                		Integer y = Integer.parseInt(arrVertexData[2]) * 4;
+                		map.put(vertexIdNumeric.toString(), new VertexCustom(vertexIdNumeric, x, y));
                 	}
+                	layoutedVertices = map;
                 } else if (messageData.startsWith("maxVertices")) {
                 	String[] arrMessageData = messageData.split(";");
                 	maxVertices = Integer.parseInt(arrMessageData[1]);
@@ -197,6 +200,7 @@ public class Main {
 					flinkCore.setLeftModelPos(leftModelPos);
 					if (!layout) {
 						if (messageData.startsWith("zoomIn")) {
+							System.out.println(layoutedVertices.size());
 		    				Main.setOperation("zoomIn");
 							System.out.println("in zoom in layout function");
 							Main.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
@@ -318,6 +322,7 @@ public class Main {
 		Main.rightModel = rightModel;
 		Main.bottomModel = bottomModel;
 		Main.leftModel = leftModel;
+		System.out.println("top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 		if (operation != "zoomOut"){
 			for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) {
 				VVEdgeWrapper wrapper = entry.getValue();
@@ -336,6 +341,7 @@ public class Main {
 			while (iter.hasNext()) {
 				Map.Entry<String,VertexCustom> entry = iter.next();
 				VertexCustom vertex = entry.getValue();
+				System.out.println("VertexID: " + vertex.getIdNumeric() + ", VertexX: " + vertex.getX() + ", VertexY: "+ vertex.getY());
 				if ((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || (bottomModel < vertex.getY())) {
 					iter.remove();
 					System.out.println("Removing Object in prepareOperation in innerVertices only, ID: " + vertex.getIdNumeric());

@@ -85,7 +85,6 @@ function addVertexToLayoutBase(dataArray){
 	const vertexId = cy.$id(dataArray[1])
 	console.log(vertexId);
 	layoutBase = layoutBase.add(vertexId);
-	layoutBaseIdString += ";" + vertexId;
 	clearTimeout(this.timeOut);
 	this.timeOut = setTimeout(performLayout, 500);
 }
@@ -95,10 +94,10 @@ function performLayout(){
 	let layout = layoutBase.layout({name: "random"});
 	layout.run();
 	console.log("layout performed");
-	let layoutBaseString;
+	let layoutBaseString = "";
 	layoutBase.forEach(function(node){
 		let pos = node.position();
-		layoutBaseString + = ";" node.data("id") + "," + pos.x + "," + pos.y;
+		layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
 	})
 	ws.send("layoutBaseString" + layoutBaseString);
 }
@@ -135,7 +134,7 @@ cyto.addEventListener("mouseup", function(e){
 		handler.operation = "pan";
 		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	}
-	ws.send("pan;" + xModelDiff + ";" + yModelDiff);
+	// ws.send("pan;" + xModelDiff + ";" + yModelDiff);
 });
 
 document.addEventListener("click",
