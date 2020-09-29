@@ -193,8 +193,8 @@ class AppendHandler{
 				if (!sourceIsRegisteredInside && sourceAdmission && !targetIsRegisteredInside && targetAdmission) {
 					this.reduceNeighborIncidence(this.minDegreeVertex);
 					this.removeVertex(this.minDegreeVertex);
-					this.newVerticesMap.put(sourceVertex.id, sourceVertex);
-					this.newVerticesMap.put(targetVertex.id, targetVertex);
+					this.newVerticesMap.set(sourceVertex.id, sourceVertex);
+					this.newVerticesMap.set(targetVertex.id, targetVertex);
 				} else if (!sourceIsRegisteredInside && sourceAdmission) {
 					this.registerInside(sourceVertex);
 				} else if (!targetIsRegisteredInside && targetAdmission) {
@@ -273,12 +273,12 @@ class AppendHandler{
 	addWrapper(dataArray){
 		const edgeId = dataArray[1];
 		const edgeLabel = dataArray[2];
-		const sourceVertex = new Vertex(dataArray[3], dataArray[4]);
-		sourceVertex.x = parseInt(dataArray[5]);
-		sourceVertex.y = parseInt(dataArray[6]);
-		const targetVertex = new Vertex(dataArray[7], dataArray[8]);
-		targetVertex.x = parseInt(dataArray[9]);
-		targetVertex.y = parseInt(dataArray[10]);
+		const sourceVertex = new Vertex(dataArray[3], dataArray[4], dataArray[5]);
+		sourceVertex.x = parseInt(dataArray[6]);
+		sourceVertex.y = parseInt(dataArray[7]);
+		const targetVertex = new Vertex(dataArray[8], dataArray[9], dataArray[10]);
+		targetVertex.x = parseInt(dataArray[11]);
+		targetVertex.y = parseInt(dataArray[12]);
 		if (this.operation == "initial") {
 			if (edgeLabel == "identityEdge"){
 				this.addIdentityWrapperInitial(sourceVertex);
@@ -302,7 +302,7 @@ class AppendHandler{
 			map.set("incidence", 1);
 			map.set("vertex", vertex);
 			this.vertexGlobalMap.set(vertex.id, map);	
-			cy.add({group : 'nodes', data: {id: vertex.id}, position: {x: parseInt(vertex.x) , y: parseInt(vertex.y)}});
+			cy.add({group : 'nodes', data: {id: vertex.id, label: vertex.label}, position: {x: parseInt(vertex.x) , y: parseInt(vertex.y)}});
 			return true;
 		} else {
 			let map = this.vertexGlobalMap.get(vertex.id);

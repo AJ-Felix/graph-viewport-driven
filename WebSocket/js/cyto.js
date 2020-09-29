@@ -22,7 +22,7 @@ var cy = cytoscape({
       selector: 'node',
       style: {
         'background-color': '#666',
-        'label': 'data(id)',
+        'label': 'data(label)',
 		'height': '30',
 		'width':'30'
       }
@@ -134,7 +134,7 @@ cyto.addEventListener("mouseup", function(e){
 		handler.operation = "pan";
 		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	}
-	// ws.send("pan;" + xModelDiff + ";" + yModelDiff);
+	ws.send("pan;" + xModelDiff + ";" + yModelDiff);
 });
 
 document.addEventListener("click",

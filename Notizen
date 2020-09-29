@@ -153,7 +153,9 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
 
-TODO: innerVertices trägt alte X und Y, und zwar andere als layoutedVertices
+TODO: LayoutBaseString testen!
+
+
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).
@@ -166,8 +168,7 @@ FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu impl
 BuildTopViewAppend:
 	- Server sendet alle relevanten Wrapper genau einmal. Daher ist kaum Kontrollstruktur notwendig.
 
-
-
+Es muss gewährleistet sein, dass der Server keine Operation mehr auf den Knoten-Maps durchführt, wenn "layoutBaseString" ankommt!!!
 
 
 

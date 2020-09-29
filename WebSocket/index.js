@@ -55,7 +55,7 @@ async function processMessage(){
 					handler.removeWrapper(dataArray);
 					break;
 				case 'addVertexServer':
-					cy.add({group : 'nodes', data: {id: dataArray[1]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
+					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 					break;
 				case 'addVertexServerLayout':
 					addVertexToLayoutBase(dataArray);
