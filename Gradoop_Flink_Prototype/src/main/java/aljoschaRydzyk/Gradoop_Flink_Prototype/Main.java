@@ -119,12 +119,10 @@ public class Main {
                 	for (String vertexData : list) {
                 		String[] arrVertexData = vertexData.split(",");
                 		String vertexIdGradoop = arrVertexData[0];
-                		Integer x = Integer.parseInt(arrVertexData[1]) * 4;
-                		Integer y = Integer.parseInt(arrVertexData[2]) * 4;
                 		set.add(vertexIdGradoop);
             			VertexCustom vertex = innerVertices.get(vertexIdGradoop);
-            			vertex.setX(x);
-            			vertex.setY(y);
+            			vertex.setX(Integer.parseInt(arrVertexData[1]));
+            			vertex.setY(Integer.parseInt(arrVertexData[2]));
                 	}
                 	layoutedVertices = set;
                 } else if (messageData.startsWith("maxVertices")) {
@@ -198,13 +196,21 @@ public class Main {
 					flinkCore.setRightModelPos(rightModelPos);
 					flinkCore.setBottomModelPos(bottomModelPos);
 					flinkCore.setLeftModelPos(leftModelPos);
+					System.out.println("Zoom ... top, right, bottom, left:" + topModelPos + " " + rightModelPos + " "+ bottomModelPos + " " + leftModelPos);
 					if (!layout) {
 						if (messageData.startsWith("zoomIn")) {
 							System.out.println(layoutedVertices.size());
 		    				Main.setOperation("zoomIn");
 							System.out.println("in zoom in layout function");
+							for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
+								System.out.println(entry.getValue().getIdGradoop() + " " + entry.getValue().getX() + " " + entry.getValue().getY());
+							}
 							Main.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-							DataStream<Row> wrapperStream = flinkCore.zoomInLayout(innerVertices, layoutedVertices);
+//							Map<String,VertexCustom> innerVerticesCopy = new HashMap<String,VertexCustom>();
+//							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", new VertexCustom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
+//							Set<String> layoutedVerticesCopy = new HashSet<String>();
+//							layoutedVerticesCopy.add("5c6ab3fd8e3627bbfb10de29");
+							DataStream<Row> wrapperStream = flinkCore.zoomInLayout();
 							wrapperStream.addSink(new WrapperAppendSink());
 		    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
 		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);

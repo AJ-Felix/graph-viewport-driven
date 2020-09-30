@@ -153,7 +153,7 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
 
-TODO: LayoutBaseString testen!
+TODO: LayoutBaseString testen, Flink terminiert nicht mit ZoomInLayout Funktion. Wenn alle Operationen aus der Funktion entfernt werden, dann terminiert Flink, aber this.wrapperStream der GraphUtil scheint leer zu sein...
 
 
 	

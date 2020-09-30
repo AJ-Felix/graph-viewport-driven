@@ -81,9 +81,10 @@ let xRenderDiff = 0;
 let yRenderDiff = 0;
 
 function addVertexToLayoutBase(dataArray){
-	cy.add({group : 'nodes', data: {id: dataArray[1]}});
+	cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3]}});
 	const vertexId = cy.$id(dataArray[1])
 	console.log(vertexId);
+	console.log(dataArray[3]);
 	layoutBase = layoutBase.add(vertexId);
 	clearTimeout(this.timeOut);
 	this.timeOut = setTimeout(performLayout, 500);
@@ -91,7 +92,7 @@ function addVertexToLayoutBase(dataArray){
 
 function performLayout(){
 	console.log("performing layout!");
-	let layout = layoutBase.layout({name: "random"});
+	let layout = layoutBase.layout({name: "random", boundingBox: {x1: 0, y1: 0, w: 4000, h: 4000}});
 	layout.run();
 	console.log("layout performed");
 	let layoutBaseString = "";

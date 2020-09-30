@@ -187,8 +187,8 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataStream<Row> zoomInLayout(Map<String, VertexCustom> innerVertices, Set<String> layoutedVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayout(innerVertices, layoutedVertices);
+	public DataStream<Row> zoomInLayout(){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayout();
 	}
 	
 	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){
