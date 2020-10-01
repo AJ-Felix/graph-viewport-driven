@@ -1,2 +1,6 @@
-Java 1.8 laden:
+
 	module load Java/1.8.0_241
+	export HADOOP_HOME=/usr/hdp/current/hadoop-client
+	export HADOOP_CLASSPATH=$(hadoop classpath)
+	
+	In der Flink-config muss noch der REST JobManager Port auf 8081 gesetzt werden!

@@ -210,8 +210,7 @@ public class Main {
 //							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", new VertexCustom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
 //							Set<String> layoutedVerticesCopy = new HashSet<String>();
 //							layoutedVerticesCopy.add("5c6ab3fd8e3627bbfb10de29");
-							DataStream<Row> wrapperStream = flinkCore.zoomInLayout();
-							wrapperStream.addSink(new WrapperAppendSink());
+							DataStream<Row> wrapperStream = flinkCore.zoomInLayout(layoutedVertices, innerVertices);
 		    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
 		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
 						} else {
@@ -231,15 +230,15 @@ public class Main {
 		    				Main.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
 	                	}
-						try {
-							flinkCore.getFsEnv().execute();
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-						if (graphOperationLogic.equals("serverSide")) {
-	                		clearOperation();
-	                	}
 					}
+					try {
+						flinkCore.getFsEnv().execute();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					if (graphOperationLogic.equals("serverSide")) {
+                		clearOperation();
+                	}
     			} else if (messageData.startsWith("pan")) {
         			String[] arrMessageData = messageData.split(";");
         			Float topModelOld = flinkCore.gettopModelPos();
