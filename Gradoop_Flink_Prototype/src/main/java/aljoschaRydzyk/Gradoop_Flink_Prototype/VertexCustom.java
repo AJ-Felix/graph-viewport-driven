@@ -21,6 +21,13 @@ public class VertexCustom {
 		this.degree = degree;
 	}
 	
+	public VertexCustom(String idGradoop, String label, Integer idNumeric, Long degree) {
+		this.idGradoop = idGradoop;
+		this.label = label;
+		this.idNumeric = idNumeric;
+		this.degree = degree;
+	}
+	
 	public String getIdGradoop() {
 		return this.idGradoop;
 	}

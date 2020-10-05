@@ -4,12 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +38,12 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] vertexFormatTypeInfo;
 	private Map<String,Map<String,String>> adjMatrix;
+	
+	//Area Definition
+		//A	: Inside viewport after operation
+		//B : Outside viewport before and after operation
+		//C : Inside viewport before and after operation
+		//D : Outside viewport after operation
 	
 	public CSVGraphUtilJoin(StreamExecutionEnvironment fsEnv, StreamTableEnvironment fsTableEnv, String inPath, String vertexFields, String wrapperFields) {
 		this.fsEnv = fsEnv;
@@ -160,7 +163,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Float bottomNew = bottomOld + yModelDiff;
 		Float leftNew = leftOld + xModelDiff;
 		
-		//vertex stream filter and conversion to Flink Tables for areas A, B, C and D
+		//vertex stream filter and conversion to Flink Tables for areas A, B and C
 		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
 		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
 				@Override
@@ -194,7 +197,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 			//filter out redundant identity edges
 			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo).filter(new WrapperFilterIdentity());
 		
-		//produce wrapperStream from B to D and vice versa
+		//produce wrapperStream from A+C to D and vice versa
 		Table wrapperTableOldInNewInInOut = wrapperTable.join(vertexTableInner)
 				.where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
 		wrapperTableOldInNewInInOut = wrapperTableOldInNewInInOut.join(vertexTableOldInNotNewIn)
@@ -247,6 +250,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 		
+		//produce wrapper stream from 
 		Set<String> NotVisualizedNeighboursIds = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
 			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(innerVerticesEntry.getKey()).entrySet()) {
@@ -265,8 +269,20 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableOldNew, wrapperRowTypeInfo)
 				.union(fsTableEnv.toAppendStream(wrapperTableNewOld, wrapperRowTypeInfo));
-		return wrapperStream;
 		
+		//filter out already visualized edges in wrapper stream
+		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+				
+		//filter out already visualized vertices in wrapper stream (identity wrappers)
+		Set<String> visualizedVertices = this.visualizedVertices;
+		wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
+			}
+		});
+		wrapperStream.print().setParallelism(1);
+		return wrapperStream;
 		
 		//map of innerVertices and their position is given
 		//set of layouted vertices and their position is given

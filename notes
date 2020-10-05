@@ -11,6 +11,10 @@ Install curl
 Download Hadoop 2.7.7 and follow instructions on https://hadoop.apache.org/docs/r2.7.7/hadoop-project-dist/hadoop-common/SingleCluster.html 
 add hadoop.tmp.dir to core-site.xml!
 
+In .bashrc (for yarn session, but did not work):
+	export HADOOP_HOME=/home/aljoscha/hadoop-2.7.7
+	export HADOOP_CLASSPATH=`/home/aljoscha/hadoop-2.7.7/bin/hadoop classpath`
+
 Download HBase 1.4.3 and follow instructions on https://hbase.apache.org/book.html#quickstart to "Pseudo-Distributed for Local Testing"
 
 Install git

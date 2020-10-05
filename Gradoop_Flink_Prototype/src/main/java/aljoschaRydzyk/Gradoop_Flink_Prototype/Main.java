@@ -159,7 +159,12 @@ public class Main {
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
         				if (graphOperationLogic.equals("serverSide")) {
         					initializeGraphRepresentation();
-            				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
+        					DataStream<VVEdgeWrapper> wrapperStreamWrapper;
+        					if (layout) {
+                				wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
+        					} else {
+        						wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+        					}
 		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendInitial()).setParallelism(1);
         				} else {
             				wrapperStream.addSink(new WrapperAppendSink());
@@ -207,11 +212,11 @@ public class Main {
 							}
 							Main.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 //							Map<String,VertexCustom> innerVerticesCopy = new HashMap<String,VertexCustom>();
-//							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", new VertexCustom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
+//							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", Custom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
 //							Set<String> layoutedVerticesCopy = new HashSet<String>();
 //							layoutedVerticesCopy.add("5c6ab3fd8e3627bbfb10de29");
 							DataStream<Row> wrapperStream = flinkCore.zoomInLayout(layoutedVertices, innerVertices);
-		    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
+		    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
 						} else {
 	        				Main.setOperation("zoomOut");
@@ -331,10 +336,23 @@ public class Main {
 		if (operation != "zoomOut"){
 			for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) {
 				VVEdgeWrapper wrapper = entry.getValue();
-				Integer sourceX = wrapper.getSourceX();
-				Integer sourceY = wrapper.getSourceY();
-				Integer targetX = wrapper.getTargetX();
-				Integer targetY = wrapper.getTargetY();
+				Integer sourceX;
+				Integer sourceY;
+				Integer targetX;
+				Integer targetY;
+				if (layout) {
+					sourceX = wrapper.getSourceX();
+					sourceY = wrapper.getSourceY();
+					targetX = wrapper.getTargetX();
+					targetY = wrapper.getTargetY();
+				} else {
+					VertexCustom sourceVertex = innerVertices.get(wrapper.getSourceVertex().getIdGradoop());
+					sourceX = sourceVertex.getX();
+					sourceY = sourceVertex.getY();
+					VertexCustom targetVertex = innerVertices.get(wrapper.getTargetVertex().getIdGradoop());
+					targetX = targetVertex.getX();
+					targetY = targetVertex.getY();
+				}
 				if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
 						((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
 					Main.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
@@ -426,7 +444,6 @@ public class Main {
 			minDegreeVertex = vertex;
 		}
 	}
-	
 	
 	private static void addNonIdentityWrapper(VVEdgeWrapper wrapper) {
 		VertexCustom sourceVertex = wrapper.getSourceVertex();
@@ -566,6 +583,10 @@ public class Main {
 				}
 			}
 		}
+	}
+	
+	private static void addNonIdentityWrapperNoLayout(VVEdgeWrapper wrapper) {
+		
 	}
 	
 	private static void updateMinDegreeVertex(VertexCustom vertex) {

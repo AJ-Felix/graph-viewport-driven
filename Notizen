@@ -153,7 +153,12 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
 
-TODO: LayoutBaseString testen, Flink terminiert nicht mit ZoomInLayout Funktion. Wenn alle Operationen aus der Funktion entfernt werden, dann terminiert Flink, aber this.wrapperStream der GraphUtil scheint leer zu sein...
+TODO: Layouting implementieren
+	- Möglicherweise ist eine Flag notwendig, um gelayoutete Knoten zu markieren ODER die Koordinaten dürfen gar nicht erst eingelesen werden
+	- Wenn neue Wrapper geSinkt werden, dann trage diese bei "preLayout" noch keine Koordinaten, diese müssen also auf andere Weise geholt werden für die Operationen, die auf den Koordinaten basieren
+	- Der Umgang mit der Kapazitätsgrenze muss geklärt werden
+	
+TODO: Checken ob A to C and vice versa nicht für panning notwendig wäre --> die Funktion für GradoopGraphUtil anpassen
 
 
 	

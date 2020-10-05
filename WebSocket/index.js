@@ -10,6 +10,7 @@ ws.onopen = function() {
 let messageQueue = new Array();
 let messageProcessing;
 let graphOperationLogic = "serverSide";
+let boundingBoxVar;
 
 function addMessageToQueue(dataArray){
 		messageQueue.push(dataArray);
@@ -88,16 +89,19 @@ ws.onerror = function(err) {
 
 function sendSignalRetract(){
 	if (graphOperationLogic == "clientSide") handler = new RetractHandler(maxNumberVertices);
+	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
 	ws.send("buildTopView;retract");
 }
 
 function sendSignalAppendJoin(){
 	if (graphOperationLogic == "clientSide") handler = new AppendHandler(maxNumberVertices);
+	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
 	ws.send("buildTopView;appendJoin");
 }
 
 function sendSignalAdjacency(){
 	if (graphOperationLogic == "clientSide")	handler = new AppendHandler(maxNumberVertices);
+	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
 	ws.send("buildTopView;adjacency");
 }
 

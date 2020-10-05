@@ -92,7 +92,12 @@ function addVertexToLayoutBase(dataArray){
 
 function performLayout(){
 	console.log("performing layout!");
-	let layout = layoutBase.layout({name: "random", boundingBox: {x1: 0, y1: 0, w: 4000, h: 4000}});
+	console.log(boundingBoxVar);
+	let layoutOptions = {};
+	layoutOptions.name = "random";
+	layoutOptions.fit = false;
+	layoutOptions.boundingBox = boundingBoxVar;
+	let layout = layoutBase.layout(layoutOptions);
 	layout.run();
 	console.log("layout performed");
 	let layoutBaseString = "";
@@ -161,14 +166,23 @@ cyto.addEventListener("wheel", function(e) {
 		cy.pan({x:-vPixHalf + zFactor * pan.x + (vPixHalf - cytoX) * zFactor, y:-vPixHalf + zFactor * pan.y + (vPixHalf - cytoY) * zFactor});
 		pan = cy.pan();
 		const zoomLevel = cy.zoom();
+		const topModelPos = - pan.y / zoomLevel;
+		const leftModelPos = - pan.x / zoomLevel;
+		const bottomModelPos = topModelPos + vPix / zoomLevel;
+		const rightModelPos = leftModelPos + vPix / zoomLevel;
+		boundingBoxVar = {x1: leftModelPos, y1: topModelPos, x2: rightModelPos, y2: bottomModelPos};
+		console.log("new boundingBox");
+		console.log(boundingBoxVar);
 		if (graphOperationLogic == "clientSide"){
-			const topModelPos = - pan.y / zoomLevel;
-			const leftModelPos = - pan.x / zoomLevel;
-			const bottomModelPos = topModelPos + vPix / zoomLevel;
-			const rightModelPos = leftModelPos + vPix / zoomLevel;
+			// const topModelPos = - pan.y / zoomLevel;
+			// const leftModelPos = - pan.x / zoomLevel;
+			// const bottomModelPos = topModelPos + vPix / zoomLevel;
+			// const rightModelPos = leftModelPos + vPix / zoomLevel;
 			handler.operation = "zoomIn";
 			handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 		}
+		//lock existing nodes
+		cy.nodes().lock();
 		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	} else {
 		cy.zoom(cy.zoom() / zFactor);
