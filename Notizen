@@ -157,8 +157,10 @@ TODO: Layouting implementieren
 	- Möglicherweise ist eine Flag notwendig, um gelayoutete Knoten zu markieren ODER die Koordinaten dürfen gar nicht erst eingelesen werden
 	- Wenn neue Wrapper geSinkt werden, dann trage diese bei "preLayout" noch keine Koordinaten, diese müssen also auf andere Weise geholt werden für die Operationen, die auf den Koordinaten basieren
 	- Der Umgang mit der Kapazitätsgrenze muss geklärt werden
+	- Bereits gelayoutete Knoten sollten als Tiebreaker bei Gleichstand im Knotengrad vorgezogen werden.
+	- Es muss eine Datenstruktur geben, die die Koordinaten von bereits gelayouteten Knoten speichert. Vermutlich ist es nicht möglich die Koordinaten zu materialisieren und sie wieder als Input-Datei für die nächste Operation einzulesen, dies gilt es noch zu klären. Vorerst wird die Datenstruktur im Speicher gehalten.
 	
-TODO: Checken ob A to C and vice versa nicht für panning notwendig wäre --> die Funktion für GradoopGraphUtil anpassen
+TODO: ZoomIn prüfen und Funktion für nach der letzten Iteration implementieren, addNonIdentityWrapper implementieren!!!!
 
 
 	

@@ -115,16 +115,18 @@ public class Main {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
-                	Set<String> set = new HashSet<String>();
+//                	Set<String> set = new HashSet<String>();
                 	for (String vertexData : list) {
                 		String[] arrVertexData = vertexData.split(",");
                 		String vertexIdGradoop = arrVertexData[0];
-                		set.add(vertexIdGradoop);
+//                		set.add(vertexIdGradoop);
+                					//Ist "layoutedVertices" wirklich notwendig?
+//                		layoutedVertices.add(vertexIdGradoop);
             			VertexCustom vertex = innerVertices.get(vertexIdGradoop);
             			vertex.setX(Integer.parseInt(arrVertexData[1]));
             			vertex.setY(Integer.parseInt(arrVertexData[2]));
                 	}
-                	layoutedVertices = set;
+//                	layoutedVertices = set;
                 } else if (messageData.startsWith("maxVertices")) {
                 	String[] arrMessageData = messageData.split(";");
                 	maxVertices = Integer.parseInt(arrMessageData[1]);
@@ -204,7 +206,7 @@ public class Main {
 					System.out.println("Zoom ... top, right, bottom, left:" + topModelPos + " " + rightModelPos + " "+ bottomModelPos + " " + leftModelPos);
 					if (!layout) {
 						if (messageData.startsWith("zoomIn")) {
-							System.out.println(layoutedVertices.size());
+//							System.out.println(layoutedVertices.size());
 		    				Main.setOperation("zoomIn");
 							System.out.println("in zoom in layout function");
 							for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
@@ -586,7 +588,19 @@ public class Main {
 	}
 	
 	private static void addNonIdentityWrapperNoLayout(VVEdgeWrapper wrapper) {
-		
+		//checken welche Knoten bereits Koordinaten haben, es muss immer mindestens ein Knoten bereits Koordinaten haben
+		//Wenn beide Koordinaten haben, dann kann mit ihnen wie gewöhnlich verfahren werden
+		//Wenn nur ein Knoten Koordinaten hat, dann muss der andere inside sein und damit wird die Kapazität um mindestens 1 verringert
+			//TODO
+		VertexCustom sourceVertex = wrapper.getSourceVertex();
+		VertexCustom targetVertex = wrapper.getTargetVertex();
+		if (capacity > 1) {
+			if ();
+		} else if (capacity == 1) {
+			
+		} else {
+			
+		}
 	}
 	
 	private static void updateMinDegreeVertex(VertexCustom vertex) {

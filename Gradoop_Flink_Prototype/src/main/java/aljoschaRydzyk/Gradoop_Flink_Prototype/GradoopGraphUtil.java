@@ -49,6 +49,12 @@ public class GradoopGraphUtil implements GraphUtil{
 	private TypeInformation[] wrapperFormatTypeInfo;
 	private Map<String,Map<String,String>> adjMatrix;
 	
+	//Area Definition
+			//A	: Inside viewport after operation
+			//B : Outside viewport before and after operation
+			//C : Inside viewport before and after operation
+			//D : Outside viewport after operation
+	
 	public GradoopGraphUtil (LogicalGraph graph, StreamExecutionEnvironment fsEnv, StreamTableEnvironment fsTableEnv, String vertexFields, 
 			String wrapperFields) {
 		this.graph = graph;
@@ -223,7 +229,7 @@ public class GradoopGraphUtil implements GraphUtil{
 		Float bottomNew = bottomOld + yModelDiff;
 		Float leftNew = leftOld + xModelDiff;
 		
-		//vertex stream filter and conversion to Flink Tables for areas A, B, C and D
+		//vertex stream filter and conversion to Flink Tables for areas A, B and C
 		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
 		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
 				@Override
@@ -257,7 +263,7 @@ public class GradoopGraphUtil implements GraphUtil{
 			//filter out redundant identity edges
 			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo).filter(new WrapperFilterIdentity());
 		
-		//produce wrapperStream from B to D and vice versa
+		//produce wrapperStream from A+C to D and vice versa
 		Table wrapperTableOldInNewInInOut = wrapperTable.join(vertexTableInner)
 				.where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
 		wrapperTableOldInNewInInOut = wrapperTableOldInNewInInOut.join(vertexTableOldInNotNewIn)
