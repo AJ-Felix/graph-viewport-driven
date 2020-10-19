@@ -246,28 +246,44 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return this.adjMatrix;
 	}
 	
+	private boolean vertexIsInside(VertexCustom vertex,	Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+		Integer x = vertex.getX();
+		Integer y = vertex.getY();
+		return x >= leftModel && x <= rightModel && y >= topModel && y <= bottomModel;
+	}
+	
 	//Prelayout functions
-	public DataStream<Row> zoomInLayout(Set<String> layoutedVertices, Map<String, VertexCustom> innerVertices) {
+	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
+			Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
 		
-		//Diese Funktion sollte solange wieder aufgerufen werden, bis die Kapazität erreicht ist. Anschließend müssen noch die Kanten von den eben hinzugefügten
+		//Diese Funktion sollte solange wieder aufgerufen werden, bis die Kapazität erreicht ist. Wenn die Kapazität nicht erreicht wird, sollten Nachbarknoten,
+		//welche noch nicht gelayoutet sind hinzugefügt werden. Wenn die Kapazität weiterhinisolierte
+		//Knoten nichtzugefügt werden, bis die Kapazität erreich ist. Anschließend müssen noch die Kanten von den eben hinzugefügten
 		//Knoten zu Nachbarn außerhalb des Viewports hinzugefügt werden
 		
 		System.out.println("in ZoomInLayout function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 
-		// (1) produce wrapper stream from visualized Vertices to neighbours that are not visualized inside
-		Set<String> notVisualizedNeighboursIds = new HashSet<String>();
+		// (1) produce wrapper stream from visualized Vertices to neighbours that are not visualized inside but are layouted already
+		Set<String> notVisualizedButLayoutedNeighboursIds = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
 			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(innerVerticesEntry.getKey()).entrySet()) {
 				String notVisualizedVertexId = adjEntry.getKey();
-				if (!innerVertices.containsKey(notVisualizedVertexId)) notVisualizedNeighboursIds.add(notVisualizedVertexId);
+				if (!innerVertices.containsKey(notVisualizedVertexId) && layoutedVertices.containsKey(notVisualizedVertexId) 
+					&& this.vertexIsInside(layoutedVertices.get(notVisualizedVertexId), topModel, rightModel, bottomModel, leftModel)) {
+					notVisualizedButLayoutedNeighboursIds.add(notVisualizedVertexId);
+				}
 			}
 		}
+		
+		//return to next step if set is empty
+		if (notVisualizedButLayoutedNeighboursIds.isEmpty()) return null;
+		
 		DataStream<String> visualizedVerticesStream = fsEnv.fromCollection(innerVertices.keySet());
-		DataStream<String> notVisualizedNeighbours = fsEnv.fromCollection(notVisualizedNeighboursIds);
+		DataStream<String> notVisualizedButLayoutedNeighbours = fsEnv.fromCollection(notVisualizedButLayoutedNeighboursIds);
 		Table layoutedVerticesTable = fsTableEnv.fromDataStream(visualizedVerticesStream).as("vertexIdGradoop");
-		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(notVisualizedNeighbours).as("vertexIdGradoop");
+		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(notVisualizedButLayoutedNeighbours).as("vertexIdGradoop");
 		Table wrapperTableNewOld = wrapperTable.join(neighbourCandidatesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
 		wrapperTableNewOld = wrapperTableNewOld.join(layoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
 		Table wrapperTableOldNew = wrapperTable.join(layoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
@@ -302,6 +318,115 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				//produce wrapper stream of candidates to vertices already layouted 
 			//when there is still space for visualization produce wrapper stream from the neighbours neighbours and so on, 
 			//hopefully this can be controlled by consecutive execution of flink jobs
+	}
+	
+	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
+		//Diese Funktion sollte solange wieder aufgerufen werden, bis die Kapazität erreicht ist.  Wenn die Kapazität weiterhin nicht erreicht ist, 
+		//sollten isolierte Knoten nichtzugefügt werden, bis die Kapazität erreich ist. Anschließend müssen noch die Kanten von den eben hinzugefügten
+		//Knoten zu Nachbarn außerhalb des Viewports hinzugefügt werden
+		
+		//(2 + 4) produce wrapper Stream from visualized vertices inside to neighbour vertices which are not layouted and not visualized
+		
+		System.out.println("in ZoomInLayoutSecondStep function");
+		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
+		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+
+		Set<String> notVisualizedNotLayoutedNeighboursIds = new HashSet<String>();
+		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
+			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(innerVerticesEntry.getKey()).entrySet()) {
+				String notVisualizedVertexId = adjEntry.getKey();
+				if (!innerVertices.containsKey(notVisualizedVertexId)) notVisualizedNotLayoutedNeighboursIds.add(notVisualizedVertexId);
+			}
+		}
+		
+		//return to next step if set is empty
+		if (notVisualizedNotLayoutedNeighboursIds.isEmpty()) return null;
+		
+		DataStream<String> visualizedVerticesStream = fsEnv.fromCollection(innerVertices.keySet());
+		DataStream<String> notVisualizedNotLayoutedNeighbours = fsEnv.fromCollection(notVisualizedNotLayoutedNeighboursIds);
+		Table layoutedVerticesTable = fsTableEnv.fromDataStream(visualizedVerticesStream).as("vertexIdGradoop");
+		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(notVisualizedNotLayoutedNeighbours).as("vertexIdGradoop");
+		Table wrapperTableNewOld = wrapperTable.join(neighbourCandidatesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
+		wrapperTableNewOld = wrapperTableNewOld.join(layoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+		Table wrapperTableOldNew = wrapperTable.join(layoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
+		wrapperTableOldNew = wrapperTableOldNew.join(neighbourCandidatesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+		
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableOldNew, wrapperRowTypeInfo)
+				.union(fsTableEnv.toAppendStream(wrapperTableNewOld, wrapperRowTypeInfo));
+		return wrapperStream;
+	}
+	
+	public DataStream<Row> panLayoutThirdStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
+			Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+		//Diese Funktion sollte solange wieder aufgerufen werden, bis die Kapazität erreicht ist. Anschließend müssen noch die Kanten von den eben hinzugefügten
+		//Knoten zu Nachbarn außerhalb des Viewports hinzugefügt werden.
+		
+		//(5) produce wrapper identity stream for layouted vertices within model position that are not visualized yet
+		System.out.println("in ZoomInLayoutThirdStep function");
+		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
+		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+
+		Set<String> notVisualizedButLayoutedNonNeighboursIds = new HashSet<String>();
+		for (Map.Entry<String, VertexCustom> layoutedVerticesEntry : layoutedVertices.entrySet()) {
+			String vertexId = layoutedVerticesEntry.getKey();
+			if (!innerVertices.containsKey(vertexId) && this.vertexIsInside(layoutedVerticesEntry.getValue(), 
+					topModel, rightModel, bottomModel, leftModel)) notVisualizedButLayoutedNonNeighboursIds.add(vertexId);
+
+		}
+		
+		//return to next step if set is empty
+		if (notVisualizedButLayoutedNonNeighboursIds.isEmpty()) return null;
+		
+		DataStream<String> notVisualizedButLayoutedNonNeighbours = fsEnv.fromCollection(notVisualizedButLayoutedNonNeighboursIds);
+		Table candidatesTable = fsTableEnv.fromDataStream(notVisualizedButLayoutedNonNeighbours).as("vertexIdGradoop");
+		wrapperTable = wrapperTable.join(candidatesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
+		wrapperTable = wrapperTable.join(candidatesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+		
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable, wrapperRowTypeInfo);
+		return wrapperStream;
+	}
+	
+	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
+			Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){
+		
+		Float topNew = topOld + yModelDiff;
+		Float rightNew = rightOld + xModelDiff;
+		Float bottomNew = bottomOld + yModelDiff;
+		Float leftNew = leftOld + xModelDiff;
+		
+		//(3) produce wrapperStream from visualized vertices that were newly added to layouted Vertices outside the model position
+		System.out.println("in ZoomInLayoutFourthStep function");
+		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
+		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+
+		Set<String> newlyInsideVisualizedIds = new HashSet<String>();
+		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
+			VertexCustom vertex = innerVerticesEntry.getValue();
+			Integer x = vertex.getX();
+			Integer y = vertex.getY();
+			if (this.vertexIsInside(vertex, topNew, rightNew, bottomNew, leftNew) && 
+					!(x >= leftOld && x <= rightOld && y >= topOld && y <= bottomOld)) newlyInsideVisualizedIds.add(vertex.getIdGradoop());
+		}
+		Set<String> outsideLayoutedNeighbourIds = new HashSet<String>();
+		for (String insideVertexId : newlyInsideVisualizedIds) {
+			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(insideVertexId).entrySet()) {
+				String neighbourVertexId = adjEntry.getKey();
+				if (!innerVertices.containsKey(neighbourVertexId)) outsideLayoutedNeighbourIds.add(neighbourVertexId);
+			}
+		}
+		
+		DataStream<String> newlyInsideVerticesStream = fsEnv.fromCollection(newlyInsideVisualizedIds);
+		DataStream<String> notInsideNeighbours = fsEnv.fromCollection(outsideLayoutedNeighbourIds);
+		Table newlyInsideVerticesTable = fsTableEnv.fromDataStream(newlyInsideVerticesStream).as("vertexIdGradoop");
+		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(notInsideNeighbours).as("vertexIdGradoop");
+		Table wrapperTableNewOld = wrapperTable.join(neighbourCandidatesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
+		wrapperTableNewOld = wrapperTableNewOld.join(newlyInsideVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+		Table wrapperTableOldNew = wrapperTable.join(newlyInsideVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
+		wrapperTableOldNew = wrapperTableOldNew.join(neighbourCandidatesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+		
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableOldNew, wrapperRowTypeInfo)
+				.union(fsTableEnv.toAppendStream(wrapperTableNewOld, wrapperRowTypeInfo));
+		return wrapperStream;
 	}
 	
 	public DataStream<Row> zoomOutLayout() {
