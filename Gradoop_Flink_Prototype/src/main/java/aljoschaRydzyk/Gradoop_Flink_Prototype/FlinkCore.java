@@ -187,22 +187,46 @@ public class FlinkCore {
 		return stream;
 	}
 	
+	public DataStream<Row> zoomInLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutFirstStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, 
+				bottomModelPos, leftModelPos);
+	}
+	
+	public DataStream<Row> zoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutSecondStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, 
+				bottomModelPos, leftModelPos);
+	}
+	
+	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutThirdStep(layoutedVertices);
+	}
+	
+	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutFourthStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, 
+				bottomModelPos, leftModelPos);
+	}
+	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFirstStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFirstStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, 
+				bottomModelPos, leftModelPos);
 	}
 	
 	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutSecondStep(layoutedVertices, innerVertices);
-	}
-	
-	public DataStream<Row> panLayoutThirdStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutThirdStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, bottomModelPos, 
+		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutSecondStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, bottomModelPos, 
 				leftModelPos);
 	}
 	
-	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices,
+	public DataStream<Row> panLayoutThirdStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
+		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutThirdStep(layoutedVertices, innerVertices);
+	}
+	
+	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices){
+		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFourthStep(layoutedVertices);
+	}
+	
+	public DataStream<Row> panLayoutFifthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices,
 			Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){
-		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFourthStep(layoutedVertices, innerVertices, topOld, rightOld, bottomOld, leftOld, xModelDiff, yModelDiff);
+		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFifthStep(layoutedVertices, innerVertices, topOld, rightOld, bottomOld, leftOld, xModelDiff, yModelDiff);
 	}
 	
 	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){

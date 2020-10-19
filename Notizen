@@ -154,7 +154,7 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
 
 TODO: Make (most) static Main class functions private
-TODO: All comparisons of integers in model position evaluation
+TODO: Check all comparisons of integers in model position evaluation
 
 TODO: Layouting implementieren
 	- Möglicherweise ist eine Flag notwendig, um gelayoutete Knoten zu markieren ODER die Koordinaten dürfen gar nicht erst eingelesen werden
@@ -164,6 +164,7 @@ TODO: Layouting implementieren
 	- Es muss eine Datenstruktur geben, die die Koordinaten von bereits gelayouteten Knoten speichert. Vermutlich ist es nicht möglich die Koordinaten zu materialisieren und sie wieder als Input-Datei für die nächste Operation einzulesen, dies gilt es noch zu klären. Vorerst wird die Datenstruktur im Speicher gehalten.
 	
 TODO: ZoomIn prüfen und Funktion für nach der letzten Iteration implementieren, addNonIdentityWrapper implementieren!!!!
+TODO: Möglicherweise funktioniert null setzen bei zoomInLayoutThirdStep nicht, hier muss wahrscheinlich mit capacity gearbeitet werden... checken!
 
 
 	
