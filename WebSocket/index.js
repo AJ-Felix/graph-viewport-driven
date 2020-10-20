@@ -58,7 +58,10 @@ async function processMessage(){
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 					break;
-				case 'addVertexServerLayout':
+				case 'addVertexServerHasLayout':
+					addVertexToLayoutBase(dataArray);
+					break;
+				case 'addVertexServerToBeLayouted':
 					addVertexToLayoutBase(dataArray);
 					break;
 				case 'addEdgeServer':

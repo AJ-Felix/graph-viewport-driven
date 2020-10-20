@@ -108,6 +108,7 @@ public class Main {
                 } else if (messageData.equals("clientSideLogic")) {
                 	graphOperationLogic = "clientSide";
                 } else if (messageData.equals("preLayout")) {
+                	layoutedVertices = new HashMap<String,VertexCustom>();
                 	layout = false;
                 } else if (messageData.equals("postLayout")) {
                 	layout = true;
@@ -118,14 +119,14 @@ public class Main {
 //                	Set<String> set = new HashSet<String>();
                 	for (String vertexData : list) {
                 		String[] arrVertexData = vertexData.split(",");
-                		String vertexIdGradoop = arrVertexData[0];
+                		String vertexId = arrVertexData[0];
 //                		set.add(vertexIdGradoop);
-                					//Ist "layoutedVertices" wirklich notwendig?
 //                		layoutedVertices.add(vertexIdGradoop);
-            			VertexCustom vertex = innerVertices.get(vertexIdGradoop);
-            			vertex.setX(Integer.parseInt(arrVertexData[1]));
-            			vertex.setY(Integer.parseInt(arrVertexData[2]));
+            			VertexCustom vertex = new VertexCustom(vertexId, Integer.parseInt(arrVertexData[1]), Integer.parseInt(arrVertexData[2]));
+            			layoutedVertices.put(vertexId, vertex);
                 	}
+                	System.out.println("layoutedVertices size: ");
+                	System.out.println(layoutedVertices.size());
 //                	layoutedVertices = set;
                 } else if (messageData.startsWith("maxVertices")) {
                 	String[] arrMessageData = messageData.split(";");

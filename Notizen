@@ -163,10 +163,11 @@ TODO: Layouting implementieren
 	- Bereits gelayoutete Knoten sollten als Tiebreaker bei Gleichstand im Knotengrad vorgezogen werden.
 	- Es muss eine Datenstruktur geben, die die Koordinaten von bereits gelayouteten Knoten speichert. Vermutlich ist es nicht möglich die Koordinaten zu materialisieren und sie wieder als Input-Datei für die nächste Operation einzulesen, dies gilt es noch zu klären. Vorerst wird die Datenstruktur im Speicher gehalten.
 	
-TODO: ZoomIn prüfen und Funktion für nach der letzten Iteration implementieren, addNonIdentityWrapper implementieren!!!!
 TODO: Möglicherweise funktioniert null setzen bei zoomInLayoutThirdStep nicht, hier muss wahrscheinlich mit capacity gearbeitet werden... checken!
 NOTE: FrontEnd controls existing node coordinates with addVertexServerHasLayout and addVertexServerToBeLayouted calls
 NOTE: Recalling of operation functions needs to wait for backwriting answer from client...!!! Maybe it is possible to start a thread that is only responsible for receiving this answer and then exit. So that the main thread can be woken up when answer is received. The dedicated thread would necessarily listen on a different port and a new webSocket would need to be established on client side.
+
+TODO: Update Client layout functions according to changes on server side!
 
 	
 Serverseitige Graph-Semantik:
