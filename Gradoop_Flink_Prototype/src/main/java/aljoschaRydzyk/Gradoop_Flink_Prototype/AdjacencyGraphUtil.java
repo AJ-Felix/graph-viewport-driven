@@ -224,6 +224,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		this.wrapperMap = new HashMap<String,Row>();
 		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_wrappers"));
 		String row;
+		@SuppressWarnings("unused")
 		int i = 0;
 		while ((row = csvReader.readLine()) != null) {
 			i += 1;

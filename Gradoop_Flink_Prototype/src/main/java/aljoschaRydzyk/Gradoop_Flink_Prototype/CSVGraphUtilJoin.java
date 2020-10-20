@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
@@ -23,7 +22,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
-import org.apache.flink.util.Collector;
 
 public class CSVGraphUtilJoin implements GraphUtil{
 	private StreamExecutionEnvironment fsEnv;
@@ -266,6 +264,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 		
 		//(3) produce wrapper identity stream of not visualized but layouted vertices inside model position
+		//    and also produce wrapper stream between those vertices
 		Set<String> notVisualizedButLayoutedNonNeighbourIds = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> layoutedVerticesEntry : layoutedVertices.entrySet()) {
 			String notVisualizedVertexId = layoutedVerticesEntry.getKey();
@@ -332,15 +331,13 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){
-		//Anschließend müssen noch die Kanten von den eben hinzugefügten
-		//Knoten zu Nachbarn außerhalb des Viewports hinzugefügt werden.
-		
+	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){		
 		System.out.println("in ZoomInLayoutThirdStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 		
 		//(4) produce wrapper identity stream for vertices which are not yet layouted starting with highest degree
+		//    and also produce wrapper stream between those vertices
 		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -434,37 +431,15 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		
 		//filter out already visualized edges in wrapper stream
 		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-				
-		//filter out already visualized vertices in wrapper stream (identity wrappers)
-			//shouldnt be necessary
-//		Set<String> visualizedVertices = this.visualizedVertices;
-//		wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
-//			@Override
-//			public boolean filter(Row value) throws Exception {
-//				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
-//			}
-//		});
-//		wrapperStream.print().setParallelism(1);
 		return wrapperStream;
-		
-		//map of innerVertices and their position is given
-		//set of layouted vertices and their position is given
-		//new position/zoomLevel is sent by client
-		//delete those vertices from the innerVertices map that are newly outside the viewport, this is done in prepareOperation()
-		//after prepareOperation() this function
-			//produce vertex stream of neighbour vertices from those still/already visualized
-				//produce wrapper stream of candidates to vertices already layouted 
-			//when there is still space for visualization produce wrapper stream from the neighbours neighbours and so on, 
-			//hopefully this can be controlled by consecutive execution of flink jobs
 	}
 	
 	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
 			Float topModel, Float rightModel, Float bottomModel, Float leftModel){
-		//Diese Funktion sollte solange wieder aufgerufen werden, bis die Kapazität erreicht ist. Anschließend müssen noch die Kanten von den eben hinzugefügten
-		//Knoten zu Nachbarn außerhalb des Viewports hinzugefügt werden.
 		
 		//(5) produce wrapper identity stream for layouted vertices within model position that are not visualized yet
-		System.out.println("in panLayoutThirdStep function");
+		//	  and also produce wrapper stream between those vertices
+		System.out.println("in panLayoutSecondStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 
@@ -495,7 +470,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		
 		//(2 + 4) produce wrapper Stream from visualized vertices inside to neighbour vertices which are not layouted and not visualized
 		
-		System.out.println("in panLayoutSecondStep function");
+		System.out.println("in panLayoutThirdStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 
@@ -533,6 +508,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 		
 		//(4) produce wrapper identity stream for vertices which are not yet layouted starting with highest degree
+		//    and also produce wrapper stream between those vertices
 		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
@@ -556,7 +532,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Float bottomNew = bottomOld + yModelDiff;
 		Float leftNew = leftOld + xModelDiff;
 		
-		//(3) produce wrapperStream from visualized vertices that were newly added to layouted Vertices outside the model position
+		//(3) produce wrapperStream from visualized vertices that were newly added inside to layouted Vertices outside the model position
 		System.out.println("in panLayoutFifthStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);

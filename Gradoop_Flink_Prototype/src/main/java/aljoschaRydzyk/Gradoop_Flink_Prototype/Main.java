@@ -316,7 +316,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(layoutedVertices, innerVertices);
     	if (wrapperStream == null) zoomInLayoutSecondStep();
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -334,7 +334,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(layoutedVertices, innerVertices);
     	if (wrapperStream == null) zoomInLayoutThirdStep();
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -351,7 +351,7 @@ public class Main {
     private static void zoomInLayoutThirdStep() {
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutThirdStep(layoutedVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -364,7 +364,7 @@ public class Main {
     private static void zoomInLayoutFourthStep() {
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(layoutedVertices, innerVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -377,7 +377,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, innerVertices);
     	if (wrapperStream == null) panLayoutSecondStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
 		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -396,7 +396,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.panLayoutSecondStep(layoutedVertices, innerVertices);
     	if (wrapperStream == null) panLayoutThirdStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -415,7 +415,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(layoutedVertices, innerVertices);
     	if (wrapperStream == null) panLayoutFourthStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -434,7 +434,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFourthStep(layoutedVertices);
     	if (wrapperStream == null) panLayoutFifthStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -449,7 +449,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFifthStep(layoutedVertices, innerVertices, 
     			topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -460,7 +460,7 @@ public class Main {
     /**
      * sends a message to the all connected web socket clients
      */
-    private static void sendToAll(String message) {
+    public static void sendToAll(String message) {
         for (WebSocketChannel session : channels) {
             WebSockets.sendText(message, session, null);
         }
@@ -574,7 +574,7 @@ public class Main {
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentityLayout(wrapper.getSourceVertex());
 		} else {
-//			addNonIdentityWrapperLayout(wrapper);
+			addNonIdentityWrapperLayout(wrapper);
 		}
 	}
 	
@@ -754,21 +754,161 @@ public class Main {
 		}
 	}
 	
-//	private static void addNonIdentityWrapperNoLayout(VVEdgeWrapper wrapper) {
-//		//checken welche Knoten bereits Koordinaten haben, es muss immer mindestens ein Knoten bereits Koordinaten haben
-//		//Wenn beide Koordinaten haben, dann kann mit ihnen wie gewöhnlich verfahren werden
-//		//Wenn nur ein Knoten Koordinaten hat, dann muss der andere inside sein und damit wird die Kapazität um mindestens 1 verringert
-//			//TODO
-//		VertexCustom sourceVertex = wrapper.getSourceVertex();
-//		VertexCustom targetVertex = wrapper.getTargetVertex();
-//		if (capacity > 1) {
-//			if ();
-//		} else if (capacity == 1) {
-//			
-//		} else {
-//			
-//		}
-//	}
+	private static void addNonIdentityWrapperLayout(VVEdgeWrapper wrapper) {
+		//checken welche Knoten bereits Koordinaten haben. Es muss NICHT immer mindestens ein Knoten bereits Koordinaten haben! (siehe zoomIn3 und pan4)
+		//Wenn beide Koordinaten haben, dann kann mit ihnen wie gewöhnlich verfahren werden
+		//Wenn nur ein Knoten Koordinaten hat, dann muss der andere inside sein und damit wird die Kapazität um mindestens 1 verringert
+			//TODO
+		VertexCustom sourceVertex = wrapper.getSourceVertex();
+		VertexCustom targetVertex = wrapper.getTargetVertex();
+		String sourceId = sourceVertex.getIdGradoop();
+		String targetId = targetVertex.getIdGradoop();
+		VertexCustom sourceLayouted = null;
+		VertexCustom targetLayouted = null;
+		boolean sourceIsRegisteredInside = newVertices.containsKey(sourceId) || innerVertices.containsKey(sourceId);
+		boolean targetIsRegisteredInside = newVertices.containsKey(targetId) || innerVertices.containsKey(targetId);
+		if (layoutedVertices.containsKey(sourceVertex.getIdGradoop())) sourceLayouted = layoutedVertices.get(sourceVertex.getIdGradoop());
+		if (layoutedVertices.containsKey(targetVertex.getIdGradoop())) targetLayouted = layoutedVertices.get(targetVertex.getIdGradoop());
+		
+		//Both Nodes have coordinates and can be treated as usual
+		if (sourceLayouted != null && targetLayouted != null) {
+			sourceVertex.setX(sourceLayouted.getX());
+			sourceVertex.setY(sourceLayouted.getY());
+			targetVertex.setX(targetLayouted.getX());
+			targetVertex.setY(targetLayouted.getY());
+			addNonIdentityWrapper(wrapper);
+		}
+		
+		//Only one node has coordinates, then this node is necessarily already visualized and the other node necessarily needs to be layouted inside
+		else if (sourceLayouted != null) {
+			if (capacity > 0) {
+				addVertex(targetVertex);
+				if (!targetIsRegisteredInside) {
+					updateMinDegreeVertex(targetVertex);
+					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+					capacity -= 1;
+				}
+				addEdge(wrapper);
+			} else {
+				if (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
+					addVertex(targetVertex);
+					addEdge(wrapper);
+					if (!targetIsRegisteredInside) {
+						reduceNeighborIncidence(minDegreeVertex);
+						removeVertex(minDegreeVertex);
+						registerInside(targetVertex);
+					}
+				}
+			}
+		} else if (targetLayouted != null) {
+			if (capacity > 0) {
+				addVertex(sourceVertex);
+				if (!sourceIsRegisteredInside) {
+					updateMinDegreeVertex(sourceVertex);
+					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+					capacity -= 1;
+				}
+				addEdge(wrapper);
+			} else {
+				addVertex(sourceVertex);
+				addEdge(wrapper);
+				if (!sourceIsRegisteredInside) {
+					reduceNeighborIncidence(minDegreeVertex);
+					removeVertex(minDegreeVertex);
+					registerInside(sourceVertex);
+				}
+			}
+		}
+		
+		//Both nodes do not have coordinates. Then both nodes necessarily need to be layouted inside
+		else {
+			if (capacity > 1) {
+				addVertex(sourceVertex);
+				if (!sourceIsRegisteredInside){
+					updateMinDegreeVertex(sourceVertex);
+					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+					capacity -= 1;
+				}
+				addVertex(targetVertex);
+				if (!targetIsRegisteredInside){
+					updateMinDegreeVertex(targetVertex);
+					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+					capacity -= 1;
+				}
+				addEdge(wrapper);
+			} else if (capacity == 1) {
+				boolean sourceAdmission = false;
+				boolean targetAdmission = false;
+				if (sourceVertex.getDegree() > targetVertex.getDegree()) {
+					addVertex(sourceVertex);
+					sourceAdmission = true;
+					if (targetVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
+						addVertex(targetVertex);
+						targetAdmission = true;
+						addEdge(wrapper);
+					}
+				} else {
+					addVertex(targetVertex);
+					targetAdmission = true;
+					if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
+						addVertex(sourceVertex);
+						sourceAdmission = true;
+						addEdge(wrapper);
+					}
+				}
+				if (!sourceIsRegisteredInside && sourceAdmission && !targetIsRegisteredInside && targetAdmission) {
+					reduceNeighborIncidence(minDegreeVertex);
+					removeVertex(minDegreeVertex);
+					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+					updateMinDegreeVertices(newVertices);
+				} else if (!sourceIsRegisteredInside && sourceAdmission) {
+					registerInside(sourceVertex);
+				} else if (!targetIsRegisteredInside && targetAdmission) {
+					registerInside(targetVertex);
+				}
+				capacity -= 1 ;
+			} else {
+				if ((sourceVertex.getDegree() > secondMinDegreeVertex.getDegree()) && 
+						(targetVertex.getDegree() > secondMinDegreeVertex.getDegree())) {
+					addVertex(sourceVertex);
+					addVertex(targetVertex);
+					addEdge(wrapper);
+					if (!sourceIsRegisteredInside && !targetIsRegisteredInside) {
+						reduceNeighborIncidence(minDegreeVertex);
+						reduceNeighborIncidence(secondMinDegreeVertex);
+						removeVertex(secondMinDegreeVertex);
+						removeVertex(minDegreeVertex);
+						newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+						newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+						updateMinDegreeVertices(newVertices);
+					} else if (!sourceIsRegisteredInside) {
+						reduceNeighborIncidence(minDegreeVertex);
+						removeVertex(minDegreeVertex);
+						registerInside(sourceVertex);
+					} else if (!targetIsRegisteredInside) {
+						reduceNeighborIncidence(minDegreeVertex);
+						removeVertex(minDegreeVertex);
+						registerInside(targetVertex);
+					}
+				} else if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
+					addVertex(sourceVertex);
+					if (!sourceIsRegisteredInside) {
+						reduceNeighborIncidence(minDegreeVertex);
+						removeVertex(minDegreeVertex);
+						registerInside(sourceVertex);
+					}
+				} else if (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
+					addVertex(targetVertex);
+					if (!targetIsRegisteredInside) {
+						reduceNeighborIncidence(minDegreeVertex);
+						removeVertex(minDegreeVertex);
+						registerInside(targetVertex);
+					}
+				}
+			}
+		}
+	}
 	
 	private static void updateMinDegreeVertex(VertexCustom vertex) {
 		if (vertex.getDegree() < minDegreeVertex.getDegree()) {
@@ -854,7 +994,7 @@ public class Main {
 	}
 	
 	private static void addWrapperIdentityLayout(VertexCustom vertex) {
-		System.out.println("In addWrapperIdentity");
+		System.out.println("In addWrapperIdentityLayout");
 		String vertexId = vertex.getIdGradoop();
 		boolean vertexIsRegisteredInside = newVertices.containsKey(vertexId) || innerVertices.containsKey(vertexId);
 		if (capacity > 0) {
@@ -865,7 +1005,7 @@ public class Main {
 				capacity -= 1;
 			}
 		} else {
-			System.out.println("In addWrapperIdentity, declined capacity > 0");
+			System.out.println("In addWrapperIdentityLayout, declined capacity > 0");
 			if (vertex.getDegree() > minDegreeVertex.getDegree()) {
 				addVertex(vertex);
 				if (!vertexIsRegisteredInside) {
@@ -905,7 +1045,12 @@ public class Main {
 			if (layout) {
 				Main.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
 			} else {
-				Main.sendToAll("addVertexServerLayout;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
+				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
+					Main.sendToAll("addVertexServerHasLayout;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" 
+							+ vertex.getIdNumeric());
+				} else {
+					Main.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
+				}
 			}
 			return true;
 		} else {
