@@ -10,6 +10,7 @@ ws.onopen = function() {
 let messageQueue = new Array();
 let messageProcessing;
 let graphOperationLogic = "serverSide";
+let layout;
 let boundingBoxVar;
 
 function addMessageToQueue(dataArray){
@@ -58,9 +59,9 @@ async function processMessage(){
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 					break;
-				case 'addVertexServerHasLayout':
-					addVertexToLayoutBase(dataArray);
-					break;
+				// case 'addVertexServerHasLayout':
+					// addVertexToLayoutBase(dataArray);
+					// break;
 				case 'addVertexServerToBeLayouted':
 					addVertexToLayoutBase(dataArray);
 					break;
@@ -69,8 +70,17 @@ async function processMessage(){
 					break;
 				case 'removeObjectServer':
 					console.log(cy.$id(dataArray[1]));
+					if (!layout) {
+						console.log(layoutBase.length);
+						console.log(layoutBase);
+						layoutBase.delete(dataArray[1]);
+						console.log(layoutBase.length);
+					}
 					cy.remove(cy.$id(dataArray[1]));
 					console.log(cy.$id(dataArray[1]));
+					break;
+				case 'operationStep':
+					operationStep = dataArray[1];
 					break;
 			}
 			resolve(true);
@@ -92,18 +102,21 @@ ws.onerror = function(err) {
 
 function sendSignalRetract(){
 	if (graphOperationLogic == "clientSide") handler = new RetractHandler(maxNumberVertices);
+	if (!layout) layoutBase = new Set();
 	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
 	ws.send("buildTopView;retract");
 }
 
 function sendSignalAppendJoin(){
 	if (graphOperationLogic == "clientSide") handler = new AppendHandler(maxNumberVertices);
+	if (!layout) layoutBase = new Set();
 	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
 	ws.send("buildTopView;appendJoin");
 }
 
 function sendSignalAdjacency(){
 	if (graphOperationLogic == "clientSide")	handler = new AppendHandler(maxNumberVertices);
+	if (!layout) layoutBase = new Set();
 	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
 	ws.send("buildTopView;adjacency");
 }
@@ -210,10 +223,12 @@ function resetVisualization(){
 }
 
 function preLayout(){
+	layout = false;
 	ws.send("preLayout");
 }
 
 function postLayout(){
+	layout = true;
 	ws.send("postLayout");
 }
 

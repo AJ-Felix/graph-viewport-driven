@@ -38,6 +38,8 @@ public class Main {
     private static String graphOperationLogic = "serverSide";
     private static boolean layout = true;
     
+    private static int operationStep;
+    
     private static Float viewportPixelX = (float) 1000;
     private static Float viewportPixelY = (float) 1000;
     private static float zoomLevel = 1;    
@@ -116,18 +118,45 @@ public class Main {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
-//                	Set<String> set = new HashSet<String>();
+                	String operationAndStep = list.remove(0);
+                	System.out.println("operationAndStep" + operationAndStep);
+                	for (VertexCustom vertex : innerVertices.values()) System.out.println(vertex.getIdGradoop());
                 	for (String vertexData : list) {
                 		String[] arrVertexData = vertexData.split(",");
                 		String vertexId = arrVertexData[0];
-//                		set.add(vertexIdGradoop);
-//                		layoutedVertices.add(vertexIdGradoop);
-            			VertexCustom vertex = new VertexCustom(vertexId, Integer.parseInt(arrVertexData[1]), Integer.parseInt(arrVertexData[2]));
+                		Integer x = Integer.parseInt(arrVertexData[1]);
+                		Integer y = Integer.parseInt(arrVertexData[2]);
+            			VertexCustom vertex = new VertexCustom(vertexId, x, y);
             			layoutedVertices.put(vertexId, vertex);
+//            			VertexCustom innerVertex = innerVertices.get(vertexId);
+//            			innerVertex.setX(x);
+//            			innerVertex.setY(y);
                 	}
                 	System.out.println("layoutedVertices size: ");
                 	System.out.println(layoutedVertices.size());
-//                	layoutedVertices = set;
+                	if (operation.startsWith("zoom")) {
+                		if (operation.contains("In")) {
+                			if (operationStep == 1) {
+                				if (capacity > 0) {
+                					zoomInLayoutFirstStep();
+                				} else {
+                					zoomInLayoutFourthStep();
+                					if (graphOperationLogic.equals("serverSide")) {
+                                		clearOperation();
+                                	}
+                				}
+                			} else if (operationStep == 2) {
+                				if (capacity > 0) {
+                					zoomInLayoutSecondStep();
+                				} else {
+                					zoomInLayoutFourthStep();
+                					if (graphOperationLogic.equals("serverSide")) {
+                                		clearOperation();
+                                	}
+                				}
+                			}
+                		}
+                	}
                 } else if (messageData.startsWith("maxVertices")) {
                 	String[] arrMessageData = messageData.split(";");
                 	maxVertices = Integer.parseInt(arrMessageData[1]);
@@ -218,6 +247,7 @@ public class Main {
 //							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", Custom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
 //							Set<String> layoutedVerticesCopy = new HashSet<String>();
 //							layoutedVerticesCopy.add("5c6ab3fd8e3627bbfb10de29");
+							Main.setOperationStep(1);
 							zoomInLayoutFirstStep();
 						} else {
 	        				Main.setOperation("zoomOut");
@@ -241,10 +271,10 @@ public class Main {
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
+	                	if (graphOperationLogic.equals("serverSide")) {
+	                		clearOperation();
+	                	}
 					}
-					if (graphOperationLogic.equals("serverSide")) {
-                		clearOperation();
-                	}
     			} else if (messageData.startsWith("pan")) {
         			String[] arrMessageData = messageData.split(";");
         			Float topModelOld = flinkCore.gettopModelPos();
@@ -315,20 +345,17 @@ public class Main {
     
     private static void zoomInLayoutFirstStep() {
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(layoutedVertices, innerVertices);
-    	if (wrapperStream == null) zoomInLayoutSecondStep();
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		//invoke function again if capacity is not 0 else move to last step
-		if (capacity > 0) {
-			zoomInLayoutFirstStep();
-		} else {
-			zoomInLayoutFourthStep();
-		}
+    	if (wrapperStream == null) {
+    		zoomInLayoutSecondStep();
+    	} else {
+	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			try {
+				flinkCore.getFsEnv().execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
     }
     
     private static void zoomInLayoutSecondStep() {
@@ -340,12 +367,6 @@ public class Main {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
-		//invoke function again if capacity is not 0 else move to last step
-		if (capacity > 0) {
-			zoomInLayoutSecondStep();
-		} else {
-			zoomInLayoutFourthStep();
 		}
     }
     
@@ -477,6 +498,10 @@ public class Main {
 	
 	private static void setOperation(String operation) {
 		Main.operation = operation;
+	}
+	
+	private static void setOperationStep(Integer step) {
+		Main.operationStep = step;
 	}
 	
 	private static void prepareOperation(Float topModel, Float rightModel, Float bottomModel, Float leftModel){
@@ -1047,7 +1072,8 @@ public class Main {
 				Main.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
-					Main.sendToAll("addVertexServerHasLayout;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" 
+					VertexCustom layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
+					Main.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
 							+ vertex.getIdNumeric());
 				} else {
 					Main.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
@@ -1071,6 +1097,13 @@ public class Main {
 		System.out.println("in clear operation");
 		if (operation != "initial"){
 			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println("innerVertex " + entry.getValue().getIdGradoop());
+			if (!layout) {
+				for (VertexCustom vertex : newVertices.values()) {
+					VertexCustom layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
+					vertex.setX(layoutedVertex.getX());
+					vertex.setY(layoutedVertex.getY());
+				}
+			}
 			innerVertices.putAll(newVertices); 
 			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println("innerVertex " + entry.getValue().getIdGradoop());
 			System.out.println("global...");

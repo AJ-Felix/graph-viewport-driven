@@ -3,6 +3,11 @@ const vPixHalf = 500;
 const zFactor = 2;
 let maxNumberVertices = 100;
 
+let operation = "topView";
+let operationStep = 0;
+
+let layoutBase;
+
 var cy = cytoscape({
   container: $('#cy'),
   elements: [ 
@@ -75,17 +80,15 @@ var cy = cytoscape({
  */  pixelRatio: 'auto'
 });
 
-let layoutBase = cy.collection();
-
 let xRenderDiff = 0;
 let yRenderDiff = 0;
 
 function addVertexToLayoutBase(dataArray){
 	cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3]}});
-	const vertexId = cy.$id(dataArray[1])
-	console.log(vertexId);
+	const vertex = cy.$id(dataArray[1]);
+	console.log(vertex);
 	console.log(dataArray[3]);
-	layoutBase = layoutBase.add(vertexId);
+	layoutBase.add(dataArray[1]);
 	clearTimeout(this.timeOut);
 	this.timeOut = setTimeout(performLayout, 500);
 }
@@ -97,15 +100,23 @@ function performLayout(){
 	layoutOptions.name = "random";
 	layoutOptions.fit = false;
 	layoutOptions.boundingBox = boundingBoxVar;
-	let layout = layoutBase.layout(layoutOptions);
+	layoutBaseCy = cy.collection();
+	console.log("layoutBase size" + layoutBase.size);
+	layoutBase.forEach(function (vertexId){
+		layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
+	});
+	let layout = layoutBaseCy.layout(layoutOptions);
 	layout.run();
 	console.log("layout performed");
 	let layoutBaseString = "";
-	layoutBase.forEach(function(node){
+	layoutBaseCy.forEach(function(node){
 		let pos = node.position();
 		layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
 	})
-	ws.send("layoutBaseString" + layoutBaseString);
+	operationStep += 1;
+	console.log("operation: " + operation);
+	console.log("operationStep: " + operationStep);
+	ws.send("layoutBaseString;" + operation + operationStep + layoutBaseString);
 }
 
 let cyto = document.getElementById('cy');
@@ -140,6 +151,7 @@ cyto.addEventListener("mouseup", function(e){
 		handler.operation = "pan";
 		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	}
+	layoutBase = new Set();
 	ws.send("pan;" + xModelDiff + ";" + yModelDiff);
 });
 
@@ -161,6 +173,7 @@ cyto.addEventListener("wheel", function(e) {
 	const cytoX = e.pageX - cyto.offsetLeft;
 	const cytoY = e.pageY - cyto.offsetTop;
 	let pan = cy.pan();
+	layoutBase = new Set();
 	if (delta < 0){
 		cy.zoom(cy.zoom() * zFactor);
 		cy.pan({x:-vPixHalf + zFactor * pan.x + (vPixHalf - cytoX) * zFactor, y:-vPixHalf + zFactor * pan.y + (vPixHalf - cytoY) * zFactor});
@@ -183,6 +196,8 @@ cyto.addEventListener("wheel", function(e) {
 		}
 		//lock existing nodes
 		cy.nodes().lock();
+		operation = "zoomIn";
+		operationStep = 1;
 		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	} else {
 		cy.zoom(cy.zoom() / zFactor);
