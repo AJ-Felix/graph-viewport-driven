@@ -157,14 +157,14 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	@Override
-	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){
-		Float topNew = topOld + yModelDiff;
-		Float rightNew = rightOld + xModelDiff;
-		Float bottomNew = bottomOld + yModelDiff;
-		Float leftNew = leftOld + xModelDiff;
+	public DataStream<Row> pan(Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff){
+		Float topOld = top - yModelDiff;
+		Float rightOld = right - xModelDiff;
+		Float bottomOld = bottom - yModelDiff;
+		Float leftOld = left - xModelDiff;
 		
 		//vertex stream filter and conversion to Flink Tables for areas A, B and C
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
+		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
 		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
 				@Override
 				public boolean filter(Row value) throws Exception {
@@ -173,8 +173,8 @@ public class CSVGraphUtilJoin implements GraphUtil{
 					return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
 				}
 			});
-		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
-		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
 		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNewNotOld).as(this.vertexFields);
 		Table vertexTableOldOuterExtend = fsTableEnv.fromDataStream(vertexStreamOldOuterBoth).as(this.vertexFields);
 		Table vertexTableOldInNotNewIn = fsTableEnv.fromDataStream(vertexStreamOldInnerNotNewInner).as(this.vertexFields);
@@ -390,7 +390,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
+	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
 			Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
 		
 		//Diese Funktion sollte solange wieder aufgerufen werden, bis die Kapazität erreicht ist. Wenn die Kapazität nicht erreicht wird, sollten Nachbarknoten,
@@ -404,10 +404,10 @@ public class CSVGraphUtilJoin implements GraphUtil{
 
 		// (1) produce wrapper stream from visualized Vertices to neighbours that are not visualized inside but are layouted already
 		Set<String> notVisualizedButLayoutedNeighboursIds = new HashSet<String>();
-		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
+		for (Map.Entry<String, VertexCustom> innerVerticesEntry : newVertices.entrySet()) {
 			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(innerVerticesEntry.getKey()).entrySet()) {
 				String notVisualizedVertexId = adjEntry.getKey();
-				if (!innerVertices.containsKey(notVisualizedVertexId) && layoutedVertices.containsKey(notVisualizedVertexId) 
+				if (!newVertices.containsKey(notVisualizedVertexId) && layoutedVertices.containsKey(notVisualizedVertexId) 
 					&& this.vertexIsInside(layoutedVertices.get(notVisualizedVertexId), topModel, rightModel, bottomModel, leftModel)) {
 					notVisualizedButLayoutedNeighboursIds.add(notVisualizedVertexId);
 				}
@@ -417,7 +417,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		//return to next step if set is empty
 		if (notVisualizedButLayoutedNeighboursIds.isEmpty()) return null;
 		
-		DataStream<String> visualizedVerticesStream = fsEnv.fromCollection(innerVertices.keySet());
+		DataStream<String> visualizedVerticesStream = fsEnv.fromCollection(newVertices.keySet());
 		DataStream<String> notVisualizedButLayoutedNeighbours = fsEnv.fromCollection(notVisualizedButLayoutedNeighboursIds);
 		Table layoutedVerticesTable = fsTableEnv.fromDataStream(visualizedVerticesStream).as("vertexIdGradoop");
 		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(notVisualizedButLayoutedNeighbours).as("vertexIdGradoop");
@@ -434,7 +434,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
+	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
 			Float topModel, Float rightModel, Float bottomModel, Float leftModel){
 		
 		//(5) produce wrapper identity stream for layouted vertices within model position that are not visualized yet
@@ -444,10 +444,15 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 
 		Set<String> notVisualizedButLayoutedNonNeighboursIds = new HashSet<String>();
+		for (String key : newVertices.keySet()) System.out.println("inner key " + key);
 		for (Map.Entry<String, VertexCustom> layoutedVerticesEntry : layoutedVertices.entrySet()) {
 			String vertexId = layoutedVerticesEntry.getKey();
-			if (!innerVertices.containsKey(vertexId) && this.vertexIsInside(layoutedVerticesEntry.getValue(), 
-					topModel, rightModel, bottomModel, leftModel)) notVisualizedButLayoutedNonNeighboursIds.add(vertexId);
+			System.out.println("boolean is inside innerVertices " + newVertices.containsKey(vertexId));
+			if (!newVertices.containsKey(vertexId) && this.vertexIsInside(layoutedVerticesEntry.getValue(), 
+					topModel, rightModel, bottomModel, leftModel)) {
+				System.out.println("panLayoutSecondStep " + vertexId);
+				notVisualizedButLayoutedNonNeighboursIds.add(vertexId);
+			}
 
 		}
 		
@@ -463,7 +468,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> panLayoutThirdStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
+	public DataStream<Row> panLayoutThirdStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
 		//Diese Funktion sollte solange wieder aufgerufen werden, bis die Kapazität erreicht ist.  Wenn die Kapazität weiterhin nicht erreicht ist, 
 		//sollten isolierte Knoten nichtzugefügt werden, bis die Kapazität erreich ist. Anschließend müssen noch die Kanten von den eben hinzugefügten
 		//Knoten zu Nachbarn außerhalb des Viewports hinzugefügt werden.
@@ -475,17 +480,17 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 
 		Set<String> notVisualizedNotLayoutedNeighboursIds = new HashSet<String>();
-		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
+		for (Map.Entry<String, VertexCustom> innerVerticesEntry : newVertices.entrySet()) {
 			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(innerVerticesEntry.getKey()).entrySet()) {
 				String notVisualizedVertexId = adjEntry.getKey();
-				if (!innerVertices.containsKey(notVisualizedVertexId)) notVisualizedNotLayoutedNeighboursIds.add(notVisualizedVertexId);
+				if (!newVertices.containsKey(notVisualizedVertexId)) notVisualizedNotLayoutedNeighboursIds.add(notVisualizedVertexId);
 			}
 		}
 		
 		//return to next step if set is empty
 		if (notVisualizedNotLayoutedNeighboursIds.isEmpty()) return null;
 		
-		DataStream<String> visualizedVerticesStream = fsEnv.fromCollection(innerVertices.keySet());
+		DataStream<String> visualizedVerticesStream = fsEnv.fromCollection(newVertices.keySet());
 		DataStream<String> notVisualizedNotLayoutedNeighbours = fsEnv.fromCollection(notVisualizedNotLayoutedNeighboursIds);
 		Table layoutedVerticesTable = fsTableEnv.fromDataStream(visualizedVerticesStream).as("vertexIdGradoop");
 		Table neighbourCandidatesTable = fsTableEnv.fromDataStream(notVisualizedNotLayoutedNeighbours).as("vertexIdGradoop");
@@ -524,13 +529,13 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> panLayoutFifthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
-			Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){
+	public DataStream<Row> panLayoutFifthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
+			Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff){
 		
-		Float topNew = topOld + yModelDiff;
-		Float rightNew = rightOld + xModelDiff;
-		Float bottomNew = bottomOld + yModelDiff;
-		Float leftNew = leftOld + xModelDiff;
+		Float topOld = top - yModelDiff;
+		Float rightOld = right - xModelDiff;
+		Float bottomOld = bottom - yModelDiff;
+		Float leftOld = left - xModelDiff;
 		
 		//(3) produce wrapperStream from visualized vertices that were newly added inside to layouted Vertices outside the model position
 		System.out.println("in panLayoutFifthStep function");
@@ -538,18 +543,18 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 
 		Set<String> newlyInsideVisualizedIds = new HashSet<String>();
-		for (Map.Entry<String, VertexCustom> innerVerticesEntry : innerVertices.entrySet()) {
+		for (Map.Entry<String, VertexCustom> innerVerticesEntry : newVertices.entrySet()) {
 			VertexCustom vertex = innerVerticesEntry.getValue();
 			Integer x = vertex.getX();
 			Integer y = vertex.getY();
-			if (this.vertexIsInside(vertex, topNew, rightNew, bottomNew, leftNew) && 
+			if (this.vertexIsInside(vertex, top, right, bottom, left) && 
 					!(x >= leftOld && x <= rightOld && y >= topOld && y <= bottomOld)) newlyInsideVisualizedIds.add(vertex.getIdGradoop());
 		}
 		Set<String> outsideLayoutedNeighbourIds = new HashSet<String>();
 		for (String insideVertexId : newlyInsideVisualizedIds) {
 			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(insideVertexId).entrySet()) {
 				String neighbourVertexId = adjEntry.getKey();
-				if (!innerVertices.containsKey(neighbourVertexId)) outsideLayoutedNeighbourIds.add(neighbourVertexId);
+				if (!newVertices.containsKey(neighbourVertexId)) outsideLayoutedNeighbourIds.add(neighbourVertexId);
 			}
 		}
 		

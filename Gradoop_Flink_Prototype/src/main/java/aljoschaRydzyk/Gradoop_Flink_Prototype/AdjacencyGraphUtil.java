@@ -110,13 +110,13 @@ public class AdjacencyGraphUtil implements GraphUtil{
 	}
 	
 	@Override
-	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff) throws IOException{
-		Float topNew = topOld + yModelDiff;
-		Float rightNew = rightOld + xModelDiff;
-		Float bottomNew = bottomOld + yModelDiff;
-		Float leftNew = leftOld + xModelDiff;
+	public DataStream<Row> pan(Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff) throws IOException{
+		Float topOld = top - yModelDiff;
+		Float rightOld = right - xModelDiff;
+		Float bottomOld = bottom - yModelDiff;
+		Float leftOld = left - xModelDiff;
 		DataStream<Row> vertexStreamInnerNewNotOld = this.vertexStream
-			.filter(new VertexFilterInnerNewNotOld(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+			.filter(new VertexFilterInnerNewNotOld(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
 		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
 		Map<String, Row> vertexMap = this.vertexMap;
 
@@ -132,7 +132,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 					Integer targetX = (Integer) targetVertex.getField(4);
 					Integer targetY = (Integer) targetVertex.getField(5);
 					if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) && 
-							((leftNew > targetX) || (targetX > rightNew) || (topNew > targetY) || (targetY > bottomNew))) {
+							((left > targetX) || (targetX > right) || (top > targetY) || (targetY > bottom))) {
 						out.collect(entry.getValue());
 					} else {
 						if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) 
@@ -145,7 +145,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		});
 		DataStream<Row> wrapperDefNotVis = wrapperKeysDefNotVis.map(new WrapperIDMapWrapper(this.wrapperMap));
 		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream
-				.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+				.filter(new VertexFilterInnerOldNotNew(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
 		DataStream<String> wrapperKeysMaybeVis = vertexStreamOldInnerNotNewInner.flatMap(new FlatMapFunction<Row,String>(){
 			@Override
 			public void flatMap(Row value, Collector<String> out) throws Exception {			
@@ -156,7 +156,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 					Row targetVertex = vertexMap.get(targetId);
 					Integer targetX = (Integer) targetVertex.getField(4);
 					Integer targetY = (Integer) targetVertex.getField(5);
-					if ((leftNew <= targetX) &&  (targetX <= rightNew) && (topNew <= targetY) && (targetY <= bottomNew)) {
+					if ((left <= targetX) &&  (targetX <= right) && (top <= targetY) && (targetY <= bottom)) {
 						out.collect(entry.getValue());
 					} 
 				}

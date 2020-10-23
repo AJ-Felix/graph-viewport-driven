@@ -223,14 +223,14 @@ public class GradoopGraphUtil implements GraphUtil{
 	}
 	
 	@Override
-	public DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff, Float yModelDiff){
-		Float topNew = topOld + yModelDiff;
-		Float rightNew = rightOld + xModelDiff;
-		Float bottomNew = bottomOld + yModelDiff;
-		Float leftNew = leftOld + xModelDiff;
+	public DataStream<Row> pan(Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff){
+		Float topOld = top - yModelDiff;
+		Float rightOld = right - xModelDiff;
+		Float bottomOld = bottom - yModelDiff;
+		Float leftOld = left - xModelDiff;
 		
 		//vertex stream filter and conversion to Flink Tables for areas A, B and C
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
+		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
 		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
 				@Override
 				public boolean filter(Row value) throws Exception {
@@ -239,8 +239,8 @@ public class GradoopGraphUtil implements GraphUtil{
 					return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
 				}
 			});
-		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
-		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
 		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNewNotOld).as(this.vertexFields);
 		Table vertexTableOldOuterExtend = fsTableEnv.fromDataStream(vertexStreamOldOuterBoth).as(this.vertexFields);
 		Table vertexTableOldInNotNewIn = fsTableEnv.fromDataStream(vertexStreamOldInnerNotNewInner).as(this.vertexFields);

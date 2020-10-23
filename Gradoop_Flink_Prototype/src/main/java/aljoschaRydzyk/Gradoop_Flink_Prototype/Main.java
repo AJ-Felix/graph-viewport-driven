@@ -55,6 +55,8 @@ public class Main {
 	private static Float rightModel;
 	private static Float bottomModel;
 	private static Float leftModel;
+	private static Float xModelDiff;
+	private static Float yModelDiff;
 	private static VertexCustom secondMinDegreeVertex;
 	private static VertexCustom minDegreeVertex;    
 //    private static FlinkApi api = new FlinkApi();
@@ -118,8 +120,8 @@ public class Main {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
-                	String operationAndStep = list.remove(0);
-                	System.out.println("operationAndStep" + operationAndStep);
+//                	String operationAndStep = list.remove(0);
+//                	System.out.println("operationAndStep" + operationAndStep);
                 	for (VertexCustom vertex : innerVertices.values()) System.out.println(vertex.getIdGradoop());
                 	for (String vertexData : list) {
                 		String[] arrVertexData = vertexData.split(",");
@@ -134,26 +136,45 @@ public class Main {
                 	}
                 	System.out.println("layoutedVertices size: ");
                 	System.out.println(layoutedVertices.size());
-                	if (operation.startsWith("zoom")) {
+                	if (operation.equals("initial")) {
+                		if (graphOperationLogic.equals("serverSide")) {
+                    		clearOperation();
+                    	}
+                	} else if (operation.startsWith("zoom")) {
                 		if (operation.contains("In")) {
                 			if (operationStep == 1) {
                 				if (capacity > 0) {
                 					zoomInLayoutFirstStep();
                 				} else {
                 					zoomInLayoutFourthStep();
-                					if (graphOperationLogic.equals("serverSide")) {
-                                		clearOperation();
-                                	}
                 				}
                 			} else if (operationStep == 2) {
                 				if (capacity > 0) {
                 					zoomInLayoutSecondStep();
                 				} else {
                 					zoomInLayoutFourthStep();
-                					if (graphOperationLogic.equals("serverSide")) {
-                                		clearOperation();
-                                	}
                 				}
+                			}
+                		}
+                	} else if (operation.startsWith("pan")) {
+                		System.out.println("operation step " + operationStep);
+                		if (operationStep == 1) {
+                			if (capacity > 0) {
+                				panLayoutFirstStep();
+                			} else {
+                				panLayoutFifthStep();
+                			}
+                		} else if (operationStep == 2) {
+                			if (capacity > 0) {
+                				panLayoutThirdStep();
+                			} else {
+                				panLayoutFifthStep();
+                			}
+                		} else if (operationStep == 3) {
+                			if (capacity > 0) {
+                				panLayoutThirdStep();
+                			} else {
+                				panLayoutFifthStep();
                 			}
                 		}
                 	}
@@ -217,7 +238,7 @@ public class Main {
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
-                	if (graphOperationLogic.equals("serverSide")) {
+                	if (graphOperationLogic.equals("serverSide") && (layout)) {
                 		clearOperation();
                 	}
                 } else if (messageData.startsWith("zoom")) {
@@ -247,7 +268,6 @@ public class Main {
 //							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", Custom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
 //							Set<String> layoutedVerticesCopy = new HashSet<String>();
 //							layoutedVerticesCopy.add("5c6ab3fd8e3627bbfb10de29");
-							Main.setOperationStep(1);
 							zoomInLayoutFirstStep();
 						} else {
 	        				Main.setOperation("zoomOut");
@@ -281,8 +301,8 @@ public class Main {
         			Float bottomModelOld = flinkCore.getBottomModelPos();
         			Float leftModelOld = flinkCore.getLeftModelPos();
         			Float rightModelOld = flinkCore.getRightModelPos();
-        			Float xModelDiff = Float.parseFloat(arrMessageData[1]); 
-        			Float yModelDiff = Float.parseFloat(arrMessageData[2]);
+        			xModelDiff = Float.parseFloat(arrMessageData[1]); 
+        			yModelDiff = Float.parseFloat(arrMessageData[2]);
 					Float topModelNew = topModelOld + yModelDiff;
 					Float bottomModelNew = bottomModelOld + yModelDiff;
 					Float leftModelNew = leftModelOld + xModelDiff;
@@ -293,10 +313,11 @@ public class Main {
 					flinkCore.setRightModelPos(rightModelNew);
 					if (!layout) {
 	    				Main.setOperation("pan");
+	    				Main.setOperationStep(1);
 	    				Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
-	    				panLayoutFirstStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
+	    				panLayoutFirstStep();
 					} else {
-						DataStream<Row> wrapperStream = flinkCore.pan(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
+						DataStream<Row> wrapperStream = flinkCore.pan(xModelDiff, yModelDiff);
 	                	if (graphOperationLogic.equals("clientSide")) {
 	                		wrapperStream.addSink(new WrapperAppendSink());
 	                	} else {
@@ -344,6 +365,7 @@ public class Main {
     }
     
     private static void zoomInLayoutFirstStep() {
+    	Main.setOperationStep(1);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(layoutedVertices, innerVertices);
     	if (wrapperStream == null) {
     		zoomInLayoutSecondStep();
@@ -359,18 +381,23 @@ public class Main {
     }
     
     private static void zoomInLayoutSecondStep() {
+    	Main.setOperationStep(2);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(layoutedVertices, innerVertices);
-    	if (wrapperStream == null) zoomInLayoutThirdStep();
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+    	if (wrapperStream == null) {
+    		zoomInLayoutThirdStep();
+    	} else {
+	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			try {
+				flinkCore.getFsEnv().execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
     }
     
     private static void zoomInLayoutThirdStep() {
+    	Main.setOperationStep(3);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutThirdStep(layoutedVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
@@ -384,6 +411,7 @@ public class Main {
     }
     
     private static void zoomInLayoutFourthStep() {
+    	Main.setOperationStep(4);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(layoutedVertices, innerVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
@@ -392,84 +420,80 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (graphOperationLogic.equals("serverSide")) {
+    		clearOperation();
+    	}
     }
     
-    private static void panLayoutFirstStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld, Float xModelDiff, 
-    		Float yModelDiff) {
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, innerVertices);
-    	if (wrapperStream == null) panLayoutSecondStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		//invoke function again if capacity is not 0 else move to last step
-		if (capacity > 0) {
-			panLayoutFirstStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-		} else {
-			panLayoutFifthStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-		}
+    private static void panLayoutFirstStep() {
+    	Main.setOperationStep(1);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
+    	if (wrapperStream == null) {
+    		panLayoutSecondStep();
+    	} else {
+			DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			try {
+				flinkCore.getFsEnv().execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
     }
     
-    private static void panLayoutSecondStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld, Float xModelDiff, 
-    		Float yModelDiff) {
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutSecondStep(layoutedVertices, innerVertices);
-    	if (wrapperStream == null) panLayoutThirdStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		//invoke function again if capacity is not 0 else move to last step
-		if (capacity > 0) {
-			panLayoutSecondStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-		} else {
-			panLayoutFifthStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-		}
+    private static void panLayoutSecondStep() {
+    	Main.setOperationStep(2);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutSecondStep(layoutedVertices, newVertices);
+    	if (wrapperStream == null) {
+    		panLayoutThirdStep();
+    	} else {
+	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			try {
+				flinkCore.getFsEnv().execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
     }
     
-    private static void panLayoutThirdStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld, Float xModelDiff, 
-    		Float yModelDiff) {
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(layoutedVertices, innerVertices);
-    	if (wrapperStream == null) panLayoutFourthStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		//invoke function again if capacity is not 0 else move to last step
-		if (capacity > 0) {
-			panLayoutThirdStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-		} else {
-			panLayoutFifthStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-		}
+    private static void panLayoutThirdStep() {
+    	Main.setOperationStep(3);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(layoutedVertices, newVertices);
+    	if (wrapperStream == null) {
+    		panLayoutFourthStep();
+    	} else {
+	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			try {
+				flinkCore.getFsEnv().execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
     }
     
-    private static void panLayoutFourthStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld, Float xModelDiff, 
-    		Float yModelDiff) {
+    private static void panLayoutFourthStep() {
+    	Main.setOperationStep(4);
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFourthStep(layoutedVertices);
-    	if (wrapperStream == null) panLayoutFifthStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+    	if (wrapperStream == null) {
+    		panLayoutFifthStep();
+    	} else {
+    		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+    		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+    		try {
+    			flinkCore.getFsEnv().execute();
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+    	}
 		//ATTENTION: Moving to Fifth step has to be controlled by capacity while the third step is being executed. When capacity is reached, cancel third step 
 		//and move to fourth step. Probably Job Api is necessary here...
     }
     
-    private static void panLayoutFifthStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld, Float xModelDiff, 
-    		Float yModelDiff) {
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutFifthStep(layoutedVertices, innerVertices, 
-    			topModelOld, rightModelOld, bottomModelOld, leftModelOld, xModelDiff, yModelDiff);
+    private static void panLayoutFifthStep() {
+    	Main.setOperationStep(5);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutFifthStep(layoutedVertices, newVertices, xModelDiff, yModelDiff);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
@@ -477,6 +501,9 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (graphOperationLogic.equals("serverSide")) {
+    		clearOperation();
+    	}
     }
 
     /**
@@ -523,10 +550,10 @@ public class Main {
 					targetX = wrapper.getTargetX();
 					targetY = wrapper.getTargetY();
 				} else {
-					VertexCustom sourceVertex = innerVertices.get(wrapper.getSourceVertex().getIdGradoop());
+					VertexCustom sourceVertex = (VertexCustom) globalVertices.get(wrapper.getSourceVertex().getIdGradoop()).get("vertex");
 					sourceX = sourceVertex.getX();
 					sourceY = sourceVertex.getY();
-					VertexCustom targetVertex = innerVertices.get(wrapper.getTargetVertex().getIdGradoop());
+					VertexCustom targetVertex = (VertexCustom) globalVertices.get(wrapper.getTargetVertex().getIdGradoop()).get("vertex");
 					targetX = targetVertex.getX();
 					targetY = targetVertex.getY();
 				}
@@ -1095,6 +1122,7 @@ public class Main {
 	
 	private static void clearOperation(){
 		System.out.println("in clear operation");
+		System.out.println(operation);
 		if (operation != "initial"){
 			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println("innerVertex " + entry.getValue().getIdGradoop());
 			if (!layout) {
@@ -1105,7 +1133,8 @@ public class Main {
 				}
 			}
 			innerVertices.putAll(newVertices); 
-			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println("innerVertex " + entry.getValue().getIdGradoop());
+			for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) System.out.println("innerVertex " + entry.getValue().getIdGradoop() + " " 
+					+ entry.getValue().getX());
 			System.out.println("global...");
 			Iterator<Map.Entry<String, Map<String,Object>>> iter = globalVertices.entrySet().iterator();
 			while (iter.hasNext()) {
@@ -1123,6 +1152,14 @@ public class Main {
 				} 
 			}
 		} else {
+			if (!layout) {
+				for (VertexCustom vertex : innerVertices.values()) {
+					VertexCustom layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
+					System.out.println(layoutedVertices.get(vertex.getIdGradoop()).getIdGradoop() + layoutedVertex.getX());
+					vertex.setX(layoutedVertex.getX());
+					vertex.setY(layoutedVertex.getY());
+				}
+			}
 			newVertices = innerVertices;
 			if (newVertices.size() > 1) {
 				updateMinDegreeVertices(newVertices);
@@ -1130,7 +1167,7 @@ public class Main {
 				minDegreeVertex = newVertices.values().iterator().next();
 			}
 		}
-		operation = null;
+//		operation = null;
 		System.out.println("before updatemindegreevertices in clear operation");
 		Set<String> visualizedVertices = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());

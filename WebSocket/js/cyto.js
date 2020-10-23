@@ -3,8 +3,8 @@ const vPixHalf = 500;
 const zFactor = 2;
 let maxNumberVertices = 100;
 
-let operation = "topView";
-let operationStep = 0;
+// let operation = "topView";
+// let operationStep = 0;
 
 let layoutBase;
 
@@ -113,10 +113,10 @@ function performLayout(){
 		let pos = node.position();
 		layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
 	})
-	operationStep += 1;
-	console.log("operation: " + operation);
-	console.log("operationStep: " + operationStep);
-	ws.send("layoutBaseString;" + operation + operationStep + layoutBaseString);
+	// operationStep += 1;
+	// console.log("operation: " + operation);
+	// console.log("operationStep: " + operationStep);
+	ws.send("layoutBaseString" + layoutBaseString);
 }
 
 let cyto = document.getElementById('cy');
@@ -196,8 +196,8 @@ cyto.addEventListener("wheel", function(e) {
 		}
 		//lock existing nodes
 		cy.nodes().lock();
-		operation = "zoomIn";
-		operationStep = 1;
+		// operation = "zoomIn";
+		// operationStep = 1;
 		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	} else {
 		cy.zoom(cy.zoom() / zFactor);
