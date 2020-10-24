@@ -332,10 +332,10 @@ public class Main {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
+	                	if (graphOperationLogic.equals("serverSide")) {
+	                		clearOperation();
+	                	}
 					}
-					if (graphOperationLogic.equals("serverSide")) {
-                		clearOperation();
-                	}
 				} else if (messageData.equals("displayAll")) {
     		        flinkCore = new FlinkCore(graphOperationLogic);
         			flinkCore.initializeCSVGraphUtilJoin();
@@ -413,13 +413,15 @@ public class Main {
     private static void zoomInLayoutFourthStep() {
     	Main.setOperationStep(4);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(layoutedVertices, innerVertices);
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+    	if (wrapperStream != null) {
+	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			try {
+				flinkCore.getFsEnv().execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
 		if (graphOperationLogic.equals("serverSide")) {
     		clearOperation();
     	}
@@ -494,13 +496,15 @@ public class Main {
     private static void panLayoutFifthStep() {
     	Main.setOperationStep(5);
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFifthStep(layoutedVertices, newVertices, xModelDiff, yModelDiff);
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+    	if (wrapperStream != null) {
+	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			try {
+				flinkCore.getFsEnv().execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
 		if (graphOperationLogic.equals("serverSide")) {
     		clearOperation();
     	}
@@ -863,12 +867,14 @@ public class Main {
 				}
 				addEdge(wrapper);
 			} else {
-				addVertex(sourceVertex);
-				addEdge(wrapper);
-				if (!sourceIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
-					removeVertex(minDegreeVertex);
-					registerInside(sourceVertex);
+				if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
+					addVertex(sourceVertex);
+					addEdge(wrapper);
+					if (!sourceIsRegisteredInside) {
+						reduceNeighborIncidence(minDegreeVertex);
+						removeVertex(minDegreeVertex);
+						registerInside(sourceVertex);
+					}
 				}
 			}
 		}

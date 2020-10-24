@@ -167,7 +167,7 @@ TODO: Möglicherweise funktioniert null setzen bei zoomInLayoutThirdStep nicht, 
 NOTE: FrontEnd controls existing node coordinates with addVertexServerHasLayout and addVertexServerToBeLayouted calls
 NOTE: Recalling of operation functions needs to wait for backwriting answer from client...!!! Maybe it is possible to start a thread that is only responsible for receiving this answer and then exit. So that the main thread can be woken up when answer is received. The dedicated thread would necessarily listen on a different port and a new webSocket would need to be established on client side.
 
-TODO: Update Client layout functions according to changes on server side! (ZoomIn...)
+TODO: Trouble Shoot Layout semantics
 
 	
 Serverseitige Graph-Semantik:

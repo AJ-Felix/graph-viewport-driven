@@ -83,14 +83,42 @@ var cy = cytoscape({
 let xRenderDiff = 0;
 let yRenderDiff = 0;
 
+function finalOperations(){
+	console.log("in finalOperations funtion");
+	let layoutBaseString = "";
+	console.log("layoutBase size: " + layoutBase.size);
+	if (layoutBase.size > 0){
+		console.log("performing layout!");
+		console.log(boundingBoxVar);
+		let layoutOptions = {};
+		layoutOptions.name = "random";
+		layoutOptions.fit = false;
+		layoutOptions.boundingBox = boundingBoxVar;
+		layoutBaseCy = cy.collection();
+		console.log("layoutBase size" + layoutBase.size);
+		layoutBase.forEach(function (vertexId){
+			layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
+		});
+		let layout = layoutBaseCy.layout(layoutOptions);
+		layout.run();
+		console.log("layout performed");
+		layoutBaseCy.forEach(function(node){
+			let pos = node.position();
+			layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
+		})
+	}
+	ws.send("layoutBaseString" + layoutBaseString);
+}
+
 function addVertexToLayoutBase(dataArray){
 	cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3]}});
 	const vertex = cy.$id(dataArray[1]);
 	console.log(vertex);
 	console.log(dataArray[3]);
 	layoutBase.add(dataArray[1]);
-	clearTimeout(this.timeOut);
-	this.timeOut = setTimeout(performLayout, 500);
+	console.log("layoutBase size: " + layoutBase.size);
+	// clearTimeout(this.timeOut);
+	// this.timeOut = setTimeout(performLayout, 1000);
 }
 
 function performLayout(){

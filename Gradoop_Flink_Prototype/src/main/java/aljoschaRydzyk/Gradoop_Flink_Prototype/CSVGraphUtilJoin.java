@@ -372,6 +372,8 @@ public class CSVGraphUtilJoin implements GraphUtil{
 			}
 		}
 		
+		if (outsideNeighboursIds.isEmpty()) return null;
+		
 		DataStream<String> visualizedVerticesStream = fsEnv.fromCollection(innerVertices.keySet());
 		DataStream<String> outsideNeighboursStream = fsEnv.fromCollection(outsideNeighboursIds);
 		Table layoutedVerticesTable = fsTableEnv.fromDataStream(visualizedVerticesStream).as("vertexIdGradoop");
@@ -457,6 +459,8 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		}
 		
 		//return to next step if set is empty
+		System.out.println("notVisualizedButLayoutedNonNeighboursIds size in panLayoutSecondStep: " + notVisualizedButLayoutedNonNeighboursIds.size());
+		System.out.println(notVisualizedButLayoutedNonNeighboursIds.isEmpty());
 		if (notVisualizedButLayoutedNonNeighboursIds.isEmpty()) return null;
 		
 		DataStream<String> notVisualizedButLayoutedNonNeighbours = fsEnv.fromCollection(notVisualizedButLayoutedNonNeighboursIds);
@@ -482,8 +486,10 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Set<String> notVisualizedNotLayoutedNeighboursIds = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> innerVerticesEntry : newVertices.entrySet()) {
 			for (Map.Entry<String, String> adjEntry : this.adjMatrix.get(innerVerticesEntry.getKey()).entrySet()) {
-				String notVisualizedVertexId = adjEntry.getKey();
-				if (!newVertices.containsKey(notVisualizedVertexId)) notVisualizedNotLayoutedNeighboursIds.add(notVisualizedVertexId);
+				String notLayoutedVertexId = adjEntry.getKey();
+				if (!newVertices.containsKey(notLayoutedVertexId) && !layoutedVertices.containsKey(notLayoutedVertexId)) {
+					notVisualizedNotLayoutedNeighboursIds.add(notLayoutedVertexId);
+				}
 			}
 		}
 		
@@ -543,8 +549,9 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 
 		Set<String> newlyInsideVisualizedIds = new HashSet<String>();
-		for (Map.Entry<String, VertexCustom> innerVerticesEntry : newVertices.entrySet()) {
-			VertexCustom vertex = innerVerticesEntry.getValue();
+		for (String vertexId : newVertices.keySet()) {
+			VertexCustom vertex = layoutedVertices.get(vertexId);
+			System.out.println("panLayout5: " + vertex.getIdGradoop() + " " + vertex.getX());
 			Integer x = vertex.getX();
 			Integer y = vertex.getY();
 			if (this.vertexIsInside(vertex, top, right, bottom, left) && 
@@ -557,6 +564,8 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				if (!newVertices.containsKey(neighbourVertexId)) outsideLayoutedNeighbourIds.add(neighbourVertexId);
 			}
 		}
+		
+		if (newlyInsideVisualizedIds.isEmpty() || outsideLayoutedNeighbourIds.isEmpty()) return null;
 		
 		DataStream<String> newlyInsideVerticesStream = fsEnv.fromCollection(newlyInsideVisualizedIds);
 		DataStream<String> notInsideNeighbours = fsEnv.fromCollection(outsideLayoutedNeighbourIds);

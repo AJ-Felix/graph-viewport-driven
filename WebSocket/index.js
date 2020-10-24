@@ -31,6 +31,7 @@ async function processMessage(){
 	if (messageQueue.length > 0){
 		let dataArray = messageQueue.shift();
 		let promise = new Promise((resolve, reject) => {
+			let debugMessage = false;
 			switch (dataArray[0]){
 				// case 'clearGraph':
 					// console.log('clearing graph');
@@ -58,15 +59,25 @@ async function processMessage(){
 					break;
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
+					if (!layout){
+						clearTimeout(this.timeOut);
+						this.timeOut = setTimeout(finalOperations, 500);
+					}
 					break;
 				// case 'addVertexServerHasLayout':
 					// addVertexToLayoutBase(dataArray);
 					// break;
 				case 'addVertexServerToBeLayouted':
 					addVertexToLayoutBase(dataArray);
+					clearTimeout(this.timeOut);
+					this.timeOut = setTimeout(finalOperations, 500);
 					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
+					if (!layout){
+						clearTimeout(this.timeOut);
+						this.timeOut = setTimeout(finalOperations, 500);
+					}
 					break;
 				case 'removeObjectServer':
 					console.log(cy.$id(dataArray[1]));
@@ -82,7 +93,13 @@ async function processMessage(){
 				case 'operationStep':
 					operationStep = dataArray[1];
 					break;
+				default:
+					debugMessage = true;
 			}
+			// if (!layout && !debugMessage){
+				// clearTimeout(this.timeOut);
+				// this.timeOut = setTimeout(finalOperations, 1000);
+			// }
 			resolve(true);
 		});
 		await promise;
