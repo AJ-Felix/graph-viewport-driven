@@ -1,19 +1,18 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
-import java.util.Set;
-
+import java.util.Map;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
-public class VertexFilterLayouted implements FilterFunction<Row> {
-	private Set<String> layoutedVertices;
+public class VertexFilterLayouted implements FilterFunction<Row>{
+	private Map<String,VertexCustom> layoutedVertices;
 	
-	public VertexFilterLayouted (Set<String> layoutedVertices) {
+	public VertexFilterLayouted (Map<String,VertexCustom> layoutedVertices) {
 		this.layoutedVertices = layoutedVertices;
 	}
 	
 	@Override
 	public boolean filter(Row value) throws Exception {
-		return this.layoutedVertices.contains(value.getField(1));
+		return this.layoutedVertices.containsKey(value.getField(1));
 	}
 }

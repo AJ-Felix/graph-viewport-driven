@@ -1,6 +1,8 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
-public class VertexCustom {
+import java.io.Serializable;
+
+public class VertexCustom implements Serializable{
 	public String idGradoop;
 	public String label;
 	public Integer x;
