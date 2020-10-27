@@ -24,7 +24,10 @@ import org.apache.flink.api.java.functions.NullByteKeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction.Context;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.Collector;
 
 public class Main {
 	
@@ -61,6 +64,8 @@ public class Main {
 	private static Float yModelDiff;
 	private static VertexCustom secondMinDegreeVertex;
 	private static VertexCustom minDegreeVertex;    
+	
+	private static Row latestRow;
 //    private static FlinkApi api = new FlinkApi();
     
 //    private static JobID jobId;
@@ -385,30 +390,31 @@ public class Main {
     	} else {
 	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+			wrapperStream.addSink(new CheckEmptySink());
+			latestRow = null;
 			try {
 				flinkCore.getFsEnv().execute();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			if (latestRow == null) zoomInLayoutSecondStep();
     	}
     }
     
     private static void zoomInLayoutSecondStep() {
     	Main.setOperationStep(2);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(layoutedVertices, innerVertices);
-    	if (wrapperStream == null) {
-    		zoomInLayoutThirdStep();
-    	} else {
-    		wrapperStream.addSink(new FlinkRowStreamPrintSink()).setParallelism(1);
-    		wrapperStream.keyBy(value -> value.getField(1)).process(new TimeOut());
-	    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-			try {
-				flinkCore.getFsEnv().execute();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-    	}
+//    	DataStream<Boolean> boolStream = wrapperStream.keyBy(value -> value.getField(1)).process(new TimeOut(5)).setParallelism(1);
+    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+		wrapperStream.addSink(new CheckEmptySink());
+		latestRow = null;
+		try {
+			flinkCore.getFsEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (latestRow == null) zoomInLayoutThirdStep();
     }
     
     private static void zoomInLayoutThirdStep() {
@@ -1211,5 +1217,9 @@ public class Main {
 		Map<String,Map<String,String>> adjMatrix = flinkCore.getGraphUtil().getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
 		return false;
+	}
+	
+	public static void latestRow(Row element) {
+		latestRow = element;
 	}
 }

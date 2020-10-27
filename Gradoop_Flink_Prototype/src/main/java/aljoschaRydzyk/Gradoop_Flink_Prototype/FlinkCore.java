@@ -5,6 +5,7 @@ import java.util.Map;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
@@ -41,11 +42,13 @@ public class FlinkCore {
 	  
 	public  FlinkCore (String graphOperationLogic) {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
+//		env.getConfig().setAutoWatermarkInterval(1);
 	    this.graflink_cfg = GradoopFlinkConfig.createConfig(env);
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
 		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+		this.fsEnv.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
 		org.apache.flink.configuration.Configuration conf = new Configuration();
 		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
