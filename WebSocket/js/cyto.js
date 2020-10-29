@@ -3,8 +3,8 @@ const vPixHalf = 500;
 const zFactor = 2;
 let maxNumberVertices = 100;
 
-// let operation = "topView";
-// let operationStep = 0;
+let operation;
+let operationStep;
 
 let layoutBase;
 
@@ -121,31 +121,31 @@ function addVertexToLayoutBase(dataArray){
 	// this.timeOut = setTimeout(performLayout, 1000);
 }
 
-function performLayout(){
-	console.log("performing layout!");
-	console.log(boundingBoxVar);
-	let layoutOptions = {};
-	layoutOptions.name = "random";
-	layoutOptions.fit = false;
-	layoutOptions.boundingBox = boundingBoxVar;
-	layoutBaseCy = cy.collection();
-	console.log("layoutBase size" + layoutBase.size);
-	layoutBase.forEach(function (vertexId){
-		layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
-	});
-	let layout = layoutBaseCy.layout(layoutOptions);
-	layout.run();
-	console.log("layout performed");
-	let layoutBaseString = "";
-	layoutBaseCy.forEach(function(node){
-		let pos = node.position();
-		layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
-	})
-	// operationStep += 1;
-	// console.log("operation: " + operation);
-	// console.log("operationStep: " + operationStep);
-	ws.send("layoutBaseString" + layoutBaseString);
-}
+// function performLayout(){
+	// console.log("performing layout!");
+	// console.log(boundingBoxVar);
+	// let layoutOptions = {};
+	// layoutOptions.name = "random";
+	// layoutOptions.fit = false;
+	// layoutOptions.boundingBox = boundingBoxVar;
+	// layoutBaseCy = cy.collection();
+	// console.log("layoutBase size" + layoutBase.size);
+	// layoutBase.forEach(function (vertexId){
+		// layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
+	// });
+	// let layout = layoutBaseCy.layout(layoutOptions);
+	// layout.run();
+	// console.log("layout performed");
+	// let layoutBaseString = "";
+	// layoutBaseCy.forEach(function(node){
+		// let pos = node.position();
+		// layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
+	// })
+	// // operationStep += 1;
+	// // console.log("operation: " + operation);
+	// // console.log("operationStep: " + operationStep);
+	// ws.send("layoutBaseString" + layoutBaseString);
+// }
 
 let cyto = document.getElementById('cy');
 cyto.addEventListener('mousedown', function(e){

@@ -59,9 +59,11 @@ async function processMessage(){
 					break;
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
-					if (!layout){
+					if (!layout 
+					// && ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5))
+					){
 						clearTimeout(this.timeOut);
-						this.timeOut = setTimeout(finalOperations, 500);
+						this.timeOut = setTimeout(finalOperations, 1000);
 					}
 					break;
 				// case 'addVertexServerHasLayout':
@@ -69,14 +71,18 @@ async function processMessage(){
 					// break;
 				case 'addVertexServerToBeLayouted':
 					addVertexToLayoutBase(dataArray);
-					clearTimeout(this.timeOut);
-					this.timeOut = setTimeout(finalOperations, 500);
+					// if ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5)){
+						clearTimeout(this.timeOut);
+						this.timeOut = setTimeout(finalOperations, 1000);
+					// }
 					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
-					if (!layout){
+					if (!layout 
+					// && ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5))
+					){
 						clearTimeout(this.timeOut);
-						this.timeOut = setTimeout(finalOperations, 500);
+						this.timeOut = setTimeout(finalOperations, 1000);
 					}
 					break;
 				case 'removeObjectServer':
@@ -90,8 +96,9 @@ async function processMessage(){
 					cy.remove(cy.$id(dataArray[1]));
 					console.log(cy.$id(dataArray[1]));
 					break;
-				case 'operationStep':
-					operationStep = dataArray[1];
+				case 'operationAndStep':
+					operation = dataArray[1];
+					operationStep = dataArray[2];
 					break;
 				default:
 					debugMessage = true;

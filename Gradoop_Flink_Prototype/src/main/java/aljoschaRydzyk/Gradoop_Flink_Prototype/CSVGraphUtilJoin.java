@@ -315,7 +315,6 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(innerVertices));
 		DataStream<Row> neighbours = this.vertexStream.filter(new VertexFilterNotVisualized(innerVertices))
 				.filter(new VertexFilterNotLayoutedOutside(layoutedVertices, topModel, rightModel, bottomModel, leftModel));
-		neighbours.addSink(new FlinkRowStreamPrintSink());
 //		visualizedVertices.addSink(new FlinkRowStreamPrintSink());
 //		neighbours.addSink(new FlinkRowStreamPrintSink());
 		Table visualizedVerticesTable = fsTableEnv.fromDataStream(visualizedVertices).as(this.vertexFields);
@@ -452,6 +451,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 
 		//DIFFERENT APPROACH
 		// (1) produce wrapper stream from visualized Vertices to neighbours that are not visualized inside but are layouted already
+		for (String vId : newVertices.keySet()) System.out.println("panLayoutFirstStep, newVertices key: " + vId);
 		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices));
 		DataStream<Row> notVisualizedButLayoutedVerticesStream = this.vertexStream.filter(new VertexFilterNotVisualized(newVertices))
 				.filter(new VertexFilterIsLayouted(layoutedVertices));
@@ -465,6 +465,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				.join(notVisualizedButLayoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo));
 		//filter out already visualized edges in wrapper stream
 		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		wrapperStream.addSink(new FlinkRowStreamPrintSink());
 		return wrapperStream;
 		
 //		// (1) produce wrapper stream from visualized Vertices to neighbours that are not visualized inside but are layouted already
@@ -558,18 +559,31 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		
 		//DIFFERENT APPROACH
 		//(2 + 4) produce wrapper Stream from visualized vertices inside to neighbour vertices which are not layouted and not visualized
+		for (String vId : newVertices.keySet()) System.out.println("panLayoutThirdStep, newVertices key: " + vId);
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices));
 		DataStream<Row> notVisualizedNotLayoutedVertices = this.vertexStream.filter(new VertexFilterNotVisualized(newVertices))
 				.filter(new VertexFilterNotLayouted(layoutedVertices));
+//		notVisualizedNotLayoutedVertices.addSink(new FlinkRowStreamPrintSink());
+//		visualizedVertices.addSink(new FlinkRowStreamPrintSink());
+//		wrapperStream.addSink(new FlinkRowStreamPrintSink());
 		Table visualizedVerticesTable = fsTableEnv.fromDataStream(visualizedVertices).as("vertexIdGradoop");
 		Table notVisualizedNotLayoutedVerticesTable = fsTableEnv.fromDataStream(notVisualizedNotLayoutedVertices).as("vertexIdGradoop");
-		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
-				.join(visualizedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-				.join(notVisualizedNotLayoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo)
-			.union(fsTableEnv.toAppendStream(wrapperTable
+//		DataStream<Row> verticesTest = fsTableEnv.toAppendStream(notVisualizedNotLayoutedVerticesTable, 
+//				new RowTypeInfo(this.vertexFormatTypeInfo));
+//		verticesTest.addSink(new FlinkRowStreamPrintSink());
+		Table wrapperTable1 = wrapperTable
+//				.join(visualizedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+				.join(notVisualizedNotLayoutedVerticesTable)
+				.where("vertexIdGradoop = targetVertexIdGradoop")
+				.select(this.wrapperFields)
+				;
+		DataStream<Row> wrapperStream1 = fsTableEnv.toAppendStream(wrapperTable1, wrapperRowTypeInfo);
+		DataStream<Row> wrapperStream2 = fsTableEnv.toAppendStream(wrapperTable
 				.join(notVisualizedNotLayoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-				.join(visualizedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo));
-		return wrapperStream;
+				.join(visualizedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo);
+		wrapperStream1.addSink(new FlinkRowStreamPrintSink());
+//		wrapperStream2.addSink(new FlinkRowStreamPrintSink());
+		return wrapperStream1;
 	
 //		//(2 + 4) produce wrapper Stream from visualized vertices inside to neighbour vertices which are not layouted and not visualized
 //		
@@ -637,6 +651,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		
 		//DIFFERENT APPROACH
 		//(3) produce wrapperStream from visualized vertices that were newly added inside to layouted Vertices outside the model position
+		System.out.println("in panLayoutFifthStep function, layoutedVertices size: " + layoutedVertices.size());
 		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices))
 				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
