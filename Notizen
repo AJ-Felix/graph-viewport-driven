@@ -167,10 +167,23 @@ TODO: Möglicherweise funktioniert null setzen bei zoomInLayoutThirdStep nicht, 
 NOTE: FrontEnd controls existing node coordinates with addVertexServerHasLayout and addVertexServerToBeLayouted calls
 NOTE: Recalling of operation functions needs to wait for backwriting answer from client...!!! Maybe it is possible to start a thread that is only responsible for receiving this answer and then exit. So that the main thread can be woken up when answer is received. The dedicated thread would necessarily listen on a different port and a new webSocket would need to be established on client side.
 
-TODO: Layout does not have to be performed after every suboperation step. But server always needs an answer after every suboperation step to evaluate following steps
 
-TODO: trouble shoot panLayoutThirdStep: Does not perform join in any way... Maybe memory issue?
 
+(1) wrapperStream is empty > nächster Schritt wird eingeleitet
+(2) wrapperStream is not empty and calls to client are made > client answers in final operation > nächster Schritt wird eingeleitet (depending on capacity)
+(3) wrapperStream is not empty but no calls to client are made > nothin happens.... but should like (1)
+
+Solutions:
+	- add a dummy stream element and send it to the client always:
+		if the stream element is the only one arriving at the client -> cases (1) and (3)	
+		if the stream element is not the only one arriving at the client -> case (2)
+	- add a state variable for "having send anything to client" and if this is false proceed like (1). Then CheckEmptySink could be neglected but is faster in cases where the stream is empty.
+
+TODO: ignore pan;0;0
+
+TODO: Client throws error when panning a lot sequentially
+
+Layout: Layout does have to be performed after every suboperation step, because some following suboperation steps might access the layoutedVertices. But 
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).

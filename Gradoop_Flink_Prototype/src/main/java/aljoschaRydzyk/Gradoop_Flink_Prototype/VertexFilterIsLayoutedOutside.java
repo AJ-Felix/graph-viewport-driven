@@ -12,7 +12,8 @@ public class VertexFilterIsLayoutedOutside implements FilterFunction<Row> {
 	private Float bottomModel;
 	private Float leftModel;
 	
-	public VertexFilterIsLayoutedOutside (Map<String,VertexCustom> layoutedVertices, Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+	public VertexFilterIsLayoutedOutside (Map<String,VertexCustom> layoutedVertices, Float topModel, Float rightModel, Float bottomModel, 
+			Float leftModel) {
 		this.layoutedVertices = layoutedVertices;
 		this.topModel = topModel;
 		this.rightModel = rightModel;

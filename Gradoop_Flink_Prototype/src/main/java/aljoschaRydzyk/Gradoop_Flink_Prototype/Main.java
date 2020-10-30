@@ -64,9 +64,7 @@ public class Main {
 	private static VertexCustom secondMinDegreeVertex;
 	private static VertexCustom minDegreeVertex;    
 	
-	private static boolean identityWrapperAdded;
-	private static boolean nonIdentityWrapperAdded;
-	
+	private static boolean sentToClientInSubStep;
 	private static Row latestRow;
     private static FlinkApi api = new FlinkApi();
     
@@ -138,6 +136,7 @@ public class Main {
                 		Integer x = Integer.parseInt(arrVertexData[1]);
                 		Integer y = Integer.parseInt(arrVertexData[2]);
             			VertexCustom vertex = new VertexCustom(vertexId, x, y);
+            			if (layoutedVertices.containsKey(vertexId)) System.out.println("vertex already in layoutedVertices!!!");
             			layoutedVertices.put(vertexId, vertex);
 //            			VertexCustom innerVertex = innerVertices.get(vertexId);
 //            			innerVertex.setX(x);
@@ -171,22 +170,15 @@ public class Main {
                 			if (capacity > 0) {
                 				panLayoutFirstStep();
                 			} else {
-                				panLayoutFifthStep();
+                				panLayoutFourthStep();
                 			}
                 		} else if (operationStep == 2) {
                 			if (capacity > 0) {
-                				panLayoutThirdStep();
+                				panLayoutSecondStep();
                 			} else {
-                				panLayoutFifthStep();
+                				panLayoutFourthStep();
                 			}
-                		} else if (operationStep == 3) {
-                			if (capacity > 0) {
-                				System.out.println("operationStep pan 3, capacity: " + capacity);
-                				panLayoutThirdStep();
-                			} else {
-                				panLayoutFifthStep();
-                			}
-                		} else if (operationStep == 4) panLayoutFifthStep();
+                		} else if (operationStep == 3) panLayoutFourthStep();
                 	}
                 } else if (messageData.startsWith("maxVertices")) {
                 	String[] arrMessageData = messageData.split(";");
@@ -333,6 +325,7 @@ public class Main {
 					flinkCore.setBottomModelPos(bottomModelNew);
 					flinkCore.setLeftModelPos(leftModelNew);
 					flinkCore.setRightModelPos(rightModelNew);
+					System.out.println("Pan ... top, right, bottom, left:" + topModelNew + " " + rightModelNew + " "+ bottomModelNew + " " + leftModelNew);
 					if (!layout) {
 	    				Main.setOperation("pan");
 	    				Main.setOperationStep(1);
@@ -394,6 +387,7 @@ public class Main {
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		wrapperStream.addSink(new CheckEmptySink());
 		latestRow = null;
+		Main.sentToClientInSubStep = false;
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -405,12 +399,13 @@ public class Main {
     private static void zoomInLayoutSecondStep() {
     	Main.setOperationStep(2);
 		Main.sendToAll("operationAndStep;zoomIn;2");
-    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(layoutedVertices, innerVertices);
+    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(layoutedVertices, innerVertices, newVertices);
 //    	DataStream<Boolean> boolStream = wrapperStream.keyBy(value -> value.getField(1)).process(new TimeOut(5)).setParallelism(1);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		wrapperStream.addSink(new CheckEmptySink());
 		latestRow = null;
+		Main.sentToClientInSubStep = false;
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -425,8 +420,7 @@ public class Main {
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutThirdStep(layoutedVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		identityWrapperAdded = true;
-		nonIdentityWrapperAdded = true;
+		Main.sentToClientInSubStep = false;
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -439,7 +433,7 @@ public class Main {
     private static void zoomInLayoutFourthStep() {
     	Main.setOperationStep(4);
 		Main.sendToAll("operationAndStep;zoomIn;4");
-    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(layoutedVertices, innerVertices);
+    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(layoutedVertices, innerVertices, newVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
@@ -452,14 +446,31 @@ public class Main {
     	}
     }
     
+//    private static void panLayoutFirstStep() {
+//    	Main.setOperationStep(1);
+//		Main.sendToAll("operationAndStep;pan;1");
+//    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
+//		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+//		wrapperStream.addSink(new CheckEmptySink());
+//		latestRow = null;
+//		try {
+//			flinkCore.getFsEnv().execute();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		if (latestRow == null) panLayoutSecondStep();
+//    }
+    
     private static void panLayoutFirstStep() {
     	Main.setOperationStep(1);
 		Main.sendToAll("operationAndStep;pan;1");
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
-		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		wrapperStream.addSink(new CheckEmptySink());
 		latestRow = null;
+		Main.sentToClientInSubStep = false;
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -476,6 +487,7 @@ public class Main {
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		wrapperStream.addSink(new CheckEmptySink());
 		latestRow = null;
+		Main.sentToClientInSubStep = false;
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -487,27 +499,10 @@ public class Main {
     private static void panLayoutThirdStep() {
     	Main.setOperationStep(3);
 		Main.sendToAll("operationAndStep;pan;3");
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(layoutedVertices, newVertices);
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		wrapperStream.addSink(new CheckEmptySink());
-		latestRow = null;
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-//		if (latestRow == null) panLayoutFourthStep();
-    }
-    
-    private static void panLayoutFourthStep() {
-    	Main.setOperationStep(4);
-		Main.sendToAll("operationAndStep;pan;4");
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutFourthStep(layoutedVertices);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(layoutedVertices);
 		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		identityWrapperAdded = true;
-		nonIdentityWrapperAdded = true;
+		Main.sentToClientInSubStep = false;
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -517,10 +512,10 @@ public class Main {
 		//and move to fourth step. Probably Job Api is necessary here...
     }
     
-    private static void panLayoutFifthStep() {
-    	Main.setOperationStep(5);
-    	Main.sendToAll("operationAndStep;pan;5");
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutFifthStep(layoutedVertices, newVertices, xModelDiff, yModelDiff);
+    private static void panLayoutFourthStep() {
+    	Main.setOperationStep(4);
+    	Main.sendToAll("operationAndStep;pan;4");
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutFourthStep(layoutedVertices, newVertices, xModelDiff, yModelDiff);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		try {
@@ -648,20 +643,21 @@ public class Main {
 	
 	public static void addWrapperLayout(VVEdgeWrapper wrapper) {
 		//if in zoomIn3 or pan4: cancel flinkjob and move to next step!
-//		if ((operationStep == 3 && operation == "zoomIn") || (operationStep == 4 && operation == "pan")) {
-////			if (!identityWrapperAdded && ! nonIdentityWrapperAdded) {
-//			if (capacity == 0) {
-//				try {
-//					JobIdsWithStatusOverview jobs = api.getJobs();
-//					List<JobIdWithStatus> list = jobs.getJobs();
-//					String jobid = list.get(0).getId();
-//					api.terminateJob(jobid, "cancel");
-//				} catch (ApiException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//		} 
+		if (operationStep == 3 && ((operation == "zoomIn") || (operation == "pan"))) {
+//			if (!identityWrapperAdded && ! nonIdentityWrapperAdded) {
+			if (capacity == 0) {
+				try {
+					JobIdsWithStatusOverview jobs = api.getJobs();
+					List<JobIdWithStatus> list = jobs.getJobs();
+					String jobid = list.get(0).getId();
+					System.out.println("flink api job list size: " + list.size());
+					api.terminateJob(jobid, "cancel");
+				} catch (ApiException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} 
 		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
 		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
 		System.out.println("TargetIdNumeric: " + wrapper.getTargetIdNumeric());
@@ -853,7 +849,6 @@ public class Main {
 				}
 			} else {
 				System.out.println("nonIdentityWrapper not Added!");
-				nonIdentityWrapperAdded = false;
 			}
 		}
 	}
@@ -904,7 +899,6 @@ public class Main {
 					}
 				} else {
 					System.out.println("nonIdentityWrapper not Added!");
-					nonIdentityWrapperAdded = false;
 				}
 			}
 		} else if (targetLayouted != null) {
@@ -927,7 +921,6 @@ public class Main {
 					}
 				} else {
 					System.out.println("nonIdentityWrapper not Added!");
-					nonIdentityWrapperAdded = false;
 				}
 			}
 		}
@@ -1019,7 +1012,6 @@ public class Main {
 					}
 				} else {
 					System.out.println("nonIdentityWrapper not Added!");
-					nonIdentityWrapperAdded = false;
 				}
 			}
 		}
@@ -1094,7 +1086,7 @@ public class Main {
 				capacity -= 1;
 			}
 		} else {
-			System.out.println("In addWrapperIdentity, declined capacity > 0");
+			System.out.println("In addWrapperIdentity, declined capacity < 0");
 			if (vertex.getDegree() > minDegreeVertex.getDegree()) {
 				addVertex(vertex);
 				if (!vertexIsRegisteredInside) {
@@ -1130,7 +1122,6 @@ public class Main {
 				}
 			} else {
 				System.out.println("In addWrapperIdentity, declined vertexDegree > minDegreeVertexDegree");
-				identityWrapperAdded = false;
 				System.out.println("identityWrapper not Added!");
 			}
 		}
