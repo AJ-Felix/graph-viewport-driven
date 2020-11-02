@@ -152,7 +152,7 @@ public class Main {
                 		if (operation.contains("In")) {
                 			if (operationStep == 1) {
                 				if (capacity > 0) {
-                					zoomInLayoutFirstStep();
+                					zoomInLayoutSecondStep();
                 				} else {
                 					zoomInLayoutFourthStep();
                 				}
@@ -168,7 +168,7 @@ public class Main {
                 		System.out.println("operation step " + operationStep);
                 		if (operationStep == 1) {
                 			if (capacity > 0) {
-                				panLayoutFirstStep();
+                				panLayoutSecondStep();
                 			} else {
                 				panLayoutFourthStep();
                 			}
@@ -284,7 +284,7 @@ public class Main {
 	        				Main.setOperation("zoomOut");
 							System.out.println("in zoom out layout function");
 							Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
-//							zoomOutLayoutFirstStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
+							zoomOutLayoutFirstStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
 	        			}
 					} else {
 	        			DataStream<Row> wrapperStream = flinkCore.zoom(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
@@ -393,7 +393,7 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (latestRow == null) zoomInLayoutSecondStep();
+		if (latestRow == null || Main.sentToClientInSubStep == false) zoomInLayoutSecondStep();
     }
     
     private static void zoomInLayoutSecondStep() {
@@ -411,7 +411,7 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (latestRow == null) zoomInLayoutThirdStep();
+		if (latestRow == null || Main.sentToClientInSubStep == false) zoomInLayoutThirdStep();
     }
     
     private static void zoomInLayoutThirdStep() {
@@ -426,6 +426,7 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (Main.sentToClientInSubStep == false) zoomInLayoutFourthStep();
 		//ATTENTION: Moving to Fourth step has to be controlled by capacity while the third step is being executed. When capacity is reached, cancel third step 
 		//and move to fourth step. Probably Job Api is necessary here...
     }
@@ -446,21 +447,15 @@ public class Main {
     	}
     }
     
-//    private static void panLayoutFirstStep() {
-//    	Main.setOperationStep(1);
-//		Main.sendToAll("operationAndStep;pan;1");
-//    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
-//		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		wrapperStream.addSink(new CheckEmptySink());
-//		latestRow = null;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (latestRow == null) panLayoutSecondStep();
-//    }
+    private static void zoomOutLayoutFirstStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld) {
+    	Main.setOperationStep(1);
+		Main.sendToAll("operationAndStep;zoomOut;1");
+		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutFirstStep(layoutedVertices, globalVertices,
+				topModelOld, rightModelOld, bottomModelOld, leftModelOld);
+    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+		wrapperStream.addSink(new FlinkRowStreamPrintSink());
+    }
     
     private static void panLayoutFirstStep() {
     	Main.setOperationStep(1);
@@ -476,7 +471,7 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (latestRow == null) panLayoutSecondStep();
+		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutSecondStep();
     }
     
     private static void panLayoutSecondStep() {
@@ -493,7 +488,7 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (latestRow == null) panLayoutThirdStep();
+		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutThirdStep();
     }
     
     private static void panLayoutThirdStep() {
@@ -508,6 +503,7 @@ public class Main {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (Main.sentToClientInSubStep == false) panLayoutFourthStep();
 		//ATTENTION: Moving to Fifth step has to be controlled by capacity while the third step is being executed. When capacity is reached, cancel third step 
 		//and move to fourth step. Probably Job Api is necessary here...
     }
@@ -1152,13 +1148,16 @@ public class Main {
 			globalVertices.put(sourceId, map);
 			if (layout) {
 				Main.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
+				Main.sentToClientInSubStep = true;
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
 					VertexCustom layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
 					Main.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
 							+ vertex.getIdNumeric());
+					Main.sentToClientInSubStep = true;
 				} else {
 					Main.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
+					Main.sentToClientInSubStep = true;
 				}
 			}
 			return true;
@@ -1173,6 +1172,7 @@ public class Main {
 	private static void addEdge(VVEdgeWrapper wrapper) {
 		edges.put(wrapper.getEdgeIdGradoop(), wrapper);
 		Main.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + wrapper.getTargetIdGradoop());
+		Main.sentToClientInSubStep = true;
 	}
 	
 	private static void clearOperation(){

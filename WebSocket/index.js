@@ -12,6 +12,7 @@ let messageProcessing;
 let graphOperationLogic = "serverSide";
 let layout;
 let boundingBoxVar;
+let boundingBoxVarOld;
 
 function addMessageToQueue(dataArray){
 		messageQueue.push(dataArray);
@@ -66,9 +67,6 @@ async function processMessage(){
 						this.timeOut = setTimeout(finalOperations, 1000);
 					}
 					break;
-				// case 'addVertexServerHasLayout':
-					// addVertexToLayoutBase(dataArray);
-					// break;
 				case 'addVertexServerToBeLayouted':
 					addVertexToLayoutBase(dataArray);
 					// if ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5)){

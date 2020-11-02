@@ -209,10 +209,26 @@ public class FlinkCore {
 				topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	}
 	
-//	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
-//		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFirstStep(layoutedVertices, newVertices, topModelPos, rightModelPos, 
-//				bottomModelPos, leftModelPos);
-//	}
+	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, 
+			Map<String, Map<String,Object>> globalVertices,
+			Float topModelPosOld, Float rightModelPosOld, Float bottomModelPosOld, Float leftModelPosOld){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomOutLayoutFirstStep(layoutedVertices, globalVertices, topModelPos, rightModelPos, 
+				bottomModelPos, leftModelPos, topModelPosOld, rightModelPosOld, bottomModelPosOld, leftModelPosOld);
+	}
+	
+	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices,
+			Map<String, Map<String,Object>> globalVertices,
+			Float topModelPosOld, Float rightModelPosOld, Float bottomModelPosOld, Float leftModelPosOld){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomOutLayoutSecondStep(layoutedVertices, newVertices, globalVertices, topModelPos, 
+				rightModelPos, bottomModelPos, leftModelPos, topModelPosOld, rightModelPosOld, bottomModelPosOld, leftModelPosOld);
+	}
+	
+	public DataStream<Row> zoomOutLayoutThirdStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices,
+			Map<String, Map<String,Object>> globalVertices,
+			Float topModelPosOld, Float rightModelPosOld, Float bottomModelPosOld, Float leftModelPosOld){
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomOutLayoutThirdStep(layoutedVertices, newVertices, topModelPos, rightModelPos, 
+				bottomModelPos, leftModelPos, topModelPosOld, rightModelPosOld, bottomModelPosOld, leftModelPosOld);
+	}
 	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
 		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFirstStep(layoutedVertices, newVertices, topModelPos, rightModelPos, bottomModelPos, 

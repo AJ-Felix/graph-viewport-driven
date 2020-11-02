@@ -113,14 +113,16 @@ function finalOperations(){
 }
 
 function addVertexToLayoutBase(dataArray){
-	cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3]}});
+	let xVertex = boundingBoxVar.x1 + Math.random() * (boundingBoxVar.x2 - boundingBoxVar.x1);
+	let yVertex = boundingBoxVar.y1 + Math.random() * (boundingBoxVar.y2 - boundingBoxVar.y1);
+	console.log("xVertex: " + xVertex);
+	console.log("yVertex: " + yVertex);
+	cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3]}, position: {x: xVertex, y: yVertex}});
 	const vertex = cy.$id(dataArray[1]);
 	console.log(vertex);
 	console.log(dataArray[3]);
 	layoutBase.add(dataArray[1]);
 	console.log("layoutBase size: " + layoutBase.size);
-	// clearTimeout(this.timeOut);
-	// this.timeOut = setTimeout(performLayout, 1000);
 }
 
 // function performLayout(){
