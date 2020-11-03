@@ -153,8 +153,6 @@ TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit ka
 
 TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
 
-TODO: Make (most) static Main class functions private
-TODO: Check all comparisons of integers in model position evaluation
 
 TODO: Layouting implementieren
 	- Möglicherweise ist eine Flag notwendig, um gelayoutete Knoten zu markieren ODER die Koordinaten dürfen gar nicht erst eingelesen werden
@@ -169,13 +167,9 @@ TODO: ignore pan;0;. this is causing errors in next operation
 
 TODO: adjust other graphUtils
 
-TODO: Implement zoomOut
-TODO: adjust vertex and edge size per zoom level
-TODO: Check whether incidence is working
+Die Adjazenzmatrix kann bei allen GraphUtil-Anwendungen für die Operationen in der Visualisierung verwendet werden, weil das keine GraphUtil-spezifischen Operationen mehr sind (im Prinzip alles nach Flink-Sink)
 
-
-TODO: ZoomOut operationen nochmal genau nachvollziehen, vor allem wann welcher Typ Knoten in welcher Map landet!!!
-
+Incidence might not work correct after buildTopView but is also only important for buildTopView, so nevermind...
 
 Initial coordinates of to be layouted vertices are in viewport model position but not in necessarily in new model area (late TODO)
 

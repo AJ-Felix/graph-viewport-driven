@@ -7,6 +7,11 @@ let operation;
 let operationStep;
 
 let layoutBase;
+let nodeWidth = 50;
+let nodeHeight = 50;
+let nodeLabelFontSize = 32;
+let edgeWidth = 5;
+let edgeArrowSize = 2;
 
 var cy = cytoscape({
   container: $('#cy'),
@@ -28,19 +33,21 @@ var cy = cytoscape({
       style: {
         'background-color': '#666',
         'label': 'data(label)',
-		'height': '30',
-		'width':'30'
+		'height': nodeHeight,
+		'width': nodeWidth,
+		'font-size': nodeLabelFontSize
       }
     },
 
     {
       selector: 'edge',
       style: {
-        'width': 3,
+        'width': edgeWidth,
         'line-color': '#ccc',
         'target-arrow-color': '#ccc',
         'target-arrow-shape': 'triangle',
-        'curve-style': 'bezier'
+        'curve-style': 'bezier',
+		'arrow-scale': edgeArrowSize
       }
     }
   ],
@@ -84,6 +91,7 @@ let xRenderDiff = 0;
 let yRenderDiff = 0;
 
 function finalOperations(){
+	console.log(cy.elements.style);
 	console.log("in finalOperations funtion");
 	let layoutBaseString = "";
 	console.log("layoutBase size: " + layoutBase.size);
@@ -103,12 +111,13 @@ function finalOperations(){
 		layout.run();
 		console.log("layout performed");
 		layoutBaseCy.forEach(function(node){
+			// console.log(node.style({"width":"50" ,"height":"50", "font-size":"32px"}));
 			let pos = node.position();
 			layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
 		})
 		cy.nodes().lock();
 		layoutBase = new Set();
-	}
+	}	
 	ws.send("layoutBaseString" + layoutBaseString);
 }
 
@@ -124,32 +133,6 @@ function addVertexToLayoutBase(dataArray){
 	layoutBase.add(dataArray[1]);
 	console.log("layoutBase size: " + layoutBase.size);
 }
-
-// function performLayout(){
-	// console.log("performing layout!");
-	// console.log(boundingBoxVar);
-	// let layoutOptions = {};
-	// layoutOptions.name = "random";
-	// layoutOptions.fit = false;
-	// layoutOptions.boundingBox = boundingBoxVar;
-	// layoutBaseCy = cy.collection();
-	// console.log("layoutBase size" + layoutBase.size);
-	// layoutBase.forEach(function (vertexId){
-		// layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
-	// });
-	// let layout = layoutBaseCy.layout(layoutOptions);
-	// layout.run();
-	// console.log("layout performed");
-	// let layoutBaseString = "";
-	// layoutBaseCy.forEach(function(node){
-		// let pos = node.position();
-		// layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
-	// })
-	// // operationStep += 1;
-	// // console.log("operation: " + operation);
-	// // console.log("operationStep: " + operationStep);
-	// ws.send("layoutBaseString" + layoutBaseString);
-// }
 
 let cyto = document.getElementById('cy');
 cyto.addEventListener('mousedown', function(e){
@@ -212,6 +195,20 @@ cyto.addEventListener("wheel", function(e) {
 	let pan = cy.pan();
 	layoutBase = new Set();
 	if (delta < 0){
+		nodeWidth = nodeWidth / zFactor;
+		nodeHeight = nodeHeight / zFactor;
+		nodeLabelFontSize = nodeLabelFontSize / zFactor;
+		edgeWidth = edgeWidth / zFactor;
+		edgeArrowSize = edgeArrowSize / zFactor;
+		cy.style().selector('node').style({
+			'width': nodeWidth,
+			'height': nodeHeight,
+			'font-size': nodeLabelFontSize
+		}).update();
+		cy.style().selector('edge').style({
+			'width': edgeWidth,
+			'arrow-scale': edgeArrowSize
+		}).update();
 		cy.zoom(cy.zoom() * zFactor);
 		cy.pan({x:-vPixHalf + zFactor * pan.x + (vPixHalf - cytoX) * zFactor, y:-vPixHalf + zFactor * pan.y + (vPixHalf - cytoY) * zFactor});
 		pan = cy.pan();
@@ -231,6 +228,20 @@ cyto.addEventListener("wheel", function(e) {
 		}
 		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	} else {
+		nodeWidth = nodeWidth * zFactor;
+		nodeHeight = nodeHeight * zFactor;
+		nodeLabelFontSize = nodeLabelFontSize * zFactor;
+		edgeWidth = edgeWidth * zFactor;
+		edgeArrowSize = edgeArrowSize * zFactor;
+		cy.style().selector('node').style({
+			'width': nodeWidth,
+			'height': nodeHeight,
+			'font-size': nodeLabelFontSize
+		}).update();
+		cy.style().selector('edge').style({
+			'width': edgeWidth,
+			'arrow-scale': edgeArrowSize
+		}).update();
 		cy.zoom(cy.zoom() / zFactor);
 		cy.pan({x:vPixHalf + pan.x - (vPixHalf + pan.x) / zFactor - (cytoX - vPixHalf) / zFactor, y:vPixHalf + pan.y - (vPixHalf + pan.y) / zFactor - (cytoY - vPixHalf) / zFactor});
 		pan = cy.pan();

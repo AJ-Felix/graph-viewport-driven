@@ -59,6 +59,10 @@ public class Main {
 	private static Float rightModel;
 	private static Float bottomModel;
 	private static Float leftModel;
+	private static Float topModelOld;
+	private static Float rightModelOld;
+	private static Float bottomModelOld;
+	private static Float leftModelOld;
 	private static Float xModelDiff;
 	private static Float yModelDiff;
 	private static VertexCustom secondMinDegreeVertex;
@@ -93,7 +97,6 @@ public class Main {
         server.start();
         System.out.println("Server started!");
         api.getApiClient().setBasePath("http://localhost:8081");  
-//        flinkCore = new FlinkCore();
     }
     
 //    private static MessageHeaders getMessageHeaders() {
@@ -163,6 +166,8 @@ public class Main {
                 					zoomInLayoutFourthStep();
                 				}
                 			} else if (operationStep == 3) zoomInLayoutFourthStep();
+                		} else {
+                			if (operationStep == 1) zoomOutLayoutSecondStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
                 		}
                 	} else if (operation.startsWith("pan")) {
                 		System.out.println("operation step " + operationStep);
@@ -253,19 +258,19 @@ public class Main {
         			Float xRenderPos = Float.parseFloat(arrMessageData[1]);
         			Float yRenderPos = Float.parseFloat(arrMessageData[2]);
         			zoomLevel = Float.parseFloat(arrMessageData[3]);
-        			Float topModelNew = (- yRenderPos / zoomLevel);
-        			Float leftModelNew = (- xRenderPos /zoomLevel);
-        			Float bottomModelNew = (topModelNew + viewportPixelY / zoomLevel);
-        			Float rightModelNew = (leftModelNew + viewportPixelX / zoomLevel);
-        			Float topModelOld = flinkCore.gettopModelPos();
-        			Float leftModelOld = flinkCore.getLeftModelPos();
-        			Float bottomModelOld = flinkCore.getBottomModelPos();
-        			Float rightModelOld = flinkCore.getRightModelPos();
-					flinkCore.setTopModelPos(topModelNew);
-					flinkCore.setRightModelPos(rightModelNew);
-					flinkCore.setBottomModelPos(bottomModelNew);
-					flinkCore.setLeftModelPos(leftModelNew);
-					System.out.println("Zoom ... top, right, bottom, left:" + topModelNew + " " + rightModelNew + " "+ bottomModelNew + " " + leftModelNew);
+        			topModel = (- yRenderPos / zoomLevel);
+        			leftModel = (- xRenderPos /zoomLevel);
+        			bottomModel = (topModel + viewportPixelY / zoomLevel);
+        			rightModel = (leftModel + viewportPixelX / zoomLevel);
+        			topModelOld = flinkCore.gettopModelPos();
+        			leftModelOld = flinkCore.getLeftModelPos();
+        			bottomModelOld = flinkCore.getBottomModelPos();
+        			rightModelOld = flinkCore.getRightModelPos();
+					flinkCore.setTopModelPos(topModel);
+					flinkCore.setRightModelPos(rightModel);
+					flinkCore.setBottomModelPos(bottomModel);
+					flinkCore.setLeftModelPos(leftModel);
+					System.out.println("Zoom ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					if (!layout) {
 						if (messageData.startsWith("zoomIn")) {
 //							System.out.println(layoutedVertices.size());
@@ -274,7 +279,7 @@ public class Main {
 							for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
 								System.out.println(entry.getValue().getIdGradoop() + " " + entry.getValue().getX() + " " + entry.getValue().getY());
 							}
-							Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+							Main.prepareOperation();
 //							Map<String,VertexCustom> innerVerticesCopy = new HashMap<String,VertexCustom>();
 //							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", Custom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
 //							Set<String> layoutedVerticesCopy = new HashSet<String>();
@@ -283,11 +288,11 @@ public class Main {
 						} else {
 	        				Main.setOperation("zoomOut");
 							System.out.println("in zoom out layout function");
-							Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+							Main.prepareOperation();
 							zoomOutLayoutFirstStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
 	        			}
 					} else {
-	        			DataStream<Row> wrapperStream = flinkCore.zoom(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+	        			DataStream<Row> wrapperStream = flinkCore.zoom(topModel, rightModel, bottomModel, leftModel);
 	                	if (graphOperationLogic.equals("clientSide")) {
 	                		wrapperStream.addSink(new WrapperAppendSink());
 	                	} else {
@@ -297,7 +302,7 @@ public class Main {
 		        				Main.setOperation("zoomOut");
 		        			}
 		    				DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-		    				Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+		    				Main.prepareOperation();
 		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
 	                	}
 	                	try {
@@ -311,25 +316,25 @@ public class Main {
 					}
     			} else if (messageData.startsWith("pan")) {
         			String[] arrMessageData = messageData.split(";");
-        			Float topModelOld = flinkCore.gettopModelPos();
-        			Float bottomModelOld = flinkCore.getBottomModelPos();
-        			Float leftModelOld = flinkCore.getLeftModelPos();
-        			Float rightModelOld = flinkCore.getRightModelPos();
+        			topModelOld = flinkCore.gettopModelPos();
+        			bottomModelOld = flinkCore.getBottomModelPos();
+        			leftModelOld = flinkCore.getLeftModelPos();
+        			rightModelOld = flinkCore.getRightModelPos();
         			xModelDiff = Float.parseFloat(arrMessageData[1]); 
         			yModelDiff = Float.parseFloat(arrMessageData[2]);
-					Float topModelNew = topModelOld + yModelDiff;
-					Float bottomModelNew = bottomModelOld + yModelDiff;
-					Float leftModelNew = leftModelOld + xModelDiff;
-					Float rightModelNew = rightModelOld + xModelDiff;
-					flinkCore.setTopModelPos(topModelNew);
-					flinkCore.setBottomModelPos(bottomModelNew);
-					flinkCore.setLeftModelPos(leftModelNew);
-					flinkCore.setRightModelPos(rightModelNew);
-					System.out.println("Pan ... top, right, bottom, left:" + topModelNew + " " + rightModelNew + " "+ bottomModelNew + " " + leftModelNew);
+					topModel = topModelOld + yModelDiff;
+					bottomModel = bottomModelOld + yModelDiff;
+					leftModel = leftModelOld + xModelDiff;
+					rightModel = rightModelOld + xModelDiff;
+					flinkCore.setTopModelPos(topModel);
+					flinkCore.setBottomModelPos(bottomModel);
+					flinkCore.setLeftModelPos(leftModel);
+					flinkCore.setRightModelPos(rightModel);
+					System.out.println("Pan ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					if (!layout) {
 	    				Main.setOperation("pan");
 	    				Main.setOperationStep(1);
-	    				Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+	    				Main.prepareOperation();
 	    				panLayoutFirstStep();
 					} else {
 						DataStream<Row> wrapperStream = flinkCore.pan(xModelDiff, yModelDiff);
@@ -338,7 +343,7 @@ public class Main {
 	                	} else {
 	                		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
 	    					Main.setOperation("pan");
-		    				Main.prepareOperation(topModelNew, rightModelNew, bottomModelNew, leftModelNew);
+		    				Main.prepareOperation();
 		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
 	                	}
 	                	try {
@@ -450,12 +455,36 @@ public class Main {
     private static void zoomOutLayoutFirstStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld) {
     	Main.setOperationStep(1);
 		Main.sendToAll("operationAndStep;zoomOut;1");
-		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutFirstStep(layoutedVertices, globalVertices,
+		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutFirstStep(layoutedVertices,
 				topModelOld, rightModelOld, bottomModelOld, leftModelOld);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		wrapperStream.addSink(new FlinkRowStreamPrintSink());
+		wrapperStream.addSink(new CheckEmptySink());
+		latestRow = null;
+		sentToClientInSubStep = false;
+		try {
+			flinkCore.getFsEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if ((sentToClientInSubStep == false || latestRow == null) && graphOperationLogic.equals("serverSide")) clearOperation();
     }
+    
+    private static void zoomOutLayoutSecondStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld) {
+    	Main.setOperationStep(2);
+		Main.sendToAll("operationAndStep;zoomOut;2");
+		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutSecondStep(layoutedVertices, newVertices,
+				topModelOld, rightModelOld, bottomModelOld, leftModelOld);
+    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+		try {
+			flinkCore.getFsEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (graphOperationLogic.equals("serverSide")) clearOperation(); 
+    }
+    
     
     private static void panLayoutFirstStep() {
     	Main.setOperationStep(1);
@@ -549,11 +578,7 @@ public class Main {
 		Main.operationStep = step;
 	}
 	
-	private static void prepareOperation(Float topModel, Float rightModel, Float bottomModel, Float leftModel){
-		Main.topModel = topModel;
-		Main.rightModel = rightModel;
-		Main.bottomModel = bottomModel;
-		Main.leftModel = leftModel;
+	private static void prepareOperation(){
 		System.out.println("top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 		if (operation != "zoomOut"){
 			for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) {
@@ -638,9 +663,8 @@ public class Main {
 	}
 	
 	public static void addWrapperLayout(VVEdgeWrapper wrapper) {
-		//if in zoomIn3 or pan4: cancel flinkjob and move to next step!
+		//if in zoomIn3 or pan3: cancel flinkjob and move to next step!
 		if (operationStep == 3 && ((operation == "zoomIn") || (operation == "pan"))) {
-//			if (!identityWrapperAdded && ! nonIdentityWrapperAdded) {
 			if (capacity == 0) {
 				try {
 					JobIdsWithStatusOverview jobs = api.getJobs();
@@ -649,7 +673,6 @@ public class Main {
 					System.out.println("flink api job list size: " + list.size());
 					api.terminateJob(jobid, "cancel");
 				} catch (ApiException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -1208,6 +1231,14 @@ public class Main {
 					while (edgesIterator.hasNext()) if (vertexNeighborMap.values().contains(edgesIterator.next().getKey())) edgesIterator.remove();
 				} 
 			}
+			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step before (e.g. in ZoomOut)
+			if (minDegreeVertex == null || secondMinDegreeVertex == null) {
+				if (newVertices.size() > 1) {
+					updateMinDegreeVertices(newVertices);
+				} else if (newVertices.size() == 1) {
+					minDegreeVertex = newVertices.values().iterator().next();
+				}
+			}
 		} else {
 			if (!layout) {
 				for (VertexCustom vertex : innerVertices.values()) {
@@ -1225,7 +1256,6 @@ public class Main {
 			}
 		}
 //		operation = null;
-		System.out.println("before updatemindegreevertices in clear operation");
 		Set<String> visualizedVertices = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();
@@ -1234,16 +1264,39 @@ public class Main {
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
 		System.out.println("global size "+ globalVertices.size());
+//		for (Map.Entry<String, Map<String,Object>> map : globalVertices.entrySet()) {
+//			VertexCustom vertex = (VertexCustom) map.getValue().get("vertex");
+//			System.out.println("vertex id: "  + vertex.getIdGradoop());
+//			System.out.println("vertex degree: " + vertex.getDegree());
+//			System.out.println("vertex incidence: " + map.getValue().get("incidence"));
+//			System.out.println(vertex.getDegree() + 1 >= (Integer) map.getValue().get("incidence"));
+//		}
 	}
 	
 	private static Set<String> getNeighborhood(VertexCustom vertex){
 		Set<String> neighborIds = new HashSet<String>();
+//		for (VVEdgeWrapper wrapper : edges.values()) {
+//			String vertexId = vertex.getIdGradoop();
+//			String sourceId = wrapper.getSourceIdGradoop();
+//			String targetId = wrapper.getTargetIdGradoop();
+//			if (sourceId.equals(vertexId)) neighborIds.add(targetId);
+//			else if (targetId.equals(vertexId)) neighborIds.add(sourceId);
+//		}
+//		return neighborIds;
 		Map<String,Map<String,String>> adjMatrix = flinkCore.getGraphUtil().getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
 		return neighborIds;
 	}
 	
 	private static boolean hasVisualizedNeighborsInside(VertexCustom vertex) {
+//		for (VVEdgeWrapper wrapper : edges.values()) {
+//			String vertexId = vertex.getIdGradoop();
+//			String sourceId = wrapper.getSourceIdGradoop();
+//			String targetId = wrapper.getTargetIdGradoop();
+//			if (sourceId.equals(vertexId) && innerVertices.containsKey(targetId)) return true;
+//			else if (targetId.equals(vertexId) && innerVertices.containsKey(sourceId)) return true;
+//		}
+//		return false;
 		Map<String,Map<String,String>> adjMatrix = flinkCore.getGraphUtil().getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
 		return false;

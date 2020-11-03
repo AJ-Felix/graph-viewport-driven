@@ -10,7 +10,7 @@ ws.onopen = function() {
 let messageQueue = new Array();
 let messageProcessing;
 let graphOperationLogic = "serverSide";
-let layout;
+let layout = true;
 let boundingBoxVar;
 let boundingBoxVarOld;
 
@@ -76,6 +76,9 @@ async function processMessage(){
 					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
+					
+					console.log(cy.$id(dataArray[1]).style());
+					
 					if (!layout 
 					// && ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5))
 					){
