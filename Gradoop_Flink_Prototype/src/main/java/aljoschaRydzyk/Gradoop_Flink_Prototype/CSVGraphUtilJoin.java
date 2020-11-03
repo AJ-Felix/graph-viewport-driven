@@ -38,6 +38,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] vertexFormatTypeInfo;
 	private Map<String,Map<String,String>> adjMatrix;
+	private FilterFunction<Row> zoomOutVertexFilter;
 	
 	//Area Definition
 		//A	: Inside viewport after operation
@@ -116,6 +117,9 @@ public class CSVGraphUtilJoin implements GraphUtil{
 
 	@Override
 	public DataStream<Row> zoom (Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+		/*
+		 * Zoom function for graphs with layout
+		 */
 		
 		//vertex stream filter for in-view and out-view area and conversion to Flink Tables
 		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topModel, rightModel, bottomModel, leftModel));
@@ -158,6 +162,11 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	
 	@Override
 	public DataStream<Row> pan(Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff){
+		/*
+		 * Pan function for graphs with layout
+		 */
+		
+		//calculate previous model coordinate borders
 		Float topOld = top - yModelDiff;
 		Float rightOld = right - xModelDiff;
 		Float bottomOld = bottom - yModelDiff;
@@ -244,18 +253,15 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return this.adjMatrix;
 	}
 	
-	//Functions for non-layouted graphs
-	
 	public DataStream<Row> zoomInLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
 			Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+		/*
+		 * First substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that were
+		 * layouted before and have their coordinates in the current model window but are not visualized yet.
+		 */
 		
-		System.out.println("in ZoomInLayoutFirstStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		
-		//DIFFERENT APPROACH
-		//(3) produce wrapper identity stream of not visualized but layouted vertices inside model position
-		//    and also produce wrapper stream between those vertices
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topModel, rightModel, bottomModel, leftModel))
 			.filter(new VertexFilterNotVisualized(innerVertices));
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
@@ -290,19 +296,22 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	public DataStream<Row> zoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
-			Map<String, VertexCustom> newVertices,Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+			Map<String, VertexCustom> newVertices){
+		/*
+		 * Second substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
+		 * other hand.
+		 */
+
+		//unite maps of already visualized vertices before this zoom-in operation and vertices added in this zoom-in operation
+		Map<String,VertexCustom> unionMap = new HashMap<String,VertexCustom>(innerVertices);
+		unionMap.putAll(newVertices);
 		
-		System.out.println("in ZoomInLayoutSecondStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		Map<String,VertexCustom> fusedMap = new HashMap<String,VertexCustom>(innerVertices);
-		fusedMap.putAll(newVertices);
-		
-		//DIFFERENT APPROACH
-		//(1) produce wrapper stream from visualized vertices to neighbours that are not visualized but also not layouted outside model position
-		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(fusedMap));
-		DataStream<Row> neighbours = this.vertexStream.filter(new VertexFilterNotVisualized(fusedMap))
-				.filter(new VertexFilterNotLayoutedOutside(layoutedVertices, topModel, rightModel, bottomModel, leftModel));
+		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
+		DataStream<Row> neighbours = this.vertexStream
+				.filter(new VertexFilterNotLayouted(layoutedVertices));
 		Table visualizedVerticesTable = fsTableEnv.fromDataStream(visualizedVertices).as(this.vertexFields);
 		Table neighboursTable = fsTableEnv.fromDataStream(neighbours).as(this.vertexFields);
 		DataStream<Row> wrapperStream = 
@@ -352,12 +361,12 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){		
-		System.out.println("in ZoomInLayoutThirdStep function");
+		/*
+		 * Third substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * not yet layouted starting with highest degree.
+		 */
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		
-		//(4) produce wrapper identity stream for vertices which are not yet layouted starting with highest degree
-		//    and also produce wrapper stream between those vertices
 		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new VertexFilterNotLayouted(layoutedVertices));
 		Table notLayoutedVerticesTable = fsTableEnv.fromDataStream(notLayoutedVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
@@ -369,16 +378,19 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	
 	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
 			Map<String, VertexCustom> newVertices, Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+		/*
+		 * Fourth substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
+		 * outside the current model window on the other hand.
+		 */
 		
-		System.out.println("in ZoomInLayoutFourthStep function");
+		//unite maps of already visualized vertices before this zoom-in operation and vertices added in this zoom-in operation
+		Map<String,VertexCustom> unionMap = new HashMap<String,VertexCustom>(innerVertices);
+		unionMap.putAll(newVertices);
+		
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		Map<String,VertexCustom> fusedMap = new HashMap<String,VertexCustom>(innerVertices);
-		fusedMap.putAll(newVertices);
-		
-		//DIFFERENT APPROACH
-		//(2) produce wrapper stream from visualized vertices to layouted vertices outside model position
-		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(fusedMap));
+		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
 		DataStream<Row> layoutedVerticesStream = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, 
 			topModel, rightModel, bottomModel, leftModel));
 		Table visualizedVerticesTable = this.fsTableEnv.fromDataStream(visualizedVerticesStream).as(this.vertexFields);
@@ -389,10 +401,9 @@ public class CSVGraphUtilJoin implements GraphUtil{
 			.union(fsTableEnv.toAppendStream(wrapperTable
 				.join(visualizedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
 				.join(layoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo));
+		
 		//filter out already visualized edges in wrapper stream
-		wrapperStream.addSink(new FlinkRowStreamPrintSink());
 		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-		wrapperStream.addSink(new FlinkRowStreamPrintSink());
 		return wrapperStream;
 
 //		//(2) produce wrapper stream from visualized vertices to layouted vertices outside model position
@@ -429,15 +440,13 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
 			Float topModel, Float rightModel, Float bottomModel, Float leftModel){
-		
-		System.out.println("in panLayoutFirstStep function");
+		/*
+		 * First substep for pan operation on graphs without layout. Returns a stream of wrappers including vertices that were
+		 * layouted before and have their coordinates in the current model window but are not visualized yet.
+		 */
+
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-
-		//DIFFERENT APPROACH
-		//(5) produce wrapper identity stream for layouted vertices within model position that are not visualized yet
-		//	  and also produce wrapper stream between those vertices
-		for (String vId : newVertices.keySet()) System.out.println("panLayoutFirstStep, newVertices key: " + vId);
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterNotVisualized(newVertices))
 				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topModel, rightModel, bottomModel, leftModel));
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
@@ -476,16 +485,16 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
+		/*
+		 * Second substep for pan operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the other 
+		 * hand.
+		 */
 		
-		System.out.println("in panLayoutSecondStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		
-		//DIFFERENT APPROACH
-		//(2 + 4) produce wrapper Stream from visualized vertices inside to neighbour vertices which are not layouted and not visualized
-		for (String vId : newVertices.keySet()) System.out.println("panLayoutSecondStep, newVertices key: " + vId);
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices));
-		DataStream<Row> notVisualizedNotLayoutedVertices = this.vertexStream.filter(new VertexFilterNotVisualized(newVertices))
+		DataStream<Row> notVisualizedNotLayoutedVertices = this.vertexStream
 				.filter(new VertexFilterNotLayouted(layoutedVertices));
 		Table visualizedVerticesTable = fsTableEnv.fromDataStream(visualizedVertices).as(this.vertexFields);
 		Table notVisualizedNotLayoutedVerticesTable = fsTableEnv.fromDataStream(notVisualizedNotLayoutedVertices).as(this.vertexFields);
@@ -533,40 +542,40 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	public DataStream<Row> panLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){
+		/*
+		 * Third substep for pan operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * not yet layouted starting with highest degree.
+		 */
 		
-		System.out.println("in panLayoutThirdStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		
-		//(4) produce wrapper identity stream for vertices which are not yet layouted starting with highest degree
-		//    and also produce wrapper stream between those vertices
 		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new VertexFilterNotLayouted(layoutedVertices));
 		Table notLayoutedVerticesTable = fsTableEnv.fromDataStream(notLayoutedVertices).as(this.vertexFields);
-		wrapperTable = wrapperTable.join(notLayoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
-		wrapperTable = wrapperTable.join(notLayoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-		
-		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable, wrapperRowTypeInfo);
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
+				.join(notLayoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+				.join(notLayoutedVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields)
+			, wrapperRowTypeInfo);
 		return wrapperStream;
 	}
 	
 	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
 			Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff){
+		/*
+		 * Fourth substep for pan operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * newly visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
+		 * outside the current model window on the other hand.
+		 */
 		
+		//calculate previous model coordinate borders
 		Float topOld = top - yModelDiff;
 		Float rightOld = right - xModelDiff;
 		Float bottomOld = bottom - yModelDiff;
 		Float leftOld = left - xModelDiff;
 		
-		System.out.println("in panLayoutFourthStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		
-		//DIFFERENT APPROACH
-		//(3) produce wrapperStream from visualized vertices that were newly added inside to layouted Vertices outside the model position
-		System.out.println("in panLayoutFourthStep function, layoutedVertices size: " + layoutedVertices.size());
 		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices))
 				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
-		newlyAddedInsideVertices.addSink(new FlinkRowStreamPrintSink());
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
 				top, right, bottom, left));
 		Table newlyAddedInsideVerticesTable = this.fsTableEnv.fromDataStream(newlyAddedInsideVertices).as(this.vertexFields);
@@ -617,13 +626,16 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, 
 			Float topModelNew, Float rightModelNew, Float bottomModelNew, Float leftModelNew, 
 			Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld){
-		//produce wrapper stream (identity and between) of vertices that are in-new-area layouted
-		System.out.println("in zoomOutLayoutFirstStep function");
+		/*
+		 * First substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * layouted inside the model space which was added by operation.
+		 */
+		
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-		DataStream<Row> vertices = this.vertexStream
-				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftModelNew, rightModelNew, topModelNew, 
-						bottomModelNew, leftModelOld, rightModelOld, topModelOld, bottomModelOld));
+		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftModelNew, rightModelNew, topModelNew, 
+				bottomModelNew, leftModelOld, rightModelOld, topModelOld, bottomModelOld);
+		DataStream<Row> vertices = this.vertexStream.filter(zoomOutVertexFilter);
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
 				.join(verticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
@@ -634,15 +646,17 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
 			Float topModelNew, Float rightModelNew, Float bottomModelNew, Float leftModelNew, 
 			Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld){
-		// (3) produce wrapper from newly inside and visualized vertices to out-area layouted but not visualized neighbour vertices and vice versa
+		/*
+		 * Second substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * visualized inside the model space which was added by operation on the one hand, neighbour vertices that are layouted with 
+		 * coordinates outside the current model window on the other hand.
+		 */
 		
-		System.out.println("in zoomOutLayoutSecondStep function");
 		RowTypeInfo wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 		Table wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
 		DataStream<Row> newlyVisualizedVertices = this.vertexStream
 				.filter(new VertexFilterIsVisualized(newVertices))
-				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftModelNew, rightModelNew, topModelNew, bottomModelNew,
-						leftModelOld, rightModelOld, topModelOld, bottomModelOld));
+				.filter(zoomOutVertexFilter);
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream
 				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, topModelNew, rightModelNew, bottomModelNew, leftModelNew));
 		Table newlyVisualizedVerticesTable = this.fsTableEnv.fromDataStream(newlyVisualizedVertices).as(this.vertexFields);

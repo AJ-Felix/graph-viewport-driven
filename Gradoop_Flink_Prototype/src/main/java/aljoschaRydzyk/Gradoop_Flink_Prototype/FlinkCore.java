@@ -195,8 +195,7 @@ public class FlinkCore {
 	
 	public DataStream<Row> zoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices,
 			Map<String, VertexCustom> newVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutSecondStep(layoutedVertices, innerVertices, newVertices, 
-				topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutSecondStep(layoutedVertices, innerVertices, newVertices);
 	}
 	
 	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){

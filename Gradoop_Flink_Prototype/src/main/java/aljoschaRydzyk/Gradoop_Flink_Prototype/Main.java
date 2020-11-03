@@ -623,6 +623,12 @@ public class Main {
 				}
 			}
 			System.out.println("innerVertices size after removing in prepareOPeration: " + innerVertices.size());
+			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
+			if (innerVertices.size() > 1) {
+				updateMinDegreeVertices(innerVertices);
+			} else if (innerVertices.size() == 1) {
+				minDegreeVertex = innerVertices.values().iterator().next();
+			}
 		}
 		capacity = maxVertices - innerVertices.size();
 		if (operation.equals("pan") || operation.equals("zoomOut")) {
@@ -1232,12 +1238,10 @@ public class Main {
 				} 
 			}
 			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step before (e.g. in ZoomOut)
-			if (minDegreeVertex == null || secondMinDegreeVertex == null) {
-				if (newVertices.size() > 1) {
-					updateMinDegreeVertices(newVertices);
-				} else if (newVertices.size() == 1) {
-					minDegreeVertex = newVertices.values().iterator().next();
-				}
+			if (newVertices.size() > 1) {
+				updateMinDegreeVertices(newVertices);
+			} else if (newVertices.size() == 1) {
+				minDegreeVertex = newVertices.values().iterator().next();
 			}
 		} else {
 			if (!layout) {

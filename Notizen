@@ -167,6 +167,8 @@ TODO: ignore pan;0;. this is causing errors in next operation
 
 TODO: adjust other graphUtils
 
+TODO: Probably kick VertexFilterNotLayoutedOutside
+
 Die Adjazenzmatrix kann bei allen GraphUtil-Anwendungen für die Operationen in der Visualisierung verwendet werden, weil das keine GraphUtil-spezifischen Operationen mehr sind (im Prinzip alles nach Flink-Sink)
 
 Incidence might not work correct after buildTopView but is also only important for buildTopView, so nevermind...
