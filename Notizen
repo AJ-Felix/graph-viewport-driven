@@ -167,7 +167,13 @@ TODO: ignore pan;0;. this is causing errors in next operation
 
 TODO: adjust other graphUtils
 
-TODO: Probably kick VertexFilterNotLayoutedOutside
+TODO: Probably kick VertexFilterNotLayoutedOutside and all vertexIdFilters
+
+TODO: Check whether identity streams in zoom in and pan in adjgraphUtil are necessary
+
+TODO: Check in all ZoomInLayoutFourthStep functions in map union is necessary, newVertices should be enough
+
+TODO: Check for adjaGraphUtil in Layout mode is working
 
 Die Adjazenzmatrix kann bei allen GraphUtil-Anwendungen für die Operationen in der Visualisierung verwendet werden, weil das keine GraphUtil-spezifischen Operationen mehr sind (im Prinzip alles nach Flink-Sink)
 

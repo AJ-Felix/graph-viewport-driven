@@ -277,7 +277,7 @@ public class Main {
 //							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", Custom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
 //							Set<String> layoutedVerticesCopy = new HashSet<String>();
 //							layoutedVerticesCopy.add("5c6ab3fd8e3627bbfb10de29");
-							panZoomInLayoutFirstStep();
+							zoomInLayoutFirstStep();
 						} else {
 	        				Main.setOperation("zoomOut");
 							System.out.println("in zoom out layout function");
@@ -328,7 +328,7 @@ public class Main {
 	    				Main.setOperation("pan");
 	    				Main.setOperationStep(1);
 	    				Main.prepareOperation();
-	    				panZoomInLayoutFirstStep();
+	    				panLayoutFirstStep();
 					} else {
 						DataStream<Row> wrapperStream = flinkCore.pan(xModelDiff, yModelDiff);
 	                	if (graphOperationLogic.equals("clientSide")) {
@@ -361,23 +361,12 @@ public class Main {
 					}
 					Main.sendToAll("fitGraph");
 //					UndertowServer.sendToAll("layout");
-    			} else if (messageData.startsWith("cancel")){
-    				String[] arr = messageData.split(";");
-    				String jobID = arr[1];
-    				System.out.println("Cancelling " + jobID);
-//    				try {
-//						api.terminateJob(jobID, "cancel");
-//					} catch (ApiException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
-    				System.out.println("Terminated job");
     			}
             }
         };
     }
     
-    private static void panZoomInLayoutFirstStep() {
+    private static void zoomInLayoutFirstStep() {
     	Main.setOperationStep(1);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(layoutedVertices, innerVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
@@ -472,21 +461,21 @@ public class Main {
     }
     
     
-//    private static void panLayoutFirstStep() {
-//    	Main.setOperationStep(1);
-//    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		wrapperStream.addSink(new CheckEmptySink());
-//		latestRow = null;
-//		Main.sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutSecondStep();
-//    }
+    private static void panLayoutFirstStep() {
+    	Main.setOperationStep(1);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
+    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+		wrapperStream.addSink(new CheckEmptySink());
+		latestRow = null;
+		Main.sentToClientInSubStep = false;
+		try {
+			flinkCore.getFsEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutSecondStep();
+    }
     
     private static void panLayoutSecondStep() {
     	Main.setOperationStep(2);

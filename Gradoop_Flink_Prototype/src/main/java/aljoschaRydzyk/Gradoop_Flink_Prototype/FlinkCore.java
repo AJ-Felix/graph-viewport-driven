@@ -220,7 +220,7 @@ public class FlinkCore {
 	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices,
 			Float topModelPosOld, Float rightModelPosOld, Float bottomModelPosOld, Float leftModelPosOld){
 		return ((CSVGraphUtilJoin) this.graphUtil).zoomOutLayoutSecondStep(layoutedVertices, newVertices, topModelPos, 
-				rightModelPos, bottomModelPos, leftModelPos, topModelPosOld, rightModelPosOld, bottomModelPosOld, leftModelPosOld);
+				rightModelPos, bottomModelPos, leftModelPos);
 	}
 	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
