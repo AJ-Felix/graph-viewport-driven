@@ -130,8 +130,6 @@ public class Main {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
-//                	String operationAndStep = list.remove(0);
-//                	System.out.println("operationAndStep" + operationAndStep);
                 	for (VertexCustom vertex : innerVertices.values()) System.out.println(vertex.getIdGradoop());
                 	for (String vertexData : list) {
                 		String[] arrVertexData = vertexData.split(",");
@@ -141,9 +139,6 @@ public class Main {
             			VertexCustom vertex = new VertexCustom(vertexId, x, y);
             			if (layoutedVertices.containsKey(vertexId)) System.out.println("vertex already in layoutedVertices!!!");
             			layoutedVertices.put(vertexId, vertex);
-//            			VertexCustom innerVertex = innerVertices.get(vertexId);
-//            			innerVertex.setX(x);
-//            			innerVertex.setY(y);
                 	}
                 	System.out.println("layoutedVertices size: ");
                 	System.out.println(layoutedVertices.size());
@@ -170,7 +165,6 @@ public class Main {
                 			if (operationStep == 1) zoomOutLayoutSecondStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
                 		}
                 	} else if (operation.startsWith("pan")) {
-                		System.out.println("operation step " + operationStep);
                 		if (operationStep == 1) {
                 			if (capacity > 0) {
                 				panLayoutSecondStep();
@@ -244,7 +238,6 @@ public class Main {
             				wrapperStream.addSink(new WrapperAppendSink());
         				}
         			}
-                	if (!layout) Main.sendToAll("operationAndStep;topView;1");
                 	try {
         				flinkCore.getFsEnv().execute();
         			} catch (Exception e) {
@@ -284,7 +277,7 @@ public class Main {
 //							innerVerticesCopy.put("5c6ab3fd8e3627bbfb10de29", Custom("5c6ab3fd8e3627bbfb10de29", "forum", 0, 2873, 2358, (long) 121));
 //							Set<String> layoutedVerticesCopy = new HashSet<String>();
 //							layoutedVerticesCopy.add("5c6ab3fd8e3627bbfb10de29");
-							zoomInLayoutFirstStep();
+							panZoomInLayoutFirstStep();
 						} else {
 	        				Main.setOperation("zoomOut");
 							System.out.println("in zoom out layout function");
@@ -335,7 +328,7 @@ public class Main {
 	    				Main.setOperation("pan");
 	    				Main.setOperationStep(1);
 	    				Main.prepareOperation();
-	    				panLayoutFirstStep();
+	    				panZoomInLayoutFirstStep();
 					} else {
 						DataStream<Row> wrapperStream = flinkCore.pan(xModelDiff, yModelDiff);
 	                	if (graphOperationLogic.equals("clientSide")) {
@@ -384,9 +377,8 @@ public class Main {
         };
     }
     
-    private static void zoomInLayoutFirstStep() {
+    private static void panZoomInLayoutFirstStep() {
     	Main.setOperationStep(1);
-		Main.sendToAll("operationAndStep;zoomIn;1");
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(layoutedVertices, innerVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
@@ -403,9 +395,7 @@ public class Main {
     
     private static void zoomInLayoutSecondStep() {
     	Main.setOperationStep(2);
-		Main.sendToAll("operationAndStep;zoomIn;2");
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(layoutedVertices, innerVertices, newVertices);
-//    	DataStream<Boolean> boolStream = wrapperStream.keyBy(value -> value.getField(1)).process(new TimeOut(5)).setParallelism(1);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
 		wrapperStream.addSink(new CheckEmptySink());
@@ -421,7 +411,6 @@ public class Main {
     
     private static void zoomInLayoutThirdStep() {
     	Main.setOperationStep(3);
-		Main.sendToAll("operationAndStep;zoomIn;3");
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutThirdStep(layoutedVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
@@ -438,7 +427,6 @@ public class Main {
     
     private static void zoomInLayoutFourthStep() {
     	Main.setOperationStep(4);
-		Main.sendToAll("operationAndStep;zoomIn;4");
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(layoutedVertices, innerVertices, newVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
@@ -454,7 +442,6 @@ public class Main {
     
     private static void zoomOutLayoutFirstStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld) {
     	Main.setOperationStep(1);
-		Main.sendToAll("operationAndStep;zoomOut;1");
 		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutFirstStep(layoutedVertices,
 				topModelOld, rightModelOld, bottomModelOld, leftModelOld);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
@@ -472,7 +459,6 @@ public class Main {
     
     private static void zoomOutLayoutSecondStep(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld) {
     	Main.setOperationStep(2);
-		Main.sendToAll("operationAndStep;zoomOut;2");
 		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutSecondStep(layoutedVertices, newVertices,
 				topModelOld, rightModelOld, bottomModelOld, leftModelOld);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
@@ -486,26 +472,24 @@ public class Main {
     }
     
     
-    private static void panLayoutFirstStep() {
-    	Main.setOperationStep(1);
-		Main.sendToAll("operationAndStep;pan;1");
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
-    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-		wrapperStream.addSink(new CheckEmptySink());
-		latestRow = null;
-		Main.sentToClientInSubStep = false;
-		try {
-			flinkCore.getFsEnv().execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutSecondStep();
-    }
+//    private static void panLayoutFirstStep() {
+//    	Main.setOperationStep(1);
+//    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(layoutedVertices, newVertices);
+//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
+//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
+//		wrapperStream.addSink(new CheckEmptySink());
+//		latestRow = null;
+//		Main.sentToClientInSubStep = false;
+//		try {
+//			flinkCore.getFsEnv().execute();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutSecondStep();
+//    }
     
     private static void panLayoutSecondStep() {
     	Main.setOperationStep(2);
-		Main.sendToAll("operationAndStep;pan;2");
     	DataStream<Row> wrapperStream = flinkCore.panLayoutSecondStep(layoutedVertices, newVertices);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
@@ -522,7 +506,6 @@ public class Main {
     
     private static void panLayoutThirdStep() {
     	Main.setOperationStep(3);
-		Main.sendToAll("operationAndStep;pan;3");
     	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(layoutedVertices);
 		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
@@ -539,7 +522,6 @@ public class Main {
     
     private static void panLayoutFourthStep() {
     	Main.setOperationStep(4);
-    	Main.sendToAll("operationAndStep;pan;4");
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFourthStep(layoutedVertices, newVertices, xModelDiff, yModelDiff);
     	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
 		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);

@@ -1,6 +1,7 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype; 
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -189,17 +190,19 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Row> zoomInLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutFirstStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, 
+		return ((CSVGraphUtilJoin) this.graphUtil).panZoomInLayoutFirstStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, 
 				bottomModelPos, leftModelPos);
 	}
 	
 	public DataStream<Row> zoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices,
 			Map<String, VertexCustom> newVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutSecondStep(layoutedVertices, innerVertices, newVertices);
+		Map<String,VertexCustom> unionMap = new HashMap<String,VertexCustom>(innerVertices);
+		unionMap.putAll(newVertices);
+		return ((CSVGraphUtilJoin) this.graphUtil).panZoomInLayoutSecondStep(layoutedVertices, unionMap);
 	}
 	
 	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).zoomInLayoutThirdStep(layoutedVertices);
+		return ((CSVGraphUtilJoin) this.graphUtil).panZoomInLayoutThirdStep(layoutedVertices);
 	}
 	
 	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices,
@@ -220,23 +223,17 @@ public class FlinkCore {
 				rightModelPos, bottomModelPos, leftModelPos, topModelPosOld, rightModelPosOld, bottomModelPosOld, leftModelPosOld);
 	}
 	
-//	public DataStream<Row> zoomOutLayoutThirdStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices,
-//			Float topModelPosOld, Float rightModelPosOld, Float bottomModelPosOld, Float leftModelPosOld){
-//		return ((CSVGraphUtilJoin) this.graphUtil).zoomOutLayoutSecondStep(layoutedVertices, newVertices, topModelPos, rightModelPos, 
-//				bottomModelPos, leftModelPos, topModelPosOld, rightModelPosOld, bottomModelPosOld, leftModelPosOld);
-//	}
-	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutFirstStep(layoutedVertices, newVertices, topModelPos, rightModelPos, bottomModelPos, 
+		return ((CSVGraphUtilJoin) this.graphUtil).panZoomInLayoutFirstStep(layoutedVertices, newVertices, topModelPos, rightModelPos, bottomModelPos, 
 				leftModelPos);
 	}
 	
 	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutSecondStep(layoutedVertices, newVertices);
+		return ((CSVGraphUtilJoin) this.graphUtil).panZoomInLayoutSecondStep(layoutedVertices, newVertices);
 	}
 	
 	public DataStream<Row> panLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){
-		return ((CSVGraphUtilJoin) this.graphUtil).panLayoutThirdStep(layoutedVertices);
+		return ((CSVGraphUtilJoin) this.graphUtil).panZoomInLayoutThirdStep(layoutedVertices);
 	}
 	
 	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
@@ -246,12 +243,7 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Row> pan(Float xModelDiff, Float yModelDiff){
-		DataStream<Row> stream = null;
-		try {
-			stream =  this.graphUtil.pan(topModelPos, rightModelPos, bottomModelPos, leftModelPos, xModelDiff, yModelDiff);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		DataStream<Row> stream = this.graphUtil.pan(topModelPos, rightModelPos, bottomModelPos, leftModelPos, xModelDiff, yModelDiff);
 		return stream;
 	}
 		

@@ -32,26 +32,7 @@ async function processMessage(){
 	if (messageQueue.length > 0){
 		let dataArray = messageQueue.shift();
 		let promise = new Promise((resolve, reject) => {
-			let debugMessage = false;
 			switch (dataArray[0]){
-				// case 'clearGraph':
-					// console.log('clearing graph');
-					// cy.elements().remove();
-					// break;
-				// case 'layout':
-					// var layout = cy.layout({name: 'fcose', ready: () => {console.log("Layout ready")}, stop: () => {console.log("Layout stopped")}});
-					// layout.run();
-					// break;
-				// case 'fitGraph':
-					// // cy.fit();
-					// cy.zoom(0.25);
-					// cy.pan({x:0, y:0});
-					// break;
-				// case 'positioning':
-					// console.log('position viewport!');
-					// cy.zoom(parseFloat(dataArray[1]));
-					// cy.pan({x:parseInt(dataArray[2]), y:parseInt(dataArray[3])});
-					// break;
 				case 'addWrapper':
 					handler.addWrapper(dataArray);
 					break;
@@ -60,28 +41,20 @@ async function processMessage(){
 					break;
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
-					if (!layout 
-					// && ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5))
-					){
+					if (!layout){
 						clearTimeout(this.timeOut);
 						this.timeOut = setTimeout(finalOperations, 1000);
 					}
 					break;
 				case 'addVertexServerToBeLayouted':
 					addVertexToLayoutBase(dataArray);
-					// if ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5)){
 						clearTimeout(this.timeOut);
 						this.timeOut = setTimeout(finalOperations, 1000);
-					// }
 					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
-					
 					console.log(cy.$id(dataArray[1]).style());
-					
-					if (!layout 
-					// && ((operation == "topView") || (operation == "zoomIn" && operationStep == 4) || (operation == "pan" && operationStep == 5))
-					){
+					if (!layout){
 						clearTimeout(this.timeOut);
 						this.timeOut = setTimeout(finalOperations, 1000);
 					}
@@ -101,13 +74,7 @@ async function processMessage(){
 					operation = dataArray[1];
 					operationStep = dataArray[2];
 					break;
-				default:
-					debugMessage = true;
 			}
-			// if (!layout && !debugMessage){
-				// clearTimeout(this.timeOut);
-				// this.timeOut = setTimeout(finalOperations, 1000);
-			// }
 			resolve(true);
 		});
 		await promise;

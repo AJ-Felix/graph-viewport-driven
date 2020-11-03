@@ -110,7 +110,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 	}
 	
 	@Override
-	public DataStream<Row> pan(Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff) throws IOException{
+	public DataStream<Row> pan(Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff) {
 		Float topOld = top - yModelDiff;
 		Float rightOld = right - xModelDiff;
 		Float bottomOld = bottom - yModelDiff;

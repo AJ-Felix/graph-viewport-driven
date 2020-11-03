@@ -15,7 +15,7 @@ public interface GraphUtil {
 	DataStream<Row> getVertexStream();
 	DataStream<Row> zoom(Float topModel, Float rightModel, Float bottomModel, Float leftModel) throws IOException;
 	DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff,
-			Float yModelDiff) throws IOException;
+			Float yModelDiff);
 	void setVisualizedVertices(Set<String> visualizedVertices);
 	void setVisualizedWrappers(Set<String> visualizedWrappers);
 	Map<String,Map<String,String>> buildAdjacencyMatrix() throws Exception;
