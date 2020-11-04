@@ -54,6 +54,7 @@ import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
 
 import Temporary.GraFlink_Graph_Loader;
 
+@SuppressWarnings("unused")
 public class Execution_Prototype {
 	
 	public static void main(String[] args) {

@@ -136,70 +136,40 @@ Aus irgendeinem Grund muss man Flink für buildTopView-Operationen zwingend neu 
 
 FLINK: Der Thread in dem Flink ausgeführt wird, stoppt bei .execute() solange bis alle Jobs terminiert sind. Um einen Job vorzeitig zu terminieren, muss daher eine Anfrage über einen anderen Thread entgegengenommen werden.
 
-Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welche in der vorherigen Ansicht schon vorhanden waren, können im BackEnd nicht herausgefiltert werden:
-	Entweder alle Kanten vorher löschen (sieht aber scheiße aus) oder die Duplikate im FrontEnd händeln.
+Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welche in der vorherigen Ansicht schon vorhanden waren, können im BackEnd nicht herausgefiltert werden. Lösung: visualizedWrappers
 
+ACHTUNG: Möglicherweise ist für eine verteilte Ausführung über Flink Cluster ein rückschreiben der Koordinaten im Prelayout Modus in entsprechende CSV-Dateien notwendig, checken!
 
-TODO: PreLayout-WrappersCSV: WrapperCSV in kleinere Stücke geordnet nach Koordinaten aufteilen, um eine Vorfilterung für Zoom- und Pan-Operationen zu realisieren
-	- aber ebenfalls die ungestückelte Variante implementiert lassen für den Vergleich
-TODO: Angeblich kann man mit eles.layout() in cytoscape ein layout von einem subset an Knoten durchführen, möglicherweise ist das hilfreich
-TODO: Die Inzidenz wird bei Zoom-Out nicht verringert!!! Inwiefern könnte das problematisch werden. Inwiefern ist das Inzidenzkonzept überhaupt notwendig? --> Das Inzidenzkonzept ist nur für buildTopViewRetract notwendig...
-TODO: Überlegung, ob eine Adjazenzmatrix nicht in jeder Art und Weise der BackEnd-Speicherung sinnvoll ist, weil Nachbarschaftsbeziehungen immer abgefragt werden müssen. Momentan wird dies über einen Vergleich mit bereits
-	visualisierten Kanten getan, diese Kantenmenge kann jedoch sehr groß werden.
-TODO: Die Adjazenzmatrix ist höchstens bei Nachbarschaftsabfragen sinnvoll, das heißt wenn z.B. ein Layout ad-hoc erstellt werden soll oder wenn geprüft werden soll, ob Nachbarknoten außerhalb des Zielbereichs dargestellt
-	werden sollten.
-TODO: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
+Die Inzidenz wird bei Zoom-Out nicht verringert. Ist aber unproblematisch, weil die Inzidenz nur für buildTopViewRetract notwendig ist
+
+Die Adjazenzmatrix wird von jeder GraphUtil in der Graph-Visualisierung verwendet
+	
+Idee: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
 	gesendet wurden.
 
-TODO: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd
-
-
-TODO: Layouting implementieren
-	- Möglicherweise ist eine Flag notwendig, um gelayoutete Knoten zu markieren ODER die Koordinaten dürfen gar nicht erst eingelesen werden
-	- Wenn neue Wrapper geSinkt werden, dann trage diese bei "preLayout" noch keine Koordinaten, diese müssen also auf andere Weise geholt werden für die Operationen, die auf den Koordinaten basieren
-	- Der Umgang mit der Kapazitätsgrenze muss geklärt werden
-	- Bereits gelayoutete Knoten sollten als Tiebreaker bei Gleichstand im Knotengrad vorgezogen werden.
-	- Es muss eine Datenstruktur geben, die die Koordinaten von bereits gelayouteten Knoten speichert. Vermutlich ist es nicht möglich die Koordinaten zu materialisieren und sie wieder als Input-Datei für die nächste Operation einzulesen, dies gilt es noch zu klären. Vorerst wird die Datenstruktur im Speicher gehalten.
+Idee: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd. Da dies aber einer Operation der Graph-Visualisierung ist, ist eine Optimierung nicht notwendig für den Vergleich
 	
 
-TODO: ignore pan;0;. this is causing errors in next operation
-
-
-TODO: adjust other graphUtils
-
-TODO: Probably kick VertexFilterNotLayoutedOutside and all vertexIdFilters
-
-TODO: Check whether identity streams in zoom in and pan in adjgraphUtil are necessary
-
-TODO: Check in all ZoomInLayoutFourthStep functions in map union is necessary, newVertices should be enough
-
-TODO: Check for adjaGraphUtil in Layout mode is working
+union map is necessary in ZoomInLayoutFourthStep functions because vertices in innerVertices now have have relevant low-degree neighbours outside
 
 Die Adjazenzmatrix kann bei allen GraphUtil-Anwendungen für die Operationen in der Visualisierung verwendet werden, weil das keine GraphUtil-spezifischen Operationen mehr sind (im Prinzip alles nach Flink-Sink)
 
 Incidence might not work correct after buildTopView but is also only important for buildTopView, so nevermind...
 
+
+Annotate all functions and classes properly (late TODO)
 Initial coordinates of to be layouted vertices are in viewport model position but not in necessarily in new model area (late TODO)
+ignore pan;0;. this is causing errors in next operation (late TODO)
 
-(1) wrapperStream is empty > nächster Schritt wird eingeleitet
-(2) wrapperStream is not empty and calls to client are made > client answers in final operation > nächster Schritt wird eingeleitet (depending on capacity)
-(3) wrapperStream is not empty but no calls to client are made > nothin happens.... but should like (1)
+Identity wrapper stream is necessary since some vertices are layouted in the respective area but none of their neighbours (adjaGrpahUtil)
 
-Solutions:
-	- add a dummy stream element and send it to the client always:
-		if the stream element is the only one arriving at the client -> cases (1) and (3)	
-		if the stream element is not the only one arriving at the client -> case (2)
-	- add a state variable for "having send anything to client" and if this is false proceed like (1). Then CheckEmptySink could be neglected but is faster in cases where the stream is empty.
-
-
-
-
+Main.sentToClientInSubStep ist eine Kontrollvariable für den Fall, dass der wrapperStream im SubStep nicht leer ist, aber auch keine Anweisungen an den Client geschickt werden.
 
 Layout: Layout does have to be performed after every suboperation step, because some following suboperation steps might access the layoutedVertices. But 
 	
 Serverseitige Graph-Semantik:
-	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).
-	ISSUE: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem
+TODO:Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).
+late TODO: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem --> Nochmal checken ob man das nicht ändern kann, dass alles in der Main liegt.
 	
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.

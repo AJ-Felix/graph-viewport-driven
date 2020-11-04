@@ -6,7 +6,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 
-public class VertexFlatMapIsLayoutedOutside implements FlatMapFunction<Row,String>{
+public class VertexFlatMapIsLayoutedOutsideBi implements FlatMapFunction<Row,String>{
 	private Map<String,VertexCustom> layoutedVertices;
 	private Map<String,Map<String,String>> adjMatrix;
 	private Float topModel;
@@ -14,7 +14,7 @@ public class VertexFlatMapIsLayoutedOutside implements FlatMapFunction<Row,Strin
 	private Float bottomModel;
 	private Float leftModel;
 	
-	public VertexFlatMapIsLayoutedOutside (Map<String,VertexCustom> layoutedVertices, Map<String,Map<String,String>> adjMatrix,
+	public VertexFlatMapIsLayoutedOutsideBi (Map<String,VertexCustom> layoutedVertices, Map<String,Map<String,String>> adjMatrix,
 			Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
 		this.layoutedVertices = layoutedVertices;
 		this.adjMatrix = adjMatrix;

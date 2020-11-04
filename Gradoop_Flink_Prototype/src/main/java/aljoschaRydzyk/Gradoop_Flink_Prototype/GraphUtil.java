@@ -20,4 +20,22 @@ public interface GraphUtil {
 	void setVisualizedWrappers(Set<String> visualizedWrappers);
 	Map<String,Map<String,String>> buildAdjacencyMatrix() throws Exception;
 	Map<String, Map<String, String>> getAdjMatrix();
+	DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices,
+			Map<String, VertexCustom> newVertices, Float topModelPos, Float rightModelPos, Float bottomModelPos,
+			Float leftModelPos);
+	DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Float topModelPos,
+			Float rightModelPos, Float bottomModelPos, Float leftModelPos, Float topModelPosOld, Float rightModelPosOld,
+			Float bottomModelPosOld, Float leftModelPosOld);
+	DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices,
+			Map<String, VertexCustom> innerVertices, Map<String, VertexCustom> newVertices, Float topModelPos,
+			Float rightModelPos, Float bottomModelPos, Float leftModelPos);
+	DataStream<Row> panZoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices);
+	DataStream<Row> panZoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices,
+			Map<String, VertexCustom> unionMap);
+	DataStream<Row> panZoomInLayoutFirstStep(Map<String, VertexCustom> layoutedVertices,
+			Map<String, VertexCustom> innerVertices, Float topModelPos, Float rightModelPos, Float bottomModelPos,
+			Float leftModelPos);
+	DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices,
+			Map<String, VertexCustom> newVertices, Float topModelPos, Float rightModelPos, Float bottomModelPos,
+			Float leftModelPos, Float xModelDiff, Float yModelDiff);
 }

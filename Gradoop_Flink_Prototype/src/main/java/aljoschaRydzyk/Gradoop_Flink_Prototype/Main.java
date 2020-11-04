@@ -696,6 +696,7 @@ public class Main {
 		} else {
 			globalVertices.get(sourceId).put("incidence", sourceIncidence - 1);
 		}
+		edges.remove(wrapper.getEdgeIdGradoop());
 	}
 	
 	private static void registerInside(VertexCustom vertex) {
@@ -1014,10 +1015,11 @@ public class Main {
 	}
 	
 	private static void updateMinDegreeVertex(VertexCustom vertex) {
-		if (vertex.getDegree() < minDegreeVertex.getDegree()) {
+		//CHANGE: < to <=
+		if (vertex.getDegree() <= minDegreeVertex.getDegree()) {
 			secondMinDegreeVertex = minDegreeVertex;
 			minDegreeVertex = vertex;
-		} else if (vertex.getDegree() < secondMinDegreeVertex.getDegree()) {
+		} else if (vertex.getDegree() <= secondMinDegreeVertex.getDegree()) {
 			secondMinDegreeVertex = vertex;
 		}		
 	}

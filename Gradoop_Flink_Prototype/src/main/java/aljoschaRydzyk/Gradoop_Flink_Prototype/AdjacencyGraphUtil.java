@@ -99,7 +99,6 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//produce Identity Wrapper Stream
-				//IS THIS NECESSARY??? ACTUALLY THE NONIDENTITY STREAM SHOULD BE ENOUGH
 		DataStream<Row> identityWrapper = vertexStreamInner.map(new VertexMapIdentityWrapper());
 		Set<String> visualizedVertices = this.visualizedVertices;
 		identityWrapper = identityWrapper.filter(new FilterFunction<Row>() {
@@ -169,7 +168,6 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		wrapperMaybeVis = wrapperMaybeVis.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//produce Identity Wrapper Stream
-				//IS THIS NECESSARY??? ACTUALLY THE NONIDENTITY STREAM SHOULD BE ENOUGH
 		DataStream<Row> identityWrapper = vertexStreamInnerNewNotOld.map(new VertexMapIdentityWrapper());
 		return wrapperMaybeVis.union(wrapperDefNotVis).union(identityWrapper);
 	}
@@ -254,11 +252,11 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		return this.vertexMap;
 	}
 	
-	public boolean vertexIsInside(VertexCustom vertex, Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
-		Integer x = vertex.getX();
-		Integer y = vertex.getY();
-		return (x >= leftModel && x <= rightModel && y >= topModel && y <= bottomModel);
-	}
+//	public boolean vertexIsInside(VertexCustom vertex, Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+//		Integer x = vertex.getX();
+//		Integer y = vertex.getY();
+//		return (x >= leftModel && x <= rightModel && y >= topModel && y <= bottomModel);
+//	}
 	
 	/*
 	 * General workflow for this GraphUtil:
@@ -268,32 +266,23 @@ public class AdjacencyGraphUtil implements GraphUtil{
 	 */
 	
 	public DataStream<Row> panZoomInLayoutFirstStep(Map<String,VertexCustom> layoutedVertices, Map<String,VertexCustom> innerVertices,
-			Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+			Float top, Float right, Float bottom, Float left) {
+		System.out.println("in panZoomInLayoutFirstStep");
 		/*
 		 * First substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that were
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
-		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topModel, rightModel, bottomModel, leftModel))
+		DataStream<Row> vertices = this.vertexStream
+				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
 				.filter(new VertexFilterNotVisualized(innerVertices));
-		DataStream<String> wrapperIds = vertices.flatMap(new FlatMapFunction<Row,String>(){
-			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {
-				String sourceId = value.getField(1).toString();
-				for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
-					String targetId = entry.getKey();
-					if (!innerVertices.containsKey(targetId) && layoutedVertices.containsKey(targetId)) {
-						VertexCustom layoutedVertex = layoutedVertices.get(targetId);
-						Integer x = layoutedVertex.getX();
-						Integer y = layoutedVertex.getY();
-						if (x >= leftModel && x <= rightModel && y >= topModel && y <= bottomModel) {
-							out.collect(entry.getValue());
-						}
-					}
-				}
-			}		
-		});
+		DataStream<String> wrapperIds = vertices
+				.flatMap(new VertexFlatMapNotVisualizedButLayoutedInsideUni(adjMatrix, layoutedVertices, innerVertices, top, right, 
+						bottom, left));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		return nonIdentityWrapper;
+		
+		//produce Identity Wrapper Stream
+		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapper());
+		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
 	public DataStream<Row> panZoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> unionMap){
@@ -302,18 +291,10 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
 		 * other hand.
 		 */
-		
+		System.out.println("in panZoomInLayoutSecondStep");
+
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
-		DataStream<String> wrapperIds = visualizedVertices.flatMap(new FlatMapFunction<Row,String>(){
-			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {
-				String sourceId = value.getField(1).toString();
-				for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
-					String targetId = entry.getKey();
-					if (!layoutedVertices.containsKey(targetId)) out.collect(entry.getValue());
-				}
-			}
-		});
+		DataStream<String> wrapperIds = visualizedVertices.flatMap(new VertexFlatMapNotLayoutedBi(adjMatrix, layoutedVertices));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		return nonIdentityWrapper;
 	}
@@ -323,19 +304,15 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * not yet layouted starting with highest degree.
 		 */
+		System.out.println("in panZoomInLayoutThirdStep");
+
 		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new VertexFilterNotLayouted(layoutedVertices));
-		DataStream<String> wrapperIds = notLayoutedVertices.flatMap(new FlatMapFunction<Row,String>(){
-			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {
-				String sourceId = value.getField(1).toString();
-				for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
-					String targetId = entry.getKey();
-					if (!layoutedVertices.containsKey(targetId)) out.collect(entry.getValue());
-				}
-			}	
-		});
+		DataStream<String> wrapperIds = notLayoutedVertices.flatMap(new VertexFlatMapNotLayoutedUni(adjMatrix, layoutedVertices));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		return nonIdentityWrapper;
+		
+		//produce Identity Wrapper Stream
+		DataStream<Row> identityWrapper = notLayoutedVertices.map(new VertexMapIdentityWrapper());
+		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
 	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
@@ -345,13 +322,14 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
 		 * outside the current model window on the other hand.
 		 */
-		
+		System.out.println("in ZoomInLayoutFourthStep");
+
 		//unite maps of already visualized vertices before this zoom-in operation and vertices added in this zoom-in operation
 		Map<String,VertexCustom> unionMap = new HashMap<String,VertexCustom>(innerVertices);
 		unionMap.putAll(newVertices);
 		
 		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
-		DataStream<String> wrapperIds = visualizedVerticesStream.flatMap(new VertexFlatMapIsLayoutedOutside(layoutedVertices,
+		DataStream<String> wrapperIds = visualizedVerticesStream.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
 				adjMatrix, topModel, rightModel, bottomModel, leftModel));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 
@@ -367,7 +345,8 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		 * newly visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
 		 * outside the current model window on the other hand.
 		 */
-		
+		System.out.println("in panLayoutFourthStep");
+
 		//calculate previous model coordinate borders
 		Float topOld = top - yModelDiff;
 		Float rightOld = right - xModelDiff;
@@ -376,7 +355,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		
 		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices))
 				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
-		DataStream<String> wrapperIds = newlyAddedInsideVertices.flatMap(new VertexFlatMapIsLayoutedOutside(layoutedVertices,
+		DataStream<String> wrapperIds = newlyAddedInsideVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
 				adjMatrix, top, right, bottom, left));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
@@ -390,29 +369,19 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		 * First substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * layouted inside the model space which was added by operation.
 		 */
+		System.out.println("in zoomOutLayoutFirstStep");
+		
+		//IDENTITY WRAPPER NEEDED
 		
 		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftNew, rightNew, topNew, 
 				bottomNew, leftOld, rightOld, topOld, bottomOld);
 		DataStream<Row> vertices = this.vertexStream.filter(zoomOutVertexFilter);
-		DataStream<String> wrapperIds = vertices.flatMap(new FlatMapFunction<Row,String>(){
-			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {
-				String sourceId = value.getField(1).toString();
-				for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
-					String targetId = entry.getKey();
-					if (layoutedVertices.containsKey(targetId)) {
-						Integer x = layoutedVertices.get(targetId).getX();
-						Integer y = layoutedVertices.get(targetId).getY();
-						if ((leftNew <= x) &&  (x <= rightNew) && (topNew <= y) && (y <= bottomNew)
-								&& ((leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld))) {
-							out.collect(entry.getValue());
-						}
-					}
-				}
-			}	
-		});
+		DataStream<String> wrapperIds = vertices.flatMap(new VertexFlatMapIsLayoutedInnerNewNotOldUni(adjMatrix, layoutedVertices, 
+				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		return nonIdentityWrapper;
+		//produce Identity Wrapper Stream
+		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapper());
+		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
 	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
@@ -422,11 +391,12 @@ public class AdjacencyGraphUtil implements GraphUtil{
 		 * visualized inside the model space which was added by operation on the one hand, neighbour vertices that are layouted with 
 		 * coordinates outside the current model window on the other hand.
 		 */
-		
+		System.out.println("in zoomOutLayoutSecondStep");
+
 		DataStream<Row> newlyVisualizedVertices = this.vertexStream
 				.filter(new VertexFilterIsVisualized(newVertices))
 				.filter(zoomOutVertexFilter);
-		DataStream<String> wrapperIds = newlyVisualizedVertices.flatMap(new VertexFlatMapIsLayoutedOutside(layoutedVertices,
+		DataStream<String> wrapperIds = newlyVisualizedVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
 				adjMatrix, topNew, rightNew, bottomNew, leftNew));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		return nonIdentityWrapper;
