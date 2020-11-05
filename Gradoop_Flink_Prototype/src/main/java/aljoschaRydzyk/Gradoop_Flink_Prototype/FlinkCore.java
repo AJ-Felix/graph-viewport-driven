@@ -48,10 +48,17 @@ public class FlinkCore {
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
-		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
-		this.fsEnv.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
+//		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+//		this.fsEnv.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
 		org.apache.flink.configuration.Configuration conf = new Configuration();
-		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+		
+		//operate locally
+//		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+		
+		//operate on cluster
+		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment("localhost", 8081, "/home/aljoscha/eclipse/java-2020-03/eclipse/Test.jar");
+		
+		
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		this.vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
 		this.wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "

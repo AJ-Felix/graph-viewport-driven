@@ -168,17 +168,32 @@ Main.sentToClientInSubStep ist eine Kontrollvariable für den Fall, dass der wra
 Layout: Layout does have to be performed after every suboperation step, because some following suboperation steps might access the layoutedVertices. But 
 	
 Serverseitige Graph-Semantik:
-TODO:Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben (nochmal checken!!!).
+	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
+
 late TODO: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem --> Nochmal checken ob man das nicht ändern kann, dass alles in der Main liegt.
 	
 
+TODO: Server über Flink Cluster starten --> debuggen
+
+TODO: Überlegung Client-seitige graph-semantik ganz zu löschen. Aber nur falls sich serverseitig nicht im Flink Cluster umsetzen lässt!!!
+
+TODO: Fehler im CLient bei AppendJoin und ZoomIn!!!
+
+TODO: Handler im singleton style aufbauen mit graph representations funtionalitäten
+
+TODO, Idee: mit getExecutionEnvironment als runnable Jar exportieren und mit java CLI ausführen und hoffen, dass automatisch die richige Environment angesprochen wird, wenn währenddessen ein Flink Cluster online ist
+(https://ci.apache.org/projects/flink/flink-docs-release-1.11/dev/datastream_api.html)
+
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
+Flink lokal: Yarn Session schmiert ab, sobald ein Job submitted wird oder das REST Interface im Browser aufgerufen wird --> standalone cluster funktioniert und kann mit ExecutionEnvironment.createRemoveEnvironment(...) auf
+Port 8081 angesprochen werden
 
 BuildTopViewAppend:
 	- Server sendet alle relevanten Wrapper genau einmal. Daher ist kaum Kontrollstruktur notwendig.
 
 Es muss gewährleistet sein, dass der Server keine Operation mehr auf den Knoten-Maps durchführt, wenn "layoutBaseString" ankommt!!!
+
 
 
 
