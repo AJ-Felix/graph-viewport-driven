@@ -4,6 +4,7 @@ import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.resource;
 import static io.undertow.Handlers.websocket;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,18 +14,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.common.serialization.TypeInformationSerializationSchema;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 
 import com.nextbreakpoint.flinkclient.api.FlinkApi;
 
 import io.undertow.Undertow;
+import io.undertow.Undertow.ListenerBuilder;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
+import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.core.AbstractReceiveListener;
+import io.undertow.websockets.core.BufferedBinaryMessage;
 import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
+import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 public class Server implements Serializable{
 public static FlinkCore flinkCore;
@@ -108,7 +118,18 @@ public static FlinkCore flinkCore;
     public void initializeServerFunctionality() {
     	Undertow server = Undertow.builder()
     			.addHttpListener(webSocketListenPort, webSocketHost)
-    			.addHttpListener(webSocketListenPort2, webSocketHost)
+//    			.addHttpListener(webSocketListenPort2, webSocketHost)
+//                .setHandler(websocket(new WebSocketConnectionCallback() {
+//
+//					@Override
+//					public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
+//						channels.add(channel);
+//						channel.getReceiveSetter().set(getListener2());
+//						channel.resumeReceives();
+//						System.out.println("connected to socket2!");
+//					}
+//                	
+//                }))
                 .setHandler(path()
                 	.addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
 	                    channels.add(channel);
@@ -126,6 +147,45 @@ public static FlinkCore flinkCore;
       //initialize graph representation
   		handler = WrapperHandler.getInstance();
   		handler.initializeGraphRepresentation();
+    }
+    
+    public void initializeServerFunctionality2() {
+    	Undertow server = Undertow.builder()
+    			.addHttpListener(webSocketListenPort2, webSocketHost)
+                .setHandler(
+                		path().addPrefixPath("/", websocket(new WebSocketConnectionCallback() {
+
+					@Override
+					public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
+						channels.add(channel);
+						channel.getReceiveSetter().set(getListener2());
+						channel.resumeReceives();
+						System.out.println("connected to socket2!");
+					}
+                	
+                }))
+                		)
+            	.build();
+    	server.start();
+    }
+    
+    private AbstractReceiveListener getListener2() {
+    	return new AbstractReceiveListener() {
+    		@Override
+    		protected void onFullTextMessage(final WebSocketChannel channel, BufferedTextMessage message) throws IOException {
+    			final String messageData = message.getData();
+                for (WebSocketChannel session : channel.getPeerConnections()) {
+                    System.out.println(messageData);
+                    WebSockets.sendText(messageData, session, null);
+                }
+    	    }
+    		
+    		@Override
+    		protected void onFullBinaryMessage(final WebSocketChannel channel, BufferedBinaryMessage message) throws IOException {
+    			System.out.println(message.equals("sdfsdf"));
+    			message.getData().free();
+    	    }
+    	};
     }
     
     private AbstractReceiveListener getListener() {
@@ -254,10 +314,28 @@ public static FlinkCore flinkCore;
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
         				if (graphOperationLogic.equals("serverSide")) {
         					DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-    	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendInitial()).setParallelism(1);
+//    	    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendInitial()).setParallelism(1);
     	    				wrapperStream.addSink(new FlinkRowStreamPrintSink());
+    	    				DataStream<String> wrapperStreamStrings = wrapperStream.map(new MapFunction<Row,String>(){
+
+								@Override
+								public String map(Row value) throws Exception {
+									String result = value.toString();
+									return result;
+								}
+    	    					
+    	    				});
     	    				wrapperStreamWrapper.print();
-    	    				wrapperStream.writeAsText("/home/aljoscha/flink_output.txt");
+    	    				wrapperStream.writeAsText("/home/aljoscha/flink_output.txt", WriteMode.OVERWRITE);
+//    	    				wrapperStream.addSink(new SecondServerSink());
+//    	    				wrapperStreamStrings.writeToSocket("localhost", 
+//    	    					    8898, new SimpleStringSchema()
+////    	    					    new TypeInformationSerializationSchema<>(
+////    	    					       wrapperStream.getType(), 
+////    	    					        flinkCore.getFsEnv().getConfig())
+//    	    					    );
+    	    				wrapperStreamStrings.addSink(new SocketClientSink<String>("localhost", 
+    	    					    8898, new SimpleStringSchema(), 3));
         				} else {
             				wrapperStream.addSink(new WrapperAppendSink());
         				}

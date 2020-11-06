@@ -91,6 +91,7 @@ public class Main {
 		//initialize Server
 		server = Server.getInstance();
 		server.initializeServerFunctionality();
+		server.initializeServerFunctionality2();
     	
 //        Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
 //                .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {

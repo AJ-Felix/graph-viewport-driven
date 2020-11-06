@@ -186,6 +186,8 @@ TODO, Idee: mit getExecutionEnvironment als runnable Jar exportieren und mit jav
 
 TODO, Idee: 2 ports
 
+TDOD: debug undertow port listening!!!
+
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
 Flink lokal: Yarn Session schmiert ab, sobald ein Job submitted wird oder das REST Interface im Browser aufgerufen wird --> standalone cluster funktioniert und kann mit ExecutionEnvironment.createRemoveEnvironment(...) auf

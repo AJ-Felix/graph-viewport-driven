@@ -6,6 +6,6 @@ import org.apache.flink.types.Row;
 public class CheckEmptySink implements SinkFunction<Row> {
 	@Override 
 	public void invoke(Row element, @SuppressWarnings("rawtypes") Context context) {
-		Main.latestRow(element);
+//		Main.latestRow(element);
 	}
 }
