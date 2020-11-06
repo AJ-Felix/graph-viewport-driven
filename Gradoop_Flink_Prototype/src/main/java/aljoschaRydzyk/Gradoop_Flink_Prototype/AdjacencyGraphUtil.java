@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -45,6 +47,14 @@ public class AdjacencyGraphUtil implements GraphUtil{
 				Types.INT, Types.INT, Types.LONG});
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
+		
+		//debugging cluster launch
+		Set<Row> collection = new HashSet<Row>();
+		collection.add(Row.of("some_id", "some_other_id", 1, "some_label", 2, 3, (long) 10));
+		DataStream<Row> debug = fsEnv.fromCollection(collection, new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
+				Types.INT, Types.STRING, 
+				Types.INT, Types.INT, Types.LONG}));
+		debug.print();
 	}
 	
 	@Override
