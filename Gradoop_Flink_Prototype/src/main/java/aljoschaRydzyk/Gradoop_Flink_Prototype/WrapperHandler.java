@@ -39,6 +39,7 @@ public class WrapperHandler implements Serializable {
     private Integer maxVertices = 100;
     private FlinkApi api = new FlinkApi();
     private int operationStep;
+    public boolean sentToClientInSubStep;
 
     private static final class InstanceHolder {
     	static final WrapperHandler INSTANCE = new WrapperHandler();
@@ -597,16 +598,16 @@ public class WrapperHandler implements Serializable {
 			if (layout) {
 				System.out.println("channel size of Server: " + Server.getInstance().channels.size());
 				Server.getInstance().sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
-				Server.getInstance().sentToClientInSubStep = true;
+				sentToClientInSubStep = true;
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
 					VertexCustom layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
 					Server.getInstance().sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
 							+ vertex.getIdNumeric());
-					Server.getInstance().sentToClientInSubStep = true;
+					sentToClientInSubStep = true;
 				} else {
 					Server.getInstance().sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
-					Server.getInstance().sentToClientInSubStep = true;
+					sentToClientInSubStep = true;
 				}
 			}
 			return true;
@@ -635,7 +636,7 @@ public class WrapperHandler implements Serializable {
 	private void addEdge(VVEdgeWrapper wrapper) {
 		edges.put(wrapper.getEdgeIdGradoop(), wrapper);
 		Server.getInstance().sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + wrapper.getTargetIdGradoop());
-		Server.getInstance().sentToClientInSubStep = true;
+		sentToClientInSubStep = true;
 	}
 	
 	private void updateMinDegreeVertex(VertexCustom vertex) {
@@ -791,6 +792,17 @@ public class WrapperHandler implements Serializable {
 //			System.out.println("vertex incidence: " + map.getValue().get("incidence"));
 //			System.out.println(vertex.getDegree() + 1 >= (Integer) map.getValue().get("incidence"));
 //		}
+	}
+
+	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+		this.topModel = topModel;
+		this.rightModel = rightModel;
+		this.bottomModel = bottomModel;
+		this.leftModel = leftModel;
+	}
+
+	public void setOperation(String operation) {
+		this.operation = operation;
 	}
 	
 }

@@ -172,6 +172,7 @@ Serverseitige Graph-Semantik:
 
 late TODO: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem --> Nochmal checken ob man das nicht ändern kann, dass alles in der Main liegt.
 	
+Java.net websocket funktioniert im prinzip, aber ist sehr low level und umständlich...
 
 TODO: Server über Flink Cluster starten --> debuggen
 
@@ -186,7 +187,7 @@ TODO, Idee: mit getExecutionEnvironment als runnable Jar exportieren und mit jav
 
 TODO, Idee: 2 ports
 
-TDOD: debug undertow port listening!!!
+TDOD: debug adja zoom In
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 

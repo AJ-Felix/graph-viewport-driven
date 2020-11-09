@@ -1,32 +1,20 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
-import io.undertow.Undertow;
-import io.undertow.server.handlers.resource.ClassPathResourceManager;
-import io.undertow.websockets.core.AbstractReceiveListener;
-import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.WebSocketChannel;
-import io.undertow.websockets.core.WebSockets;
-import static io.undertow.Handlers.*;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.types.Row;
-import com.nextbreakpoint.flinkclient.api.ApiException;
 import com.nextbreakpoint.flinkclient.api.FlinkApi;
-import com.nextbreakpoint.flinkclient.model.JobIdWithStatus;
-import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview;
 
 public class Main {
 	
@@ -73,6 +61,7 @@ public class Main {
     private static FlinkApi api = new FlinkApi();
     private static WrapperHandler handler;
     private static Server server;
+    public static FlinkResponseHandler flinkResponseHandler;
     
 //    private static JobID jobId;
 	
@@ -91,7 +80,12 @@ public class Main {
 		//initialize Server
 		server = Server.getInstance();
 		server.initializeServerFunctionality();
-		server.initializeServerFunctionality2();
+	
+		flinkResponseHandler = new FlinkResponseHandler();
+		flinkResponseHandler.listen();
+
+//		System.out.println(stringBuilder.toString());
+//		server.initializeServerFunctionality2();
     	
 //        Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, webSocketHost)
 //                .setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {

@@ -72,7 +72,7 @@ public class GraphVis implements Serializable{
 				Integer targetY = wrapper.getSourceY();
 				if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
 						((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
-					Main.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
+//					Main.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 				}
 			}
 			Iterator<Map.Entry<String,VertexCustom>> iter = innerVertices.entrySet().iterator();
@@ -240,7 +240,7 @@ public class GraphVis implements Serializable{
 		} else {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
-				Main.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
+//				Main.sendToAll("removeObjectServer;" + vertex.getIdNumeric());
 		}
 	}
 
@@ -302,7 +302,7 @@ public class GraphVis implements Serializable{
 			map.put("incidence", (int) 1);
 			map.put("vertex", vertex);
 			globalVertices.put(sourceId, map);
-				Main.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
+//				Main.sendToAll("addVertexServer;" + vertex.getIdNumeric() + ";" + vertex.getX() + ";" + vertex.getY());
 			return true;
 		} else {
 			Map<String,Object> map = globalVertices.get(sourceId);
@@ -313,7 +313,7 @@ public class GraphVis implements Serializable{
 	
 	public static void addEdge(VVEdgeWrapper wrapper) {
 		edges.add(wrapper);
-		Main.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdNumeric() + ";" + wrapper.getTargetIdNumeric());
+//		Main.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdNumeric() + ";" + wrapper.getTargetIdNumeric());
 	}
 	
 //	public void clearOperation(){

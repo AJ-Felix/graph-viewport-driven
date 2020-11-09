@@ -35,7 +35,7 @@ public class TestThread implements Runnable{
 		DataStream<String> datastream = flinkCore.getFsEnv().socketTextStream("localhost", 9999);
 		datastream.addSink(new SinkFunction<String>() {
 			public void invoke(String element, Context context) {
-				Main.sendToAll(element);
+//				Main.sendToAll(element);
 			}
 		});
 		flinkCore.initializeCSVGraphUtilJoin();
@@ -51,14 +51,14 @@ public class TestThread implements Runnable{
 				String targetIdNumeric = element.getField(8).toString();
 				String targetX = element.getField(10).toString();
 				String targetY = element.getField(11).toString();
-				Main.sendToAll("addVertex;" + sourceIdNumeric + 
-					";" + sourceX + ";" + sourceY);
-				if (!edgeIdGradoop.equals("identityEdge")) {
-				Main.sendToAll("addVertex;" + targetIdNumeric + 
-					";" + targetX + ";" + targetY);
-				Main.sendToAll("addEdge;" + edgeIdGradoop + 
-					";" + sourceIdNumeric + ";" + targetIdNumeric);
-				}
+//				Main.sendToAll("addVertex;" + sourceIdNumeric + 
+//					";" + sourceX + ";" + sourceY);
+//				if (!edgeIdGradoop.equals("identityEdge")) {
+//				Main.sendToAll("addVertex;" + targetIdNumeric + 
+//					";" + targetX + ";" + targetY);
+//				Main.sendToAll("addEdge;" + edgeIdGradoop + 
+//					";" + sourceIdNumeric + ";" + targetIdNumeric);
+//				}
 			}
 		});
 		try {
@@ -67,7 +67,7 @@ public class TestThread implements Runnable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		Main.sendToAll("fitGraph");
+//		Main.sendToAll("fitGraph");
 		System.out.println("Thread " + threadName + " exiting!");
 	} 
 	
