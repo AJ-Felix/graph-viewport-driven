@@ -44,6 +44,7 @@ public class EPGMtoDegMatrix {
 		//invoke Gradoop vertex degree operation
 		LogicalGraph result_graph = logical_graph.callForGraph(new DistinctVertexDegrees(propertyKeyDegree, propertyKeyInDegree, propertyKeyOutDegree, includeZeroDegreeVertices));
 		DataSet<EPGMVertex> ds_vertices = result_graph.getVertices();
+		
 
 		//sorting is disabled by default since HBase does not allow sorted entries
 		if (sorting) {
@@ -81,6 +82,16 @@ public class EPGMtoDegMatrix {
 		return table;	
 	}
 
+	public LogicalGraph getDegMatrixLogicalGraph() throws Exception{
+		String propertyKeyDegree = "degree";
+		String propertyKeyInDegree = "inDegree";
+		String propertyKeyOutDegree = "outDegree";
+		boolean includeZeroDegreeVertices = true;
+		
+		//invoke Gradoop vertex degree operation
+		LogicalGraph result_graph = logical_graph.callForGraph(new DistinctVertexDegrees(propertyKeyDegree, propertyKeyInDegree, propertyKeyOutDegree, includeZeroDegreeVertices));
+		return result_graph;
+	}
 		
 		
 }

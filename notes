@@ -9,7 +9,7 @@ Install curl
 (Install netty-socketIO and netty-socketIO-demo)
 
 Download Hadoop 2.7.7 and follow instructions on https://hadoop.apache.org/docs/r2.7.7/hadoop-project-dist/hadoop-common/SingleCluster.html 
-add hadoop.tmp.dir to core-site.xml!
+add hadoop.tmp.dir and mapreduce.output.fileoutputformat.outputdir to core-site.xml (Use any path which is permanent)!
 
 In .bashrc (for yarn session, but did not work):
 	export HADOOP_HOME=/home/aljoscha/hadoop-2.7.7

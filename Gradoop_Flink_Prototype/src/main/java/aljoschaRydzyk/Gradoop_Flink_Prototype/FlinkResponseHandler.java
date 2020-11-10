@@ -8,10 +8,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class FlinkResponseHandler {
-	private String wrapperHandling = "initial";
+	private String operation;
+	private boolean verticesHaveCoordinates;
 	private WrapperHandler handler;
 	private int port = 8898;
-//    private boolean stop = false;
     private ServerSocket serverSocket = null;
     public String line;
 //    private Socket echoSocket;
@@ -26,32 +26,61 @@ public class FlinkResponseHandler {
 	    try {
 	    	System.out.println("executing listen on flinkResponseHandler");
 	        serverSocket = new ServerSocket(port);
-//	        while (!stop) {
 	        Socket echoSocket = serverSocket.accept();
 	        PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
 	        BufferedReader in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-	            System.out.println("connected to socket!!!");
-	            line = "empty";
-	            if (wrapperHandling == "initial") {
-	            	while((line = in.readLine()) != null)  {
-		            	System.out.println(line);
-		            	handler.addWrapperInitial(parseWrapperString(line));
-		            }
-	            } else if (wrapperHandling == "layout") {
-	            	while((line = in.readLine()) != null)  {
-		            	System.out.println(line);
-		            	handler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
-		            }
-	            } else {
-	            	while((line = in.readLine()) != null)  {
-		            	System.out.println(line);
-		            	handler.addWrapper(parseWrapperString(line));
-		            }
-	            }
-	            in.close();
-	    	    out.close();
-	    	    echoSocket.close();   
-//	        }
+            System.out.println("connected to socket!!!");
+            line = "empty";
+            if (!(operation.startsWith("initial"))) {
+            	if (verticesHaveCoordinates) {
+            		while((line = in.readLine()) != null)  {
+    	            	System.out.println(line);
+    	            	handler.addWrapper(parseWrapperString(line));
+    	            }
+            	} else {
+            		while((line = in.readLine()) != null)  {
+    	            	System.out.println(line);
+    	            	handler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
+    	            }
+            	}	
+            } else {
+            	if (verticesHaveCoordinates) {
+	            	if (operation.contains("Append")) {
+	            		while((line = in.readLine()) != null)  {
+	    	            	System.out.println(line);
+	    	            	handler.addWrapperInitial(parseWrapperString(line));
+	    	            }
+	            	} else if (operation.contains("Retract")) {
+	            		while((line = in.readLine()) != null)  {
+	    	            	System.out.println(line);
+	    	            	if (line.endsWith("true")) {
+	    		            	handler.addWrapperInitial(parseWrapperString(line));
+	    	            	} else if (line.endsWith("false")) {
+	    	            		handler.removeWrapper(parseWrapperString(line));
+	    	            	}
+	    	            }
+	            	}
+            	} else  {
+            		if (operation.contains("Append")) {
+	            		while((line = in.readLine()) != null)  {
+	    	            	System.out.println(line);
+	    	            	handler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
+	    	            }
+	            	} else if (operation.contains("Retract")) {
+	            		while((line = in.readLine()) != null)  {
+	    	            	System.out.println(line);
+	    	            	if (line.endsWith("true")) {
+	    		            	handler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
+	    	            	} else if (line.endsWith("false")) {
+	    	            		handler.removeWrapper(parseWrapperStringNoCoordinates(line));
+	    	            	}
+	    	            }
+	            	}
+            	}
+            }
+            in.close();
+    	    out.close();
+    	    echoSocket.close();   
 	    }
 	    catch (IOException e) {
 	        e.printStackTrace();
@@ -87,8 +116,12 @@ public class FlinkResponseHandler {
 		return new VVEdgeWrapper(sourceVertex, targetVertex, edge);
 	}
 
-	public void setWrapperHandling(String wrapperHandling) {
-		this.wrapperHandling = wrapperHandling;
+	public void setOperation(String wrapperHandling) {
+		this.operation = wrapperHandling;
+	}
+	
+	public void setVerticesHaveCoordinates(Boolean have) {
+		this.verticesHaveCoordinates = have;
 	}
 	
 	private VVEdgeWrapper parseWrapperString(String line) {
@@ -101,8 +134,9 @@ public class FlinkResponseHandler {
 		return new VVEdgeWrapper(sourceVertex, targetVertex, edge);
 	}
 	
-	public void forwardToWrapperHandler(VVEdgeWrapper wrapper) {
-		if (wrapperHandling == "initial") handler.addWrapperInitial(wrapper);
-		if (wrapperHandling == "layout") handler.addWrapperLayout(wrapper);
-	}
+//	public void forwardToWrapperHandler(VVEdgeWrapper wrapper) {
+//		if (wrapperHandling == "standard") handler.addWrapperInitial(wrapper);
+//		else if (wrapperHandling == "layout") handler.addWrapperLayout(wrapper);
+//		else if (wrapperHandling == "initial") handler.addWrapper(wrapper);
+//	}
 }

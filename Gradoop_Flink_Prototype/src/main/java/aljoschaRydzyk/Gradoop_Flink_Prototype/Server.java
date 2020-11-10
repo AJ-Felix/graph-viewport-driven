@@ -215,10 +215,11 @@ public static FlinkCore flinkCore;
                 } else if (messageData.equals("clientSideLogic")) {
                 	graphOperationLogic = "clientSide";
                 } else if (messageData.equals("preLayout")) {
-                	layoutedVertices = new HashMap<String,VertexCustom>();
-                	layout = false;
+//                	layoutedVertices = new HashMap<String,VertexCustom>();
+                	handler.resetLayoutedVertices();
+                	setLayoutMode(false);
                 } else if (messageData.equals("postLayout")) {
-                	layout = true;
+                	setLayoutMode(true);
                 } else if (messageData.startsWith("layoutBaseString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
@@ -276,6 +277,7 @@ public static FlinkCore flinkCore;
                 } else if (messageData.startsWith("maxVertices")) {
                 	String[] arrMessageData = messageData.split(";");
                 	maxVertices = Integer.parseInt(arrMessageData[1]);
+                	handler.setMaxVertices(maxVertices);
                 } else if (messageData.startsWith("edgeIdString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
@@ -290,36 +292,59 @@ public static FlinkCore flinkCore;
                 	flinkCore.getGraphUtil().setVisualizedVertices(visualizedVertices);
                 } else if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore(graphOperationLogic);
-                	flinkCore.setTopModelPos((float) 0);
-                	flinkCore.setLeftModelPos((float) 0);
-                	flinkCore.setRightModelPos((float) 4000);
-                	flinkCore.setBottomModelPos((float) 4000);
+                	topModel = (float) 0;
+                	rightModel = (float) 4000;
+                	bottomModel = (float) 4000;
+                	leftModel = (float) 0;
+                	setModelPositions(topModel, rightModel, bottomModel, leftModel);
+//                	flinkCore.setTopModelPos(topModel);
+//                	flinkCore.setLeftModelPos(leftModel);
+//                	flinkCore.setRightModelPos(rightModel);
+//                	flinkCore.setBottomModelPos(bottomModel);
+//                	handler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
+                	setOperation("initial");
                 	String[] arrMessageData = messageData.split(";");
                 	if (arrMessageData[1].equals("retract")) {
 	        			flinkCore.initializeGradoopGraphUtil();
         				DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract(maxVertices);
-	        			if (graphOperationLogic.equals("serverSide")) {
+//	        			if (graphOperationLogic.equals("serverSide")) {
 		    				initializeGraphRepresentation();
+		    				Main.flinkResponseHandler.setOperation("initialRetract");
+		    				DataStream<String> wrapperLine;
+        					if (layout) {
+        						Main.flinkResponseHandler.setVerticesHaveCoordinates(true);
+	    	    				wrapperLine = wrapperStream.map(new WrapperMapLineRetract());
+        					} else {
+        						Main.flinkResponseHandler.setVerticesHaveCoordinates(false);
+        						wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinatesRetract());
+        					}
+        					wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+//    	    				wrapperLine.addSink(new SocketClientSink<Tuple2<Boolean,String>>("localhost", 8898, 
+//    	    						new TypeInformationSerializationSchema<>(
+//    	    				        wrapperLine.getType(), 
+//    	    				        flinkCore.getFsEnv().getConfig()), 3));
 		    				
 		    				//local execution
 //	        				DataStream<Tuple2<Boolean,VVEdgeWrapper>> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperRetract()).setParallelism(1);
 //	        				wrapperStreamWrapper.addSink(new WrapperObjectSinkRetractInitial()).setParallelism(1);
-	        			} else {
-	        				wrapperStream.addSink(new WrapperRetractSink());
-	        			}
+//	        			} else {
+//	        				wrapperStream.addSink(new WrapperRetractSink());
+//	        			}
                 	} else if (arrMessageData[1].equals("appendJoin")) {
         				flinkCore.initializeCSVGraphUtilJoin();
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
-        				if (graphOperationLogic.equals("serverSide")) {
+//        				if (graphOperationLogic.equals("serverSide")) {
         					initializeGraphRepresentation();
-        					
+		    				Main.flinkResponseHandler.setOperation("initialAppend");
         					DataStream<String> wrapperLine;
         					if (layout) {
+        						Main.flinkResponseHandler.setVerticesHaveCoordinates(true);
 	    	    				wrapperLine = wrapperStream.map(new WrapperMapLine());
         					} else {
+        						Main.flinkResponseHandler.setVerticesHaveCoordinates(false);
         						wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
         					}
-    	    				wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema(), 3));
+    	    				wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
         					
         					//local execution
 //        					DataStream<VVEdgeWrapper> wrapperStreamWrapper;
@@ -330,19 +355,22 @@ public static FlinkCore flinkCore;
 //        					}
 //		    				wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendInitial()).setParallelism(1);
     	    				
-        				} else {
-            				wrapperStream.addSink(new WrapperAppendSink());
-        				}
+//        				} else {
+//            				wrapperStream.addSink(new WrapperAppendSink());
+//        				}
         			} else if (arrMessageData[1].contentEquals("adjacency")) {
         				flinkCore.initializeAdjacencyGraphUtil();
     					initializeGraphRepresentation();
+	    				Main.flinkResponseHandler.setOperation("initialAppend");
         				DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
-        				if (graphOperationLogic.equals("serverSide")) {
-        					
+//        				if (graphOperationLogic.equals("serverSide")) {
+//        					
         					DataStream<String> wrapperLine;
         					if (layout) {
+        						Main.flinkResponseHandler.setVerticesHaveCoordinates(true);
 	    	    				wrapperLine = wrapperStream.map(new WrapperMapLine());
         					} else {
+        						Main.flinkResponseHandler.setVerticesHaveCoordinates(false);
         						wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
         					}
     	    				wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
@@ -351,9 +379,9 @@ public static FlinkCore flinkCore;
 //        					DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
 //        					wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendInitial());
         					
-        				} else {
-            				wrapperStream.addSink(new WrapperAppendSink());
-        				}
+//        				} else {
+//            				wrapperStream.addSink(new WrapperAppendSink());
+//        				}
         			}
                 	try {
         				flinkCore.getFsEnv().execute();
@@ -377,42 +405,41 @@ public static FlinkCore flinkCore;
         			leftModelOld = flinkCore.getLeftModelPos();
         			bottomModelOld = flinkCore.getBottomModelPos();
         			rightModelOld = flinkCore.getRightModelPos();
-					flinkCore.setTopModelPos(topModel);
-					flinkCore.setRightModelPos(rightModel);
-					flinkCore.setBottomModelPos(bottomModel);
-					flinkCore.setLeftModelPos(leftModel);
+        			setModelPositions(topModel, rightModel, bottomModel, leftModel);
+//					flinkCore.setTopModelPos(topModel);
+//					flinkCore.setRightModelPos(rightModel);
+//					flinkCore.setBottomModelPos(bottomModel);
+//					flinkCore.setLeftModelPos(leftModel);
 					System.out.println("Zoom ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
+					Main.flinkResponseHandler.setOperation("zoom");
 					if (!layout) {
+//						handler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
+						handler.prepareOperation();
+						Main.flinkResponseHandler.setVerticesHaveCoordinates(false);
 						if (messageData.startsWith("zoomIn")) {
 		    				setOperation("zoomIn");
-		    				handler.setOperation("zoomIn");
 							System.out.println("in zoom in layout function");
 							for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) {
 								System.out.println(entry.getValue().getIdGradoop() + " " + entry.getValue().getX() + " " + entry.getValue().getY());
 							}
-							handler.prepareOperation();
 							zoomInLayoutFirstStep();
 						} else {
 	        				setOperation("zoomOut");
-		    				handler.setOperation("zoomOut");
 							System.out.println("in zoom out layout function");
-							handler.prepareOperation();
 							zoomOutLayoutFirstStep(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
 	        			}
 					} else {
 	        			DataStream<Row> wrapperStream = flinkCore.zoom(topModel, rightModel, bottomModel, leftModel);
-	        			wrapperStream.print();
 //	                	if (graphOperationLogic.equals("clientSide")) {
 //	                		wrapperStream.addSink(new WrapperAppendSink());
 //	                	} else {
 		        			if (messageData.startsWith("zoomIn")) {
 			    				setOperation("zoomIn");
-			    				handler.setOperation("zoomIn");
 		        			} else {
 		        				setOperation("zoomOut");
-			    				handler.setOperation("zoomOut");
 		        			}
-		    				handler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
+    						Main.flinkResponseHandler.setVerticesHaveCoordinates(true);
+//		    				handler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
 		    				System.out.println("executing zoom on server class");
 		    				handler.prepareOperation();
 //		    				Main.flinkResponseHandler.listen();
@@ -446,19 +473,21 @@ public static FlinkCore flinkCore;
 					bottomModel = bottomModelOld + yModelDiff;
 					leftModel = leftModelOld + xModelDiff;
 					rightModel = rightModelOld + xModelDiff;
-					flinkCore.setTopModelPos(topModel);
-					flinkCore.setBottomModelPos(bottomModel);
-					flinkCore.setLeftModelPos(leftModel);
-					flinkCore.setRightModelPos(rightModel);
+					setModelPositions(topModel, rightModel, bottomModel, leftModel);
+//					flinkCore.setTopModelPos(topModel);
+//					flinkCore.setBottomModelPos(bottomModel);
+//					flinkCore.setLeftModelPos(leftModel);
+//					flinkCore.setRightModelPos(rightModel);
 					System.out.println("Pan ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					setOperation("pan");
-					handler.setOperation("pan");
-    				handler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
+//    				handler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
     				handler.prepareOperation();
+    				Main.flinkResponseHandler.setOperation("pan");
 					if (!layout) {
-	    				setOperationStep(1);
+	    				Main.flinkResponseHandler.setVerticesHaveCoordinates(false);
 	    				panLayoutFirstStep();
 					} else {
+						Main.flinkResponseHandler.setVerticesHaveCoordinates(true);
 						DataStream<Row> wrapperStream = flinkCore.pan(xModelDiff, yModelDiff);
 //	                	if (graphOperationLogic.equals("clientSide")) {
 //	                		wrapperStream.addSink(new WrapperAppendSink());
@@ -488,7 +517,9 @@ public static FlinkCore flinkCore;
         };
     }
     
-    private void zoomInLayoutFirstStep() {
+
+
+	private void zoomInLayoutFirstStep() {
     	setOperationStep(1);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(layoutedVertices, innerVertices);
     	
@@ -714,12 +745,24 @@ public static FlinkCore flinkCore;
 	}
 	
 	private void setOperation(String operation) {
+		handler.setOperation(operation);
 		this.operation = operation;
 	}
 	
 	private void setOperationStep(Integer step) {
+		handler.setOperationStep(operationStep);
 		operationStep = step;
 	}
+	
+    private void setLayoutMode(Boolean layoutMode) {
+		handler.setLayoutMode(layoutMode);	
+		layout = layoutMode;
+	}
+    
+    private void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+    	flinkCore.setModelPositions(topModel, rightModel, bottomModel, leftModel);
+    	handler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
+    }
 	
 	public void latestRow(Row element) {
 		latestRow = element;

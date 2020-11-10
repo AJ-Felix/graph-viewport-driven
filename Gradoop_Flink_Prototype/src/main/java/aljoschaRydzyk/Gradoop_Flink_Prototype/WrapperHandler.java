@@ -805,4 +805,19 @@ public class WrapperHandler implements Serializable {
 		this.operation = operation;
 	}
 	
+	public void setMaxVertices(Integer maxVertices) {
+		this.maxVertices = maxVertices;
+	}
+
+	public void setLayoutMode(boolean layoutMode) {
+		this.layout = layoutMode;
+	}
+
+	public void resetLayoutedVertices() {
+		this.layoutedVertices = new HashMap<String,VertexCustom>();
+	}
+	
+	public void setOperationStep(int operationStep) {
+		this.operationStep = operationStep;
+	}
 }

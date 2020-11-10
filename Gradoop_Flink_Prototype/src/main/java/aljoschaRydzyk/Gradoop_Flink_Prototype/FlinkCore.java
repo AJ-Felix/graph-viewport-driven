@@ -108,6 +108,13 @@ public class FlinkCore {
 		return this.fsEnv;
 	}
 	
+	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+		this.topModelPos = topModel;
+		this.rightModelPos = rightModel;
+		this.bottomModelPos = bottomModel;
+		this.leftModelPos = leftModel;
+	}
+	
 	public LogicalGraph getLogicalGraph(String gradoopGraphID) throws IOException {
 		DataSource hbaseDataSource = new HBaseDataSource(HBaseEPGMStoreFactory.createOrOpenEPGMStore(hbase_cfg, gra_hbase_cfg), graflink_cfg);
 		LogicalGraph graph = hbaseDataSource.getGraphCollection().getGraph(GradoopId.fromString(gradoopGraphID));
@@ -259,4 +266,6 @@ public class FlinkCore {
 		graphUtil.initializeStreams();
 		return graphUtil.getWrapperStream();
 	}
+
+
 }

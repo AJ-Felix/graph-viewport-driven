@@ -171,23 +171,15 @@ Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
 
 late TODO: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem --> Nochmal checken ob man das nicht ändern kann, dass alles in der Main liegt.
-	
-Java.net websocket funktioniert im prinzip, aber ist sehr low level und umständlich...
 
-TODO: Server über Flink Cluster starten --> debuggen
 
 TODO: Überlegung Client-seitige graph-semantik ganz zu löschen. Aber nur falls sich serverseitig nicht im Flink Cluster umsetzen lässt!!!
 
 TODO: Fehler im CLient bei AppendJoin und ZoomIn!!!
 
-TODO: Handler im singleton style aufbauen mit graph representations funtionalitäten
 
-TODO, Idee: mit getExecutionEnvironment als runnable Jar exportieren und mit java CLI ausführen und hoffen, dass automatisch die richige Environment angesprochen wird, wenn währenddessen ein Flink Cluster online ist
-(https://ci.apache.org/projects/flink/flink-docs-release-1.11/dev/datastream_api.html)
 
-TODO, Idee: 2 ports
-
-TDOD: debug adja zoom In
+TDOD: clean code and debug no-layout mode
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 

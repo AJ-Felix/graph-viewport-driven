@@ -78,7 +78,7 @@ public class Execution_Prototype {
 		StreamTableEnvironment fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		
 		//enable checkpointing (for StreamingFileSink)
-		fsEnv.enableCheckpointing(1000);
+//		fsEnv.enableCheckpointing(1000);
 		
 		//create Flink Table Batch Configuration
 //		BatchTableEnvironment fbTableEnv = BatchTableEnvironment.create(env);
@@ -100,11 +100,11 @@ public class Execution_Prototype {
 
 		//load graph from HBase, calculate vertex degree and sink to HBase
 //		GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
-//		GradoopId id = GradoopId.fromString("id_of_graph");
+//		GradoopId id = GradoopId.fromString("some_path");
 //		LogicalGraph log = loader.getGraphCollection().getGraph(id);
-//		LogicalGraph log_result = new EPGMtoDegMatrix(log).getDegMatrix();
+//		LogicalGraph log_result = new EPGMtoDegMatrix(fsEnv, fsTableEnv, log).getDegMatrixLogicalGraph();
 //		Gradoop_HBase_Sink sink = new Gradoop_HBase_Sink(gra_hbase_cfg, hbase_cfg, gra_flink_cfg);
-//		sink.sink(log_result);
+//		sink.sink(log_result);;
 		
 		//write vertex properties of graph to file for debugging
 //		org.apache.flink.api.java.operators.DataSink<EPGMVertex> sink = log.getVertices().writeAsText("/home/aljoscha/debug/tmp");
@@ -139,12 +139,19 @@ public class Execution_Prototype {
 //		LogicalGraph log_layout = new CentroidFRLayouter(5, 2000).execute(log);
 //		Cyto_CSV_Builder.build(fsEnv, log_layout);
 		try {
+//			DataSource source = new CSVDataSource("/home/aljoscha/graph-samples/one10thousand_sample_2_third_degrees_layout", gra_flink_cfg);
+//			GradoopId id = GradoopId.fromString("5ebe6813a7986cc7bd77f9c2");
+//			LogicalGraph log = source.getGraphCollection().getGraph(id);
+////			log.getVertices().print();
+//			Gradoop_HBase_Sink sink = new Gradoop_HBase_Sink(gra_hbase_cfg, hbase_cfg, gra_flink_cfg);
+//			sink.sink(log);
+			
 //			PrintStream fileOut = new PrintStream("/home/aljoscha/out.txt");
 //			System.setOut(fileOut);
 //
-			GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
-			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2"); 			//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			GradoopToCSV.parseGradoopToCSV(log, "/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout");
+//			GraFlink_Graph_Loader loader = new GraFlink_Graph_Loader(gra_flink_cfg, gra_hbase_cfg, hbase_cfg);
+//			LogicalGraph log = loader.getLogicalGraph("5ebe6813a7986cc7bd77f9c2"); 			//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+//			GradoopToCSV.parseGradoopToCSV(log, "/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout");
 //			
 //			DataStream<Tuple2<Boolean, Row>> ds_degree = FlinkGradoopVerticesLoader.load(fsTableEnv, 10);
 //			ds_degree.print().setParallelism(1);
@@ -183,8 +190,8 @@ public class Execution_Prototype {
 		
 		// execute
 		try {
-			fsTableEnv.execute("test");
-//			env.execute("test");
+//			fsTableEnv.execute("test");
+			env.execute("test");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
