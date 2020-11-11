@@ -195,8 +195,7 @@ public class GradoopGraphUtil implements GraphUtil{
 		Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(this.vertexFields);
 
 		//filter out already visualized edges in wrapper stream
-		DataStream<Row> wrapperStream = this.wrapperStream;
-		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		DataStream<Row> wrapperStream = this.wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//filter out already visualized vertices in wrapper stream (identity wrappers)
 		Set<String> visualizedVertices = this.visualizedVertices;
@@ -206,6 +205,8 @@ public class GradoopGraphUtil implements GraphUtil{
 				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
 			}
 		});
+		
+		Table wrapperTable = fsTableEnv.fromDataStream(wrapperStream).as(this.wrapperFields);
 		
 		//produce wrapper stream from in-view area to in-view area
 		Table wrapperTable = fsTableEnv.fromDataStream(wrapperStream).as(this.wrapperFields);

@@ -4,3 +4,12 @@
 	export HADOOP_CLASSPATH=$(hadoop classpath)
 	
 	In der Flink-config muss noch der REST JobManager Port auf 8081 gesetzt werden!
+	
+	Flink on long running Yarn session:
+	- im Flink verzeichnis: ./bin/yarn-session.sh -n 4 -jm 1024 -tm 4096
+	
+	Flink in long running slurm inertactive session (recommended):
+	- auf login node: srun --pty -n 1 --cpus-per-task=24 --mem=120G --time=24:00:00 --partition=galaxy-job bash
+	- in Bash: alle configs von oben, vorher: export HOSTNAME=$(hostname)
+	- slurm session id abfragen: squeue --user=$USER
+	- slurm session beenden: scancel session-id

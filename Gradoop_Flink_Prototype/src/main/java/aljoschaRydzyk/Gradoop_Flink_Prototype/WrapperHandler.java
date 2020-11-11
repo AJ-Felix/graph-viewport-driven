@@ -620,7 +620,7 @@ public class WrapperHandler implements Serializable {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
 			Server.getInstance().sendToAll("removeObjectServer;" + vertex.getIdGradoop());
-			Map<String,String> vertexNeighborMap = Server.flinkCore.getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
+			Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
 			Iterator<Map.Entry<String, VVEdgeWrapper>> iter = edges.entrySet().iterator();
 			while (iter.hasNext()) if (vertexNeighborMap.values().contains(iter.next().getKey())) iter.remove();
 			System.out.println("Removing Obect in removeVertex, ID: " + vertex.getIdGradoop());
@@ -696,7 +696,7 @@ public class WrapperHandler implements Serializable {
 //			else if (targetId.equals(vertexId)) neighborIds.add(sourceId);
 //		}
 //		return neighborIds;
-		Map<String,Map<String,String>> adjMatrix = Server.flinkCore.getGraphUtil().getAdjMatrix();
+		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
 		return neighborIds;
 	}
@@ -710,7 +710,7 @@ public class WrapperHandler implements Serializable {
 //			else if (targetId.equals(vertexId) && innerVertices.containsKey(sourceId)) return true;
 //		}
 //		return false;
-		Map<String,Map<String,String>> adjMatrix = Server.flinkCore.getGraphUtil().getAdjMatrix();
+		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
 		return false;
 	}
@@ -743,7 +743,7 @@ public class WrapperHandler implements Serializable {
 					System.out.println("removing in clear operation " + vertex.getIdGradoop());
 					Server.getInstance().sendToAll("removeObjectServer;" + vertex.getIdGradoop());
 					iter.remove();
-					Map<String,String> vertexNeighborMap = Server.flinkCore.getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
+					Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
 					Iterator<Map.Entry<String, VVEdgeWrapper>> edgesIterator = edges.entrySet().iterator();
 					while (edgesIterator.hasNext()) if (vertexNeighborMap.values().contains(edgesIterator.next().getKey())) edgesIterator.remove();
 				} 
@@ -775,7 +775,7 @@ public class WrapperHandler implements Serializable {
 		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();
 		for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) visualizedWrappers.add(entry.getKey());
-		GraphUtil graphUtil =  Server.flinkCore.getGraphUtil();
+		GraphUtil graphUtil =  Server.getInstance().getFlinkCore().getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
 		System.out.println("global size "+ globalVertices.size());

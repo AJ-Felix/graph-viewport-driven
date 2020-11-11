@@ -117,7 +117,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 				return !(visualizedVertices.contains(value.getField(2).toString()));
 			}
 		});
-		
+		nonIdentityWrapper.union(identityWrapper).print();
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	

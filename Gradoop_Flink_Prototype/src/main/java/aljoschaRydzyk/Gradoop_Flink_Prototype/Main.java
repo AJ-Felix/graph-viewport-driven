@@ -22,7 +22,7 @@ public class Main {
 		//initialize Server
 		server = Server.getInstance();
 		server.initializeServerFunctionality();
-		server.initializeFlinkAndGraphRep();
+		server.initializeHandlers();
 	
 		
 

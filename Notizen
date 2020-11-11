@@ -191,7 +191,8 @@ BuildTopViewAppend:
 
 Es muss gewährleistet sein, dass der Server keine Operation mehr auf den Knoten-Maps durchführt, wenn "layoutBaseString" ankommt!!!
 
-
+Die Flink-Konfigurationen müssen innerhalb des AbstractReceiveListeners durchgeführt werden. Wenn Sie vorher, z.B. während der Serverinitialisierung durchgeführt werden, kommt es bei der ersten Ausführung von Table API
+Operationen zu einem kryptischen Fehler. Möglicherweise liegt das daran, dass der gleiche Thread welcher die Flink config ausführt, auch das erste .execute() ausführen muss, um die Environment zu erstellen.
 
 
 
