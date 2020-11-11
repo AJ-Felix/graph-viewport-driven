@@ -23,16 +23,10 @@ public class WrapperHandler implements Serializable {
 	private Map<String,VertexCustom> layoutedVertices;
 	private String operation;
 	private Integer capacity;
-	private Float topModel;
-	private Float rightModel;
-	private Float bottomModel;
-	private Float leftModel;
-	private Float topModelOld;
-	private Float rightModelOld;
-	private Float bottomModelOld;
-	private Float leftModelOld;
-	private Float xModelDiff;
-	private Float yModelDiff;
+	private Float top;
+	private Float right;
+	private Float bottom;
+	private Float left;
 	private VertexCustom secondMinDegreeVertex;
 	private VertexCustom minDegreeVertex;    
     private boolean layout = true;
@@ -63,7 +57,7 @@ public class WrapperHandler implements Serializable {
 	}
 	  
 	public void prepareOperation(){
-		System.out.println("top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
+		System.out.println("top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
 			if (operation != "zoomOut"){
 				for (Map.Entry<String, VVEdgeWrapper> entry : edges.entrySet()) {
 					VVEdgeWrapper wrapper = entry.getValue();
@@ -89,8 +83,8 @@ public class WrapperHandler implements Serializable {
 						targetX = targetVertex.getX();
 						targetY = targetVertex.getY();
 					}
-					if (((sourceX < leftModel) || (rightModel < sourceX) || (sourceY < topModel) || (bottomModel < sourceY)) &&
-							((targetX  < leftModel) || (rightModel < targetX ) || (targetY  < topModel) || (bottomModel < targetY))){
+					if (((sourceX < left) || (right < sourceX) || (sourceY < top) || (bottom < sourceY)) &&
+							((targetX  < left) || (right < targetX ) || (targetY  < top) || (bottom < targetY))){
 						Server.getInstance().sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 						System.out.println("Removing Object in prepareOperation, ID: " + wrapper.getEdgeIdGradoop());
 					}
@@ -101,7 +95,7 @@ public class WrapperHandler implements Serializable {
 					Map.Entry<String,VertexCustom> entry = iter.next();
 					VertexCustom vertex = entry.getValue();
 					System.out.println("VertexID: " + vertex.getIdGradoop() + ", VertexX: " + vertex.getX() + ", VertexY: "+ vertex.getY());
-					if ((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || (bottomModel < vertex.getY())) {
+					if ((vertex.getX() < left) || (right < vertex.getX()) || (vertex.getY() < top) || (bottom < vertex.getY())) {
 						iter.remove();
 						System.out.println("Removing Object in prepareOperation in innerVertices only, ID: " + vertex.getIdGradoop());
 					}
@@ -202,15 +196,15 @@ public class WrapperHandler implements Serializable {
 		boolean targetIsRegisteredInside = newVertices.containsKey(targetId) || innerVertices.containsKey(targetId);
 		if (capacity > 1) {
 			addVertex(sourceVertex);
-			if ((sourceVertex.getX() >= leftModel) && (rightModel >= sourceVertex.getX()) && (sourceVertex.getY() >= topModel) && 
-					(bottomModel >= sourceVertex.getY()) && !sourceIsRegisteredInside){
+			if ((sourceVertex.getX() >= left) && (right >= sourceVertex.getX()) && (sourceVertex.getY() >= top) && 
+					(bottom >= sourceVertex.getY()) && !sourceIsRegisteredInside){
 				updateMinDegreeVertex(sourceVertex);
 				newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 				capacity -= 1;
 			}
 			addVertex(targetVertex);
-			if ((targetVertex.getX() >= leftModel) && (rightModel >= targetVertex.getX()) && (targetVertex.getY() >= topModel) 
-					&& (bottomModel >= targetVertex.getY()) && !targetIsRegisteredInside){
+			if ((targetVertex.getX() >= left) && (right >= targetVertex.getX()) && (targetVertex.getY() >= top) 
+					&& (bottom >= targetVertex.getY()) && !targetIsRegisteredInside){
 				updateMinDegreeVertex(targetVertex);
 				newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 				capacity -= 1;
@@ -219,12 +213,12 @@ public class WrapperHandler implements Serializable {
 		} else if (capacity == 1){
 			boolean sourceIn = true;
 			boolean targetIn = true;
-			if ((sourceVertex.getX() < leftModel) || (rightModel < sourceVertex.getX()) || (sourceVertex.getY() < topModel) || 
-					(bottomModel < sourceVertex.getY())){
+			if ((sourceVertex.getX() < left) || (right < sourceVertex.getX()) || (sourceVertex.getY() < top) || 
+					(bottom < sourceVertex.getY())){
 				sourceIn = false;
 			}
-			if ((targetVertex.getX() < leftModel) || (rightModel < targetVertex.getX()) || (targetVertex.getY() < topModel) || 
-					(bottomModel < targetVertex.getY())){
+			if ((targetVertex.getX() < left) || (right < targetVertex.getX()) || (targetVertex.getY() < top) || 
+					(bottom < targetVertex.getY())){
 				targetIn = false;
 			}
 			System.out.println("In addNonIdentityWrapper, capacity == 1, sourceID: " + sourceVertex.getIdGradoop() + ", sourceIn: " + sourceIn + 
@@ -281,12 +275,12 @@ public class WrapperHandler implements Serializable {
 		} else {
 			boolean sourceIn = true;
 			boolean targetIn = true;
-			if ((sourceVertex.getX() < leftModel) || (rightModel < sourceVertex.getX()) || (sourceVertex.getY() < topModel) || 
-					(bottomModel < sourceVertex.getY())){
+			if ((sourceVertex.getX() < left) || (right < sourceVertex.getX()) || (sourceVertex.getY() < top) || 
+					(bottom < sourceVertex.getY())){
 				sourceIn = false;
 			}
-			if ((targetVertex.getX() < leftModel) || (rightModel < targetVertex.getX()) || (targetVertex.getY() < topModel) || 
-					(bottomModel < targetVertex.getY())){
+			if ((targetVertex.getX() < left) || (right < targetVertex.getX()) || (targetVertex.getY() < top) || 
+					(bottom < targetVertex.getY())){
 				targetIn = false;
 			}
 			if (sourceIn && targetIn && (sourceVertex.getDegree() > secondMinDegreeVertex.getDegree()) && 
@@ -742,9 +736,9 @@ public class WrapperHandler implements Serializable {
 			Iterator<Map.Entry<String, Map<String,Object>>> iter = globalVertices.entrySet().iterator();
 			while (iter.hasNext()) {
 				VertexCustom vertex = (VertexCustom) iter.next().getValue().get("vertex");
-				if ((((vertex.getX() < leftModel) || (rightModel < vertex.getX()) || (vertex.getY() < topModel) || 
-						(bottomModel < vertex.getY())) && !hasVisualizedNeighborsInside(vertex)) ||
-							((vertex.getX() >= leftModel) && (rightModel >= vertex.getX()) && (vertex.getY() >= topModel) && (bottomModel >= vertex.getY()) 
+				if ((((vertex.getX() < left) || (right < vertex.getX()) || (vertex.getY() < top) || 
+						(bottom < vertex.getY())) && !hasVisualizedNeighborsInside(vertex)) ||
+							((vertex.getX() >= left) && (right >= vertex.getX()) && (vertex.getY() >= top) && (bottom >= vertex.getY()) 
 									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
 					System.out.println("removing in clear operation " + vertex.getIdGradoop());
 					Server.getInstance().sendToAll("removeObjectServer;" + vertex.getIdGradoop());
@@ -795,10 +789,10 @@ public class WrapperHandler implements Serializable {
 	}
 
 	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
-		this.topModel = topModel;
-		this.rightModel = rightModel;
-		this.bottomModel = bottomModel;
-		this.leftModel = leftModel;
+		this.top = topModel;
+		this.right = rightModel;
+		this.bottom = bottomModel;
+		this.left = leftModel;
 	}
 
 	public void setOperation(String operation) {
@@ -819,5 +813,39 @@ public class WrapperHandler implements Serializable {
 	
 	public void setOperationStep(int operationStep) {
 		this.operationStep = operationStep;
+	}
+
+	public Map<String, VertexCustom> getLayoutedVertices() {
+		return this.layoutedVertices;
+	}
+
+	public Map<String, VertexCustom> getNewVertices() {
+		return this.newVertices;
+	}
+	
+	public void setSentToClientInSubStep(Boolean sent) {
+		this.sentToClientInSubStep = sent;
+	}
+	
+	public Boolean getSentToClientInSubStep() {
+		return this.sentToClientInSubStep;
+	}
+
+	public Map<String, VertexCustom> getInnerVertices() {
+		return this.innerVertices;
+	}
+
+	public void updateLayoutedVertices(List<String> list) {
+    	for (String vertexData : list) {
+    		String[] arrVertexData = vertexData.split(",");
+    		String vertexId = arrVertexData[0];
+    		Integer x = Integer.parseInt(arrVertexData[1]);
+    		Integer y = Integer.parseInt(arrVertexData[2]);
+			VertexCustom vertex = new VertexCustom(vertexId, x, y);
+			if (layoutedVertices.containsKey(vertexId)) System.out.println("vertex already in layoutedVertices!!!");
+			layoutedVertices.put(vertexId, vertex);
+    	}
+    	System.out.println("layoutedVertices size: ");
+    	System.out.println(layoutedVertices.size());
 	}
 }

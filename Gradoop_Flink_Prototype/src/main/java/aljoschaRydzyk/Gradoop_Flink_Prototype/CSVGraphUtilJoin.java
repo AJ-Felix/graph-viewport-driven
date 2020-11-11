@@ -118,14 +118,14 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 
 	@Override
-	public DataStream<Row> zoom (Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+	public DataStream<Row> zoom (Float top, Float right, Float bottom, Float left){
 		/*
 		 * Zoom function for graphs with layout
 		 */
 		
 		//vertex stream filter for in-view and out-view area and conversion to Flink Tables
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topModel, rightModel, bottomModel, leftModel));
-		DataStream<Row> vertexStreamOuter = this.vertexStream.filter(new VertexFilterOuter(topModel, rightModel, bottomModel, leftModel));
+		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
+		DataStream<Row> vertexStreamOuter = this.vertexStream.filter(new VertexFilterOuter(top, right, bottom, left));
 		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInner).as(this.vertexFields);		
 		Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(this.vertexFields);
 
@@ -162,19 +162,14 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	@Override
-	public DataStream<Row> pan(Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff){
+	public DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,
+			Float bottomOld, Float leftOld){
 		/*
 		 * Pan function for graphs with layout
 		 */
 		
-		//calculate previous model coordinate borders
-		Float topOld = top - yModelDiff;
-		Float rightOld = right - xModelDiff;
-		Float bottomOld = bottom - yModelDiff;
-		Float leftOld = left - xModelDiff;
-		
 		//vertex stream filter and conversion to Flink Tables for areas A, B and C
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
+		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
 		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
 				@Override
 				public boolean filter(Row value) throws Exception {
@@ -183,8 +178,8 @@ public class CSVGraphUtilJoin implements GraphUtil{
 					return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
 				}
 			});
-		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
-		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(left, right, top, bottom, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNewNotOld).as(this.vertexFields);
 		Table vertexTableOldOuterExtend = fsTableEnv.fromDataStream(vertexStreamOldOuterBoth).as(this.vertexFields);
 		Table vertexTableOldInNotNewIn = fsTableEnv.fromDataStream(vertexStreamOldInnerNotNewInner).as(this.vertexFields);
@@ -251,14 +246,15 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return this.adjMatrix;
 	}
 	
+	@Override
 	public DataStream<Row> panZoomInLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
-			Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+			Float top, Float right, Float bottom, Float left){
 		/*
 		 * First substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that were
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
 		
-		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topModel, rightModel, bottomModel, leftModel))
+		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
 			.filter(new VertexFilterNotVisualized(innerVertices));
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
@@ -268,6 +264,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
+	@Override
 	public DataStream<Row> panZoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> unionMap){
 		/*
 		 * Second substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
@@ -292,6 +289,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
+	@Override
 	public DataStream<Row> panZoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices){		
 		/*
 		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
@@ -306,8 +304,9 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
+	@Override
 	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices, 
-			Map<String, VertexCustom> newVertices, Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+			Map<String, VertexCustom> newVertices, Float top, Float right, Float bottom, Float left){
 		/*
 		 * Fourth substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
@@ -320,7 +319,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		
 		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
 		DataStream<Row> layoutedVerticesStream = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, 
-			topModel, rightModel, bottomModel, leftModel));
+			top, right, bottom, left));
 		Table visualizedVerticesTable = this.fsTableEnv.fromDataStream(visualizedVerticesStream).as(this.vertexFields);
 		Table layoutedVerticesTable = this.fsTableEnv.fromDataStream(layoutedVerticesStream).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
@@ -337,24 +336,20 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
+	@Override
 	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
-			Float top, Float right, Float bottom, Float left, Float xModelDiff, Float yModelDiff){
+			Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld,
+			Float leftOld){
 		/*
 		 * Fourth substep for pan operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * newly visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
 		 * outside the current model window on the other hand.
 		 */
 		
-		//calculate previous model coordinate borders
-		Float topOld = top - yModelDiff;
-		Float rightOld = right - xModelDiff;
-		Float bottomOld = bottom - yModelDiff;
-		Float leftOld = left - xModelDiff;
-		
 		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices))
 				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
-				top, right, bottom, left));
+				topNew, rightNew, bottomNew, leftNew));
 		Table newlyAddedInsideVerticesTable = this.fsTableEnv.fromDataStream(newlyAddedInsideVertices).as(this.vertexFields);
 		Table layoutedOutsideVerticesTable = this.fsTableEnv.fromDataStream(layoutedOutsideVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = this.fsTableEnv.toAppendStream(wrapperTable
@@ -367,16 +362,17 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
+	@Override
 	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, 
-			Float topModelNew, Float rightModelNew, Float bottomModelNew, Float leftModelNew, 
-			Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld){
+			Float topNew, Float rightNew, Float bottomNew, Float leftNew, 
+			Float topOld, Float rightOld, Float bottomOld, Float leftOld){
 		/*
 		 * First substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * layouted inside the model space which was added by operation.
 		 */
 		
-		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftModelNew, rightModelNew, topModelNew, 
-				bottomModelNew, leftModelOld, rightModelOld, topModelOld, bottomModelOld);
+		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftNew, rightNew, topNew, 
+				bottomNew, leftOld, rightOld, topOld, bottomOld);
 		DataStream<Row> vertices = this.vertexStream.filter(zoomOutVertexFilter);
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
@@ -385,8 +381,9 @@ public class CSVGraphUtilJoin implements GraphUtil{
 		return wrapperStream;
 	}
 	
+	@Override
 	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
-			Float topModelNew, Float rightModelNew, Float bottomModelNew, Float leftModelNew){
+			Float top, Float right, Float bottom, Float left){
 		/*
 		 * Second substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * visualized inside the model space which was added by operation on the one hand, neighbour vertices that are layouted with 
@@ -397,7 +394,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 				.filter(new VertexFilterIsVisualized(newVertices))
 				.filter(zoomOutVertexFilter);
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream
-				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, topModelNew, rightModelNew, bottomModelNew, leftModelNew));
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left));
 		Table newlyVisualizedVerticesTable = this.fsTableEnv.fromDataStream(newlyVisualizedVertices).as(this.vertexFields);
 		Table layoutedOutsideVerticesTable = this.fsTableEnv.fromDataStream(layoutedOutsideVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = this.fsTableEnv.toAppendStream(wrapperTable

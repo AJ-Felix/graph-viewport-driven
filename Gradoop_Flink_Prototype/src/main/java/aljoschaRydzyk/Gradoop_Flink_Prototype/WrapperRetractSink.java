@@ -20,11 +20,13 @@ public class WrapperRetractSink implements SinkFunction<Tuple2<Boolean,Row>>{
 		String targetX = element.f1.getField(10).toString();
 		String targetY = element.f1.getField(11).toString();
 		if (element.f0) {
-//			Main.sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdGradoop + ";" + sourceIdNumeric + ";" + sourceDegree + ";" +
-//					sourceX + ";" + sourceY + ";" + targetIdGradoop + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
+			Server.getInstance().sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdGradoop + ";" + 
+					sourceIdNumeric + ";" + sourceDegree + ";" + sourceX + ";" + sourceY + ";" + targetIdGradoop + ";" + 
+					targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
 		} else if (!element.f0) {
-//			Main.sendToAll("removeWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdGradoop + ";" + sourceDegree + ";" +
-//					sourceX + ";" + sourceY + ";" + targetIdGradoop + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
+			Server.getInstance().sendToAll("removeWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdGradoop + ";" + 
+					sourceDegree + ";" + sourceX + ";" + sourceY + ";" + targetIdGradoop + ";" + targetIdNumeric + ";" + 
+					targetDegree + ";" + targetX + ";" + targetY);
 		}
 	}
 }

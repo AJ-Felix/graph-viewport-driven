@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
@@ -32,16 +30,22 @@ public class FlinkCore {
 	  
 	  private GraphUtil graphUtil;
 	  private String graphOperationLogic;
-	  private Float topModelPos;
-	  private Float bottomModelPos;
-	  private Float leftModelPos;
-	  private Float rightModelPos;
+	  private Float topNew;
+	  private Float bottomNew;
+	  private Float leftNew;
+	  private Float rightNew;
+	  private Float topOld;
+	  private Float rightOld;
+	  private Float bottomOld;
+	  private Float leftOld;
 	  private String vertexFields;
 	  private String wrapperFields;
 	  private String filePath;
 	  
 	  
-	public  FlinkCore (String graphOperationLogic) {
+	public  FlinkCore (
+//			String graphOperationLogic
+			) {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
 //		env.getConfig().setAutoWatermarkInterval(1);
 	    this.graflink_cfg = GradoopFlinkConfig.createConfig(env);
@@ -50,9 +54,10 @@ public class FlinkCore {
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
 //		this.fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
 //		this.fsEnv.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
-		org.apache.flink.configuration.Configuration conf = new Configuration();
+		
 		
 		//operate locally
+//		org.apache.flink.configuration.Configuration conf = new Configuration();
 //		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
 		
 		//operate on cluster
@@ -67,41 +72,41 @@ public class FlinkCore {
 		this.filePath = "/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout";
 //		TestThread thread = new TestThread("prototype", fsEnv, this);
 //		thread.start();
-		this.graphOperationLogic = graphOperationLogic;
+//		this.graphOperationLogic = graphOperationLogic;
 		System.out.println("initiated Flink.");
 
 	}
 	
 	public void setTopModelPos(Float topModelPos) {
-		this.topModelPos = topModelPos;
+		this.topNew = topModelPos;
 	}
 	
-	public Float gettopModelPos() {
-		return this.topModelPos;
+	public Float getTopModel() {
+		return this.topNew;
 	}
 	
 	public void setBottomModelPos(Float bottomModelPos) {
-		this.bottomModelPos = bottomModelPos;
+		this.bottomNew = bottomModelPos;
 	}
 	
-	public Float getBottomModelPos() {
-		return this.bottomModelPos;
+	public Float getBottomModel() {
+		return this.bottomNew;
 	}
 	
 	public void setRightModelPos(Float rightModelPos) {
-		this.rightModelPos = rightModelPos;
+		this.rightNew = rightModelPos;
 	}
 	
-	public Float getRightModelPos() {
-		return this.rightModelPos;
+	public Float getRightModel() {
+		return this.rightNew;
 	}
 	
 	public void setLeftModelPos(Float leftModelPos) {
-		this.leftModelPos = leftModelPos;
+		this.leftNew = leftModelPos;
 	}
 	
-	public Float getLeftModelPos() {
-		return this.leftModelPos;
+	public Float getLeftModel() {
+		return this.leftNew;
 	}
 	
 	public StreamExecutionEnvironment getFsEnv() {
@@ -109,10 +114,17 @@ public class FlinkCore {
 	}
 	
 	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
-		this.topModelPos = topModel;
-		this.rightModelPos = rightModel;
-		this.bottomModelPos = bottomModel;
-		this.leftModelPos = leftModel;
+		this.topNew = topModel;
+		this.rightNew = rightModel;
+		this.bottomNew = bottomModel;
+		this.leftNew = leftModel;
+	}
+	
+	public void setModelPositionsOld(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld) {
+		this.topOld = topModelOld;
+		this.rightOld = rightModelOld;
+		this.bottomOld = bottomModelOld;
+		this.leftOld = leftModelOld;
 	}
 	
 	public LogicalGraph getLogicalGraph(String gradoopGraphID) throws IOException {
@@ -193,10 +205,10 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataStream<Row> zoom(Float topModel, Float rightModel, Float bottomModel, Float leftModel){
+	public DataStream<Row> zoom(){
 		DataStream<Row> stream = null;
 		try {
-			stream = this.graphUtil.zoom(topModel, rightModel, bottomModel, leftModel);
+			stream = this.graphUtil.zoom(topNew, rightNew, bottomNew, leftNew);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -204,8 +216,8 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Row> zoomInLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices){
-		return this.graphUtil.panZoomInLayoutFirstStep(layoutedVertices, innerVertices, topModelPos, rightModelPos, 
-				bottomModelPos, leftModelPos);
+		return this.graphUtil.panZoomInLayoutFirstStep(layoutedVertices, innerVertices, topNew, rightNew, 
+				bottomNew, leftNew);
 	}
 	
 	public DataStream<Row> zoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices,
@@ -222,24 +234,22 @@ public class FlinkCore {
 	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> innerVertices,
 			Map<String, VertexCustom> newVertices){
 		return this.graphUtil.zoomInLayoutFourthStep(layoutedVertices, innerVertices, newVertices, 
-				topModelPos, rightModelPos, bottomModelPos, leftModelPos);
+				topNew, rightNew, bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, 
-			Float topModelPosOld, Float rightModelPosOld, Float bottomModelPosOld, Float leftModelPosOld){
-		return this.graphUtil.zoomOutLayoutFirstStep(layoutedVertices, topModelPos, rightModelPos, 
-				bottomModelPos, leftModelPos, topModelPosOld, rightModelPosOld, bottomModelPosOld, leftModelPosOld);
+	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices){
+		return this.graphUtil.zoomOutLayoutFirstStep(layoutedVertices, topNew, rightNew, 
+				bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
-	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices,
-			Float topModelPosOld, Float rightModelPosOld, Float bottomModelPosOld, Float leftModelPosOld){
-		return this.graphUtil.zoomOutLayoutSecondStep(layoutedVertices, newVertices, topModelPos, 
-				rightModelPos, bottomModelPos, leftModelPos);
+	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
+		return this.graphUtil.zoomOutLayoutSecondStep(layoutedVertices, newVertices, topNew, 
+				rightNew, bottomNew, leftNew);
 	}
 	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
-		return this.graphUtil.panZoomInLayoutFirstStep(layoutedVertices, newVertices, topModelPos, rightModelPos, bottomModelPos, 
-				leftModelPos);
+		return this.graphUtil.panZoomInLayoutFirstStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+				leftNew);
 	}
 	
 	public DataStream<Row> panLayoutSecondStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
@@ -250,14 +260,14 @@ public class FlinkCore {
 		return this.graphUtil.panZoomInLayoutThirdStep(layoutedVertices);
 	}
 	
-	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices, 
-			Float xModelDiff, Float yModelDiff){
-		return this.graphUtil.panLayoutFourthStep(layoutedVertices, newVertices, topModelPos, rightModelPos, bottomModelPos, 
-				leftModelPos, xModelDiff, yModelDiff);
+	public DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices, Map<String, VertexCustom> newVertices){
+		return this.graphUtil.panLayoutFourthStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+				leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
-	public DataStream<Row> pan(Float xModelDiff, Float yModelDiff){
-		DataStream<Row> stream = this.graphUtil.pan(topModelPos, rightModelPos, bottomModelPos, leftModelPos, xModelDiff, yModelDiff);
+	public DataStream<Row> pan(){
+		DataStream<Row> stream = this.graphUtil.pan(topNew, rightNew, bottomNew, leftNew, 
+				topOld, rightOld, bottomOld, leftOld);
 		return stream;
 	}
 		
@@ -266,6 +276,8 @@ public class FlinkCore {
 		graphUtil.initializeStreams();
 		return graphUtil.getWrapperStream();
 	}
+
+	
 
 
 }

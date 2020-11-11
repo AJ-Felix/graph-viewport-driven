@@ -18,7 +18,8 @@ public class WrapperAppendSink implements SinkFunction<Row>{
 		String targetX = element.getField(10).toString();
 		String targetY = element.getField(11).toString();
 		String targetDegree = element.getField(12).toString();
-//		Main.sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdGradoop + ";" + sourceIdNumeric + ";" + sourceDegree + ";" +
-//				sourceX + ";" + sourceY + ";" + targetIdGradoop + ";" + targetIdNumeric + ";" + targetDegree + ";" + targetX + ";" + targetY);
+		Server.getInstance().sendToAll("addWrapper;" + edgeIdGradoop + ";" + edgeLabel + ";" + sourceIdGradoop + ";" + sourceIdNumeric 
+				+ ";" + sourceDegree + ";" + sourceX + ";" + sourceY + ";" + targetIdGradoop + ";" + targetIdNumeric + ";" + 
+				targetDegree + ";" + targetX + ";" + targetY);
 	}
 }

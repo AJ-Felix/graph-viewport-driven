@@ -10,7 +10,7 @@ import java.net.Socket;
 public class FlinkResponseHandler {
 	private String operation;
 	private boolean verticesHaveCoordinates;
-	private WrapperHandler handler;
+	private WrapperHandler wrapperHandler;
 	private int port = 8898;
     private ServerSocket serverSocket = null;
     public String line;
@@ -18,8 +18,8 @@ public class FlinkResponseHandler {
 //    private PrintWriter out;
 //	private  BufferedReader in;
     
-	public FlinkResponseHandler() {
-		handler = WrapperHandler.getInstance();
+	public FlinkResponseHandler(WrapperHandler wrapperHandler) {
+		this.wrapperHandler = wrapperHandler;
 	}
     
     public void listen() {
@@ -35,12 +35,12 @@ public class FlinkResponseHandler {
             	if (verticesHaveCoordinates) {
             		while((line = in.readLine()) != null)  {
     	            	System.out.println(line);
-    	            	handler.addWrapper(parseWrapperString(line));
+    	            	wrapperHandler.addWrapper(parseWrapperString(line));
     	            }
             	} else {
             		while((line = in.readLine()) != null)  {
     	            	System.out.println(line);
-    	            	handler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
+    	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
     	            }
             	}	
             } else {
@@ -48,15 +48,15 @@ public class FlinkResponseHandler {
 	            	if (operation.contains("Append")) {
 	            		while((line = in.readLine()) != null)  {
 	    	            	System.out.println(line);
-	    	            	handler.addWrapperInitial(parseWrapperString(line));
+	    	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	    	            }
 	            	} else if (operation.contains("Retract")) {
 	            		while((line = in.readLine()) != null)  {
 	    	            	System.out.println(line);
 	    	            	if (line.endsWith("true")) {
-	    		            	handler.addWrapperInitial(parseWrapperString(line));
+	    		            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	    	            	} else if (line.endsWith("false")) {
-	    	            		handler.removeWrapper(parseWrapperString(line));
+	    	            		wrapperHandler.removeWrapper(parseWrapperString(line));
 	    	            	}
 	    	            }
 	            	}
@@ -64,15 +64,15 @@ public class FlinkResponseHandler {
             		if (operation.contains("Append")) {
 	            		while((line = in.readLine()) != null)  {
 	    	            	System.out.println(line);
-	    	            	handler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
+	    	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	    	            }
 	            	} else if (operation.contains("Retract")) {
 	            		while((line = in.readLine()) != null)  {
 	    	            	System.out.println(line);
 	    	            	if (line.endsWith("true")) {
-	    		            	handler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
+	    		            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	    	            	} else if (line.endsWith("false")) {
-	    	            		handler.removeWrapper(parseWrapperStringNoCoordinates(line));
+	    	            		wrapperHandler.removeWrapper(parseWrapperStringNoCoordinates(line));
 	    	            	}
 	    	            }
 	            	}
@@ -132,6 +132,10 @@ public class FlinkResponseHandler {
 				Integer.parseInt(array[8]), Integer.parseInt(array[10]), Integer.parseInt(array[11]), Long.parseLong(array[12]));
 		EdgeCustom edge = new EdgeCustom(array[13], array[14], array[1], array[7]);
 		return new VVEdgeWrapper(sourceVertex, targetVertex, edge);
+	}
+	
+	public String getLine() {
+		return this.line;
 	}
 	
 //	public void forwardToWrapperHandler(VVEdgeWrapper wrapper) {

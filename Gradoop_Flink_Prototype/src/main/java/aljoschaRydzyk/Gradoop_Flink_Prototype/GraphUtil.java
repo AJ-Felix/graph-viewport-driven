@@ -13,29 +13,29 @@ import org.apache.flink.types.Row;
 public interface GraphUtil { 
 	void initializeStreams() throws Exception;
 	DataStream<Row> getVertexStream();
-	DataStream<Row> zoom(Float topModel, Float rightModel, Float bottomModel, Float leftModel) throws IOException;
-	DataStream<Row> pan(Float topOld, Float rightOld, Float bottomOld, Float leftOld, Float xModelDiff,
-			Float yModelDiff);
+	DataStream<Row> zoom(Float top, Float right, Float bottom, Float left) throws IOException;
+	DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, 
+			Float bottomOld, Float leftOld);
 	void setVisualizedVertices(Set<String> visualizedVertices);
 	void setVisualizedWrappers(Set<String> visualizedWrappers);
 	Map<String,Map<String,String>> buildAdjacencyMatrix() throws Exception;
 	Map<String, Map<String, String>> getAdjMatrix();
 	DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexCustom> layoutedVertices,
-			Map<String, VertexCustom> newVertices, Float topModelPos, Float rightModelPos, Float bottomModelPos,
-			Float leftModelPos);
-	DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Float topModelPos,
-			Float rightModelPos, Float bottomModelPos, Float leftModelPos, Float topModelPosOld, Float rightModelPosOld,
-			Float bottomModelPosOld, Float leftModelPosOld);
+			Map<String, VertexCustom> newVertices, Float top, Float right, Float bottom,
+			Float left);
+	DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexCustom> layoutedVertices, Float topNew,
+			Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,
+			Float bottomOld, Float leftOld);
 	DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexCustom> layoutedVertices,
-			Map<String, VertexCustom> innerVertices, Map<String, VertexCustom> newVertices, Float topModelPos,
-			Float rightModelPos, Float bottomModelPos, Float leftModelPos);
+			Map<String, VertexCustom> innerVertices, Map<String, VertexCustom> newVertices, Float top,
+			Float right, Float bottom, Float left);
 	DataStream<Row> panZoomInLayoutThirdStep(Map<String, VertexCustom> layoutedVertices);
 	DataStream<Row> panZoomInLayoutSecondStep(Map<String, VertexCustom> layoutedVertices,
 			Map<String, VertexCustom> unionMap);
 	DataStream<Row> panZoomInLayoutFirstStep(Map<String, VertexCustom> layoutedVertices,
-			Map<String, VertexCustom> innerVertices, Float topModelPos, Float rightModelPos, Float bottomModelPos,
-			Float leftModelPos);
+			Map<String, VertexCustom> innerVertices, Float top, Float right, Float bottom,
+			Float left);
 	DataStream<Row> panLayoutFourthStep(Map<String, VertexCustom> layoutedVertices,
-			Map<String, VertexCustom> newVertices, Float topModelPos, Float rightModelPos, Float bottomModelPos,
-			Float leftModelPos, Float xModelDiff, Float yModelDiff);
+			Map<String, VertexCustom> newVertices, Float topNew, Float rightNew, Float bottomNew,
+			Float leftNew, Float topOld, Float rightOld, Float bottomOld, Float leftOld);
 }

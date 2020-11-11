@@ -1,4 +1,4 @@
-package aljoschaRydzyk.Gradoop_Flink_Prototype;
+package Temporary;
 
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.resource;

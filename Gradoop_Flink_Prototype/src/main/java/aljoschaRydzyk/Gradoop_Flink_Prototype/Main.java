@@ -1,69 +1,11 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
-import io.undertow.websockets.core.WebSocketChannel;
-
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.Map;
-import org.apache.flink.types.Row;
-import com.nextbreakpoint.flinkclient.api.FlinkApi;
 
 public class Main {
 	
-	public static FlinkCore flinkCore;
-	
-	public static ArrayList<WebSocketChannel> channels = new ArrayList<>();
-    private static String webSocketListenPath = "/graphData";
-    private static int webSocketListenPort = 8897;
-    private static String webSocketHost = "localhost";
-    
-    private static Integer maxVertices = 100;
-    
-    private static String graphOperationLogic = "serverSide";
-    private static boolean layout = true;
-    
-    private static int operationStep;
-    
-    private static Float viewportPixelX = (float) 1000;
-    private static Float viewportPixelY = (float) 1000;
-    private static float zoomLevel = 1;    
-    
-    private static Map<String,Map<String,Object>> globalVertices;
-	private static Map<String,VertexCustom> innerVertices;
-	private static Map<String,VertexCustom> newVertices;
-	private static Map<String,VVEdgeWrapper> edges;
-	private static Map<String,VertexCustom> layoutedVertices;
-	private static String operation;
-	private static Integer capacity;
-	private static Float topModel;
-	private static Float rightModel;
-	private static Float bottomModel;
-	private static Float leftModel;
-	private static Float topModelOld;
-	private static Float rightModelOld;
-	private static Float bottomModelOld;
-	private static Float leftModelOld;
-	private static Float xModelDiff;
-	private static Float yModelDiff;
-	private static VertexCustom secondMinDegreeVertex;
-	private static VertexCustom minDegreeVertex;    
-	
-	public static boolean sentToClientInSubStep;
-	private static Row latestRow;
-    private static FlinkApi api = new FlinkApi();
-    private static WrapperHandler handler;
     private static Server server;
-    public static FlinkResponseHandler flinkResponseHandler;
-    
-//    private static JobID jobId;
 	
     public static void main(final String[] args) {
     	
@@ -80,9 +22,9 @@ public class Main {
 		//initialize Server
 		server = Server.getInstance();
 		server.initializeServerFunctionality();
+		server.initializeFlinkAndGraphRep();
 	
-		flinkResponseHandler = new FlinkResponseHandler();
-		flinkResponseHandler.listen();
+		
 
 //		System.out.println(stringBuilder.toString());
 //		server.initializeServerFunctionality2();
