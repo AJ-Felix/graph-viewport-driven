@@ -42,7 +42,7 @@ public class FlinkCore {
 	  private String filePath;
 	  
 	  
-	public  FlinkCore () {
+	public  FlinkCore (String clusterEntryPointIp4, int clusterEntryPointPort) {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
 	    this.graflink_cfg = GradoopFlinkConfig.createConfig(env);
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
@@ -55,7 +55,7 @@ public class FlinkCore {
 //		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
 		
 		//operate on cluster
-		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment("localhost", 8081, "/home/aljoscha/eclipse/java-2020-03/eclipse/Test.jar");
+		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort , "/home/aljoscha/eclipse/java-2020-03/eclipse/Test.jar");
 		
 		
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);

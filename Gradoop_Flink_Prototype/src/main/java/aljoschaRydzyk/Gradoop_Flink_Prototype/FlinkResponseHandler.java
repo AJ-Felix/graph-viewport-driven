@@ -7,7 +7,10 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class FlinkResponseHandler {
+public class FlinkResponseHandler extends Thread{
+	private Thread t;
+	private String threadName;
+	
 	private String operation;
 	private boolean verticesHaveCoordinates;
 	private WrapperHandler wrapperHandler;
@@ -17,16 +20,39 @@ public class FlinkResponseHandler {
     private Socket echoSocket;
     private PrintWriter out;
 	private BufferedReader in;
+	
+	@Override
+	public void start() {
+		if (t == null) {
+			t = new Thread(this, threadName);
+			t.start();
+		}
+	}
+	
+	@Override
+	public void run() {
+		System.out.println("thread running");
+		this.listen();
+	}
     
 	public FlinkResponseHandler(WrapperHandler wrapperHandler) {
 		this.wrapperHandler = wrapperHandler;
+		this.threadName = "someThreadName";
+        try {
+			serverSocket = new ServerSocket(port);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
     
     public void listen() {
+//    	FlinkResponseThread flinkResponseThread = new FlinkResponseThread();
+//    	Thread t = new Thread(flinkResponseThread, "flinkResponseThread");
+//    	t.start();
 	    try {
 	    	System.out.println("executing listen on flinkResponseHandler");
-	        serverSocket = new ServerSocket(port);
-	        echoSocket = serverSocket.accept();
+			echoSocket = serverSocket.accept();
 	        out = new PrintWriter(echoSocket.getOutputStream(), true);
 	        in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
             System.out.println("connected to socket!!!");
@@ -85,15 +111,15 @@ public class FlinkResponseHandler {
 	    catch (IOException e) {
 	        e.printStackTrace();
 	    }
-	    finally {
-	        try {
-	        	System.out.println("closing serverSocket!");
-	            serverSocket.close();
-	        }
-	        catch (IOException e) {
-	            e.printStackTrace();
-	        }
-	    }
+//	    finally {
+//	        try {
+//	        	System.out.println("closing serverSocket!");
+//	            serverSocket.close();
+//	        }
+//	        catch (IOException e) {
+//	            e.printStackTrace();
+//	        }
+//	    }
 	    this.listen();
     }
     

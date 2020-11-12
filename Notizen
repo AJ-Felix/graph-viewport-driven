@@ -170,17 +170,36 @@ Layout: Layout does have to be performed after every suboperation step, because 
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
 
+
+
+
 late TODO: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem --> Nochmal checken ob man das nicht ändern kann, dass alles in der Main liegt.
 
 
-TODO: Überlegung Client-seitige graph-semantik ganz zu löschen. Aber nur falls sich serverseitig nicht im Flink Cluster umsetzen lässt!!!
-
-TODO: Fehler im CLient bei AppendJoin und ZoomIn!!! (adja schon in layout mode getestet)
+late-TODO: Überlegung Client-seitige graph-semantik ganz zu löschen. Aber nur falls sich serverseitig nicht im Flink Cluster umsetzen lässt!!!
 
 Late-TODO: FrontEnd Sperre einbauen, bis Operation vollzogen
 Late-TODO: Visualisierung farbig etc.
 
-TDOD: clean code and debug no-layout mode
+TODO: localhost IP dynamisch einlesen, cluster host IP als main Variable übergeben
+
+TODO: Flink Code von Java Code trennen
+
+TODO: Packages bauen
+
+TODO: Jar exportieren auschecken
+
+TODO: Threading wieder von flinkResponseHandler entfernen, weil das Flink-Konfigurationsproblem damit nicht behoben werden konnte
+
+TODO: Graph-Visualisierungs-Reset implementieren
+
+TODO: Viewport spezifikationen dynamisch beziehen oder als main variable übergeben
+
+TODO: parallelität > 1 ausprobieren
+
+TODO: public ip4 of server is still hard-coded in client
+
+late-TODO: implement parser for different ports given by command-line arguments
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
@@ -192,10 +211,9 @@ BuildTopViewAppend:
 
 Es muss gewährleistet sein, dass der Server keine Operation mehr auf den Knoten-Maps durchführt, wenn "layoutBaseString" ankommt!!!
 
-Die Flink-Konfigurationen müssen innerhalb des AbstractReceiveListeners durchgeführt werden. Wenn Sie vorher, z.B. während der Serverinitialisierung durchgeführt werden, kommt es bei der ersten Ausführung von Table API
-Operationen zu einem kryptischen Fehler. Möglicherweise liegt das daran, dass der gleiche Thread welcher die Flink config ausführt, auch das erste .execute() ausführen muss, um die Environment zu erstellen.
+Die Flink-Konfigurationen müssen innerhalb des AbstractReceiveListeners durchgeführt werden. Wenn Sie vorher, z.B. während der Serverinitialisierung durchgeführt werden, kommt es bei der ersten Ausführung von Table API Operationen zu einem kryptischen Fehler. Möglicherweise liegt das daran, dass der gleiche Thread welcher die Flink config ausführt, auch das erste .execute() ausführen muss, um die Environment zu erstellen. Man kann .execute() aber nicht Exception-free ausführen, ohne vorher Flink Operator definiert zu haben. Die Ausführung der Flink-Konfiguration in einem Thread der anschließend terminiert, behebt das Problem NICHT. 
 
-
+FlinkSink (SocketClient Sink): Der Socket muss wirklich immer komplett neu geöffnet werden, weil Flink den Socket schließt.
 
 REST API: Aus irgendeinem Grund werden Patch requests über ajax, welche über javascript im browser-basierten Client ausgeführt werden, vom Server blockiert (CORS). GET requests funktionieren. Die Patch requests sind notwendig
 um Jobs zu terminieren. Ein Workaround wäre, Flink serverseitig in einem separaten Thread laufen zu lassen und den patch request über die java library der rest api vom server aus durch zuführen.

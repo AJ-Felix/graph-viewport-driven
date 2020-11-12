@@ -1,4 +1,4 @@
-let ws = new WebSocket("ws://localhost:8897/graphData");
+let ws = new WebSocket("ws://139.18.13.19:8897/graphData");
 
 let handler;
 

@@ -4,8 +4,13 @@ import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.websocket;
 
 import java.io.Serializable;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -27,7 +32,7 @@ public class Server implements Serializable{
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
     private String webSocketListenPath = "/graphData";
     private int webSocketListenPort = 8897;
-    private String webSocketHost = "localhost";
+//    private String webSocketHost = "localhost";
     
     private Integer maxVertices = 100;
     
@@ -48,6 +53,12 @@ public class Server implements Serializable{
     private WrapperHandler wrapperHandler;
     private FlinkResponseHandler flinkResponseHandler;
     
+    private String localMachinePublicIp4;
+    private int flinkResponsePort;
+    
+    private String clusterEntryPointIp4;
+    private int clusterEntryPointPort;
+    
     private static Server server = null;
     
     public static Server getInstance() {
@@ -61,7 +72,7 @@ public class Server implements Serializable{
     
     public void initializeServerFunctionality() {
     	Undertow server = Undertow.builder()
-    			.addHttpListener(webSocketListenPort, webSocketHost)
+    			.addHttpListener(webSocketListenPort, localMachinePublicIp4)
                 .setHandler(path()
                 	.addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
 	                    channels.add(channel);
@@ -88,7 +99,29 @@ public class Server implements Serializable{
   		
   		//initialize FlinkResponseHandler
         flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
-		flinkResponseHandler.listen();
+        flinkResponseHandler.start();
+//		flinkResponseHandler.listen();
+    }
+    
+    public void setPublicIp4Adresses(String clusterEntryPointIp4) throws SocketException {
+    	this.clusterEntryPointIp4 = clusterEntryPointIp4;
+    	this.clusterEntryPointPort = 8081;
+    	this.flinkResponsePort = 8898;
+    	Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()){
+            NetworkInterface intFace = interfaces.nextElement();
+            System.out.println(intFace);
+            if (!intFace.isUp() || intFace.isLoopback() || intFace.isVirtual()) continue;
+            Enumeration<InetAddress> addresses = intFace.getInetAddresses();
+            while (addresses.hasMoreElements()){
+                InetAddress address = addresses.nextElement();
+                if (address.isLoopbackAddress()) continue;
+                if (address instanceof Inet4Address) {
+                	localMachinePublicIp4 = address.getHostAddress().toString();
+                	System.out.println("adress :" + address.getHostAddress().toString());
+                }
+            }
+        }
     }
     
     private AbstractReceiveListener getListener() {
@@ -132,7 +165,7 @@ public class Server implements Serializable{
 //                	flinkCore.getGraphUtil().setVisualizedVertices(visualizedVertices);
 //                } 
                 else if (messageData.startsWith("buildTopView")) {
-                	flinkCore = new FlinkCore();
+                	flinkCore = new FlinkCore(clusterEntryPointIp4, clusterEntryPointPort);
                   	Float topModel = (float) 0;
                 	Float rightModel = (float) 4000;
                 	Float bottomModel = (float) 4000;
@@ -235,8 +268,8 @@ public class Server implements Serializable{
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinatesRetract());
 			}
-			wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
-//			wrapperLine.addSink(new SocketClientSink<Tuple2<Boolean,String>>("localhost", 8898, 
+			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+//			wrapperLine.addSink(new SocketClientSink<Tuple2<Boolean,String>>("localhost", flinkResponsePort, 
 //					new TypeInformationSerializationSchema<>(
 //			        wrapperLine.getType(), 
 //			        flinkCore.getFsEnv().getConfig()), 3));
@@ -268,7 +301,7 @@ public class Server implements Serializable{
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 			}
-			wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 			
 			
 
@@ -301,7 +334,7 @@ public class Server implements Serializable{
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 			}
-			wrapperLine.addSink(new SocketClientSink<String>("139.18.13.19", 8898, new SimpleStringSchema()));
+			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 			
 			//local execution
 //			DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
@@ -322,7 +355,7 @@ public class Server implements Serializable{
 			flinkResponseHandler.setVerticesHaveCoordinates(true);
 			System.out.println("executing zoom on server class");		    				
 			DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
-			wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 			
 			//local execution
 //			DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
@@ -346,7 +379,7 @@ public class Server implements Serializable{
 //    	} else {
 			
 			DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
-			wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 			
 		//local execution
 //    		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
@@ -418,7 +451,7 @@ public class Server implements Serializable{
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices());	
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			flinkCore.getFsEnv().execute();
@@ -446,7 +479,7 @@ public class Server implements Serializable{
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			flinkCore.getFsEnv().execute();
@@ -473,7 +506,7 @@ public class Server implements Serializable{
     	setOperationStep(3);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutThirdStep(wrapperHandler.getLayoutedVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			flinkCore.getFsEnv().execute();
@@ -499,7 +532,7 @@ public class Server implements Serializable{
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(wrapperHandler.getLayoutedVertices(),
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -526,7 +559,7 @@ public class Server implements Serializable{
     	setOperationStep(1);
 		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutFirstStep(wrapperHandler.getLayoutedVertices());
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			flinkCore.getFsEnv().execute();
@@ -560,7 +593,7 @@ public class Server implements Serializable{
 		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutSecondStep(wrapperHandler.getLayoutedVertices(), 
 				wrapperHandler.getNewVertices());
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
@@ -588,7 +621,7 @@ public class Server implements Serializable{
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
 		try {
 			flinkCore.getFsEnv().execute();
@@ -616,7 +649,7 @@ public class Server implements Serializable{
     	DataStream<Row> wrapperStream = flinkCore.panLayoutSecondStep(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
 		try {
 			flinkCore.getFsEnv().execute();
@@ -643,7 +676,7 @@ public class Server implements Serializable{
     	setOperationStep(3);
     	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(wrapperHandler.getLayoutedVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
 		try {
 			flinkCore.getFsEnv().execute();
@@ -669,7 +702,7 @@ public class Server implements Serializable{
     	DataStream<Row> wrapperStream = flinkCore.panLayoutFourthStep(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-    	wrapperLine.addSink(new SocketClientSink<String>("localhost", 8898, new SimpleStringSchema()));
+    	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 		try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {

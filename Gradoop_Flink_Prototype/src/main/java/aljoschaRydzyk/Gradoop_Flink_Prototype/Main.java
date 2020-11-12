@@ -1,7 +1,16 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Enumeration;
 
 public class Main {
 	
@@ -19,12 +28,23 @@ public class Main {
 		}
 		System.setOut(fileOut);
 		
+		//parse main input arguments
+		String clusterEntryPointIP4 = args[0];
+		System.out.println(clusterEntryPointIP4);
+		
 		//initialize Server
 		server = Server.getInstance();
+		try {
+			server.setPublicIp4Adresses(clusterEntryPointIP4);
+		} catch (SocketException e) {
+			System.out.println("Could not set local machine's public Ip4 adress!");
+			e.printStackTrace();
+		}
 		server.initializeServerFunctionality();
 		server.initializeHandlers();
-	
+
 		
+		System.out.println("exiting main thread");
 
 //		System.out.println(stringBuilder.toString());
 //		server.initializeServerFunctionality2();
