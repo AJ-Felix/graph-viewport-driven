@@ -175,9 +175,10 @@ late TODO: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen
 
 TODO: Überlegung Client-seitige graph-semantik ganz zu löschen. Aber nur falls sich serverseitig nicht im Flink Cluster umsetzen lässt!!!
 
-TODO: Fehler im CLient bei AppendJoin und ZoomIn!!!
+TODO: Fehler im CLient bei AppendJoin und ZoomIn!!! (adja schon in layout mode getestet)
 
-
+Late-TODO: FrontEnd Sperre einbauen, bis Operation vollzogen
+Late-TODO: Visualisierung farbig etc.
 
 TDOD: clean code and debug no-layout mode
 

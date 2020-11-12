@@ -40,11 +40,11 @@ public class Server implements Serializable{
     private Float viewportPixelY = (float) 1000;
     
 	private String operation;
-	private Integer capacity;  
+//	private Integer capacity;  
 	
 	public boolean sentToClientInSubStep;
 //	private Row latestRow;
-    private FlinkApi api = new FlinkApi();
+//    private FlinkApi api = new FlinkApi();
     private WrapperHandler wrapperHandler;
     private FlinkResponseHandler flinkResponseHandler;
     
@@ -73,7 +73,7 @@ public class Server implements Serializable{
             	).build();
     	server.start();
         System.out.println("Server started!");
-        api.getApiClient().setBasePath("http://localhost:8081");  
+//        api.getApiClient().setBasePath("http://localhost:8081");  
 //        graphOperationLogic = "serverSide";
         
         
@@ -81,8 +81,10 @@ public class Server implements Serializable{
     
     public void initializeHandlers() {
 //    	flinkCore = new FlinkCore(graphOperationLogic);
-  		wrapperHandler = WrapperHandler.getInstance();
+//  		wrapperHandler = WrapperHandler.getInstance();
+    	wrapperHandler = new WrapperHandler();
   		wrapperHandler.initializeGraphRepresentation();
+  		wrapperHandler.initializeAPI();
   		
   		//initialize FlinkResponseHandler
         flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
@@ -364,6 +366,9 @@ public class Server implements Serializable{
     }
     
     private void nextSubStep() {
+    	System.out.println("in nextSubStep function");
+    	System.out.println("operation: " + operation);
+    	System.out.println("operationStep: " + operationStep);
     	if (operation.equals("initial")) {
 //    		if (graphOperationLogic.equals("serverSide")) {
 //    			clearOperation();
@@ -372,15 +377,17 @@ public class Server implements Serializable{
     	} else if (operation.startsWith("zoom")) {
     		if (operation.contains("In")) {
     			if (operationStep == 1) {
-    				if (capacity > 0) {
+    				if (wrapperHandler.getCapacity() > 0) {
     					zoomInLayoutSecondStep();
     				} else {
+    					System.out.println("nextSubStep 1, 4");
     					zoomInLayoutFourthStep();
     				}
     			} else if (operationStep == 2) {
-    				if (capacity > 0) {
+    				if (wrapperHandler.getCapacity() > 0) {
     					zoomInLayoutSecondStep();
     				} else {
+    					System.out.println("nextSubStep 2, 4");
     					zoomInLayoutFourthStep();
     				}
     			} else if (operationStep == 3) zoomInLayoutFourthStep();
@@ -389,13 +396,13 @@ public class Server implements Serializable{
     		}
     	} else if (operation.startsWith("pan")) {
     		if (operationStep == 1) {
-    			if (capacity > 0) {
+    			if (wrapperHandler.getCapacity() > 0) {
     				panLayoutSecondStep();
     			} else {
     				panLayoutFourthStep();
     			}
     		} else if (operationStep == 2) {
-    			if (capacity > 0) {
+    			if (wrapperHandler.getCapacity() > 0) {
     				panLayoutSecondStep();
     			} else {
     				panLayoutFourthStep();
@@ -405,7 +412,9 @@ public class Server implements Serializable{
     }
 
 	private void zoomInLayoutFirstStep() {
+		System.out.println("zoomInfirst, operationStep: " + wrapperHandler.getOperationStep());
     	setOperationStep(1);
+		System.out.println("zoomInfirst, operationStep: " + wrapperHandler.getOperationStep());
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices());	
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
@@ -705,7 +714,7 @@ public class Server implements Serializable{
 	}
 	
 	private void setOperationStep(Integer step) {
-		wrapperHandler.setOperationStep(operationStep);
+		wrapperHandler.setOperationStep(step);
 		operationStep = step;
 	}
 	
@@ -721,6 +730,10 @@ public class Server implements Serializable{
     
     public FlinkCore getFlinkCore() {
     	return this.flinkCore;
+    }
+    
+    public FlinkResponseHandler getFlinkResponseHandler() {
+    	return this.flinkResponseHandler;
     }
 	
 //	public void latestRow(Row element) {

@@ -12,6 +12,7 @@ import java.util.Set;
 import com.nextbreakpoint.flinkclient.api.ApiException;
 import com.nextbreakpoint.flinkclient.api.FlinkApi;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus;
+import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum;
 import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview;
 
 public class WrapperHandler implements Serializable {
@@ -31,22 +32,27 @@ public class WrapperHandler implements Serializable {
 	private VertexCustom minDegreeVertex;    
     private boolean layout = true;
     private Integer maxVertices = 100;
-    private FlinkApi api = new FlinkApi();
+    private FlinkApi api;
     private int operationStep;
     public boolean sentToClientInSubStep;
 
-    private static final class InstanceHolder {
-    	static final WrapperHandler INSTANCE = new WrapperHandler();
-    }
+//    private static final class InstanceHolder {
+//    	static final WrapperHandler INSTANCE = new WrapperHandler();
+//    }
 
-    private WrapperHandler () {
+    public WrapperHandler () {
     	System.out.println("wrapper handler constructor is executed");
     }
 	  
-	public static WrapperHandler getInstance () {
-		return InstanceHolder.INSTANCE;
+//	public static WrapperHandler getInstance () {
+//		return InstanceHolder.INSTANCE;
+//	}
+	 
+	public void initializeAPI() {
+		api = new FlinkApi();
+        api.getApiClient().setBasePath("http://localhost:8081");  
 	}
-	  
+	
 	public void initializeGraphRepresentation() {
 	  	System.out.println("initializing graph representation");
 	  	operation = "initial";
@@ -330,15 +336,24 @@ public class WrapperHandler implements Serializable {
 	}
 	
 	public void addWrapperLayout(VVEdgeWrapper wrapper) {
-		//if in zoomIn3 or pan3: cancel flinkjob and move to next step!
-		if (operationStep == 3 && ((operation == "zoomIn") || (operation == "pan"))) {
+		//if in zoomIn3 or pan3: cancel flinkjob if still running, close socket and reopen for next step and move to next step!
+		System.out.println("wrapperHandler, operationStep: " + operationStep);
+		if (operationStep == 3 && (operation == "zoomIn" || operation == "pan")) {
 			if (capacity == 0) {
 				try {
 					JobIdsWithStatusOverview jobs = api.getJobs();
 					List<JobIdWithStatus> list = jobs.getJobs();
-					String jobid = list.get(0).getId();
 					System.out.println("flink api job list size: " + list.size());
-					api.terminateJob(jobid, "cancel");
+					Iterator<JobIdWithStatus> iter = list.iterator();
+					JobIdWithStatus job;
+					while (iter.hasNext()) {
+						job = iter.next();
+						if (job.getStatus() == StatusEnum.RUNNING) {
+							api.terminateJob(job.getId(), "cancel");
+							break;
+						}
+					}
+					Server.getInstance().getFlinkResponseHandler().closeAndReopen();
 				} catch (ApiException e) {
 					e.printStackTrace();
 				}
@@ -847,5 +862,13 @@ public class WrapperHandler implements Serializable {
     	}
     	System.out.println("layoutedVertices size: ");
     	System.out.println(layoutedVertices.size());
+	}
+
+	public int getCapacity() {
+		return this.capacity;
+	}
+	
+	public int getOperationStep() {
+		return this.operationStep;
 	}
 }

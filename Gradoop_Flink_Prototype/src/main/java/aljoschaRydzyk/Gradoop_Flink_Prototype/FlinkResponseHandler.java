@@ -13,10 +13,10 @@ public class FlinkResponseHandler {
 	private WrapperHandler wrapperHandler;
 	private int port = 8898;
     private ServerSocket serverSocket = null;
-    public String line;
-//    private Socket echoSocket;
-//    private PrintWriter out;
-//	private  BufferedReader in;
+    private String line;
+    private Socket echoSocket;
+    private PrintWriter out;
+	private BufferedReader in;
     
 	public FlinkResponseHandler(WrapperHandler wrapperHandler) {
 		this.wrapperHandler = wrapperHandler;
@@ -26,9 +26,9 @@ public class FlinkResponseHandler {
 	    try {
 	    	System.out.println("executing listen on flinkResponseHandler");
 	        serverSocket = new ServerSocket(port);
-	        Socket echoSocket = serverSocket.accept();
-	        PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
-	        BufferedReader in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+	        echoSocket = serverSocket.accept();
+	        out = new PrintWriter(echoSocket.getOutputStream(), true);
+	        in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
             System.out.println("connected to socket!!!");
             line = "empty";
             if (!(operation.startsWith("initial"))) {
@@ -97,16 +97,17 @@ public class FlinkResponseHandler {
 	    this.listen();
     }
     
-//    public void close() {
-//		try {
-//			in.close();
-//			out.close();
-//			echoSocket.close();
-//			serverSocket.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}  
-//    }
+    public void closeAndReopen() {
+		try {
+			in.close();
+			out.close();
+			echoSocket.close();
+			serverSocket.close();
+			this.listen();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}  
+    }
 	
 	private VVEdgeWrapper parseWrapperStringNoCoordinates(String line) {
 		String[] array = line.split(",");
