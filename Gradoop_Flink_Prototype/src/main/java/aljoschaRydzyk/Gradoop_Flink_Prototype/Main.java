@@ -1,16 +1,8 @@
 package aljoschaRydzyk.Gradoop_Flink_Prototype;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.util.Enumeration;
 
 public class Main {
 	

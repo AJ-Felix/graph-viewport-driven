@@ -194,10 +194,12 @@ TODO: Threading wieder von flinkResponseHandler entfernen, weil das Flink-Konfig
 TODO: Graph-Visualisierungs-Reset implementieren
 
 TODO: Viewport spezifikationen dynamisch beziehen oder als main variable übergeben
+	- Wenn das Layout schon bestimmt wurde, dann bestimmt buildTopView die Anordung der Knoten und entsprechend in welcher Ebene/Pan sich die Visualisierung befindet. (cy.fit()???)
+	- Wenn das Layout noch nicht bestimmt wurde, dann sollten alle Knoten innerhalb von 4000 * 4000 gelayoutet werden, aber das Ganze dann auf die Viewportgröße resized werden.
 
 TODO: parallelität > 1 ausprobieren
 
-TODO: public ip4 of server is still hard-coded in client
+TODO: public ip4 of server is still hard-coded in client --> config Datei erstellen die vom Nutzer entsprechend angepasst werden muss
 
 late-TODO: implement parser for different ports given by command-line arguments
 

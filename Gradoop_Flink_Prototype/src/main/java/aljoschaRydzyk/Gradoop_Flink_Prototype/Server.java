@@ -35,6 +35,7 @@ public class Server implements Serializable{
 //    private String webSocketHost = "localhost";
     
     private Integer maxVertices = 100;
+    private Integer vertexCountNormalizationFactor = 5000;
     
 //    private String graphOperationLogic;
     private boolean layout = true;
@@ -53,11 +54,11 @@ public class Server implements Serializable{
     private WrapperHandler wrapperHandler;
     private FlinkResponseHandler flinkResponseHandler;
     
-    private String localMachinePublicIp4;
-    private int flinkResponsePort;
+    private String localMachinePublicIp4 = "localhost";
+    private int flinkResponsePort = 8898;
     
-    private String clusterEntryPointIp4;
-    private int clusterEntryPointPort;
+    private String clusterEntryPointIp4 = "localhost";
+    private int clusterEntryPointPort = 8081;
     
     private static Server server = null;
     
@@ -105,8 +106,6 @@ public class Server implements Serializable{
     
     public void setPublicIp4Adresses(String clusterEntryPointIp4) throws SocketException {
     	this.clusterEntryPointIp4 = clusterEntryPointIp4;
-    	this.clusterEntryPointPort = 8081;
-    	this.flinkResponsePort = 8898;
     	Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()){
             NetworkInterface intFace = interfaces.nextElement();
@@ -139,6 +138,12 @@ public class Server implements Serializable{
                 	setLayoutMode(false);
                 } else if (messageData.equals("postLayout")) {
                 	setLayoutMode(true);
+                } else if (messageData.startsWith("viewportSize")) {
+                	String[] arrMessageData = messageData.split(";");
+                	viewportPixelX = Float.parseFloat(arrMessageData[1]);
+                	viewportPixelY = Float.parseFloat(arrMessageData[2]);
+                	maxVertices = (int) (viewportPixelX * viewportPixelY / vertexCountNormalizationFactor);
+                	System.out.println("maxVertices derived from viewport: " + maxVertices);
                 } else if (messageData.startsWith("layoutBaseString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));

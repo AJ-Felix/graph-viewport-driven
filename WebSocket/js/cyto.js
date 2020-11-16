@@ -135,7 +135,17 @@ function addVertexToLayoutBase(dataArray){
 }
 
 let cyto = document.getElementById('cy');
+// let cyWidth;
+// let cyHeight;
+// let cyWidthNew;
+// let cyHeightNew;
+
 cyto.addEventListener('mousedown', function(e){
+	
+	// const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
+	// cyWidth = boundingClientRect.width;
+	// cyHeight = boundingClientRect.height;
+	
 	console.log("mouse went down in cy (drag)");
 	xRenderDiff = 0;
 	yRenderDiff = 0;
@@ -151,6 +161,15 @@ cyto.addEventListener('mousedown', function(e){
 });
 
 cyto.addEventListener("mouseup", function(e){
+	
+	// const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
+	// cyWidthNew = boundingClientRect.width;
+	// cyHeightNew = boundingClientRect.height;
+	
+	// if (cyWidthNew != cyWidth || cyHeightNew != cyHeight){
+		// console.log("now send viewport change to server");
+	// }
+	
     this.onmousemove = null;
 	const zoomLevel = cy.zoom();
 	const xModelDiff = - (xRenderDiff / zoomLevel);
@@ -184,6 +203,7 @@ document.addEventListener("click",
 		console.log(cy.zoom());
 		console.info("cytoX: " + (e.pageX - cyto.offsetLeft));
 		console.info("cytoY: " + (e.pageY - cyto.offsetTop));
+		console.log(document.getElementById('cy').getBoundingClientRect())
 	}
 );
 
@@ -257,4 +277,7 @@ cyto.addEventListener("wheel", function(e) {
 		ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	}
 });
+
+
+
 

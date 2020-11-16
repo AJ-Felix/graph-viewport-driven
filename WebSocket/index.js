@@ -5,6 +5,7 @@ let handler;
 ws.onopen = function() {
     console.log("Opened!");
     ws.send("Hello Server");
+	resizedw();
 };
 
 let messageQueue = new Array();
@@ -236,3 +237,47 @@ document.getElementById('cy').addEventListener('mousedown',
 		console.log("Mouse went down on cytoscape container");
 	}
 )
+
+
+// const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
+// const heightOutput = document.querySelector('#height');
+// const widthOutput = document.querySelector('#width')
+
+// function reportWindowSize() {
+	// const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
+	// const cyWidth = boundingClientRect.width;
+	// const cyHeight = boundingClientRect.height;
+	// heightOutput.textContent = cyWidth;
+	// widthOutput.textContent = cyHeight;
+	// console.log("resized viewport!");
+	// ws.send("viewportSize;" + cyHeight ";" + cyWidth);
+// }
+
+// window.onresize = reportWindowSize;
+
+
+const heightOutput = document.querySelector('#height');
+const widthOutput = document.querySelector('#width');
+
+const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
+let cyHeight = boundingClientRect.height;
+let cyWidth = boundingClientRect.width;
+
+
+
+function resizedw(){
+	const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
+	cyHeight = boundingClientRect.height;
+	cyWidth = boundingClientRect.width;
+	console.log("resizing after timeout");
+	heightOutput.textContent = cyWidth;
+	widthOutput.textContent = cyHeight;
+	ws.send("viewportSize;" + cyWidth + ";" + cyHeight);
+}
+
+
+var doit;
+window.onresize = function(){
+  clearTimeout(doit);
+  doit = setTimeout(resizedw, 100);
+};

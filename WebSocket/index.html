@@ -3,6 +3,8 @@
 <head>
 
         <meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
 
         <title>Demo Chat</title>
 
@@ -13,8 +15,8 @@
 			padding:20px;
 		}
 		#cy {
-			width: 1000px;
-			height:1000px;
+			width: auto;
+			height: 90vh;
 			display: block;
 			background: 777;
 		}
@@ -26,6 +28,11 @@
 		.connect-msg {color:green;}
 		.disconnect-msg {color:red;}
 		.send-msg {color:#888}
+		
+		#myContainer {
+			background: blue;
+		}
+		
 	</style>
 
 
@@ -40,8 +47,22 @@
 	<div id="console" class="well">
 	</div>
 	
-	<div id="cy" style="border:10px solid #cecece;" >
+	<div class="container-fluid" id="myContainer">
+		<h1>My First Bootstrap Page</h1>
+		<p>This is some text.</p>
 	</div>
+	
+	<p>Resize the browser window to fire the <code>resize</code> event.</p>
+	<p>Window height: <span id="height"></span></p>
+	<p>Window width: <span id="width"></span></p>
+	
+	<div class="container-fluid" id="myContainer">
+		<div id="cy" style="border:10px solid #cecece;" >
+		</div>
+	</div>
+	
+	<!-- <div id="cy" style="border:10px solid #cecece;" > -->
+	<!-- </div> -->
 
 	<div id="buttons" >
 		<button type="button" onClick="resetVisualization()" class="btn" id="send">Reset</button>
@@ -74,6 +95,16 @@
 	<script src="https://unpkg.com/layout-base/layout-base.js"></script>
 	<script src="https://unpkg.com/cose-base/cose-base.js"></script>
 	<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+	
+	 <!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+	<!-- jQuery library -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+	<!-- Latest compiled JavaScript -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+	
 	<script src="index.js"></script>
 	<script src="js/cyto.js"></script>
 	<script src="js/vertex.js"></script>
