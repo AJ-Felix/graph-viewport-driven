@@ -14,7 +14,7 @@ import com.nextbreakpoint.flinkclient.api.FlinkApi;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.GraphUtils.GraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
 
 import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview;
 

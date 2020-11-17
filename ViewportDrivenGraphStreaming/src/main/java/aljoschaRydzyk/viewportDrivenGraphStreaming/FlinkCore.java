@@ -19,10 +19,10 @@ import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
 import org.gradoop.storage.hbase.impl.factory.HBaseEPGMStoreFactory;
 import org.gradoop.storage.hbase.impl.io.HBaseDataSource;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.GraphUtils.AdjacencyGraphUtil;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.GraphUtils.CSVGraphUtilJoin;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.GraphUtils.GradoopGraphUtil;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.GraphUtils.GraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.AdjacencyGraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.CSVGraphUtilJoin;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GradoopGraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
 
 public class FlinkCore {
 	  private ExecutionEnvironment env;
@@ -53,7 +53,7 @@ public class FlinkCore {
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
-		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort , "/home/aljoscha/eclipse/java-2020-03/eclipse/Test.jar");
+		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort , "/home/aljoscha/graph-viewport-driven/viewportDrivenGraphStreaming.jar");
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		this.vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
 		this.wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "

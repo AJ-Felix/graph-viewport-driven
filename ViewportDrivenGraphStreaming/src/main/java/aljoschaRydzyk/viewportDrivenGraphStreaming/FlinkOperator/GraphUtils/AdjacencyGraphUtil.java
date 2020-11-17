@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming.GraphUtils;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
