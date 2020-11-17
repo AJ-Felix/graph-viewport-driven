@@ -48,16 +48,7 @@ public class FlinkCore {
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
-
-		
-		//operate locally
-//		org.apache.flink.configuration.Configuration conf = new Configuration();
-//		this.fsEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
-		
-		//operate on cluster
 		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort , "/home/aljoscha/eclipse/java-2020-03/eclipse/Test.jar");
-		
-		
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		this.vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
 		this.wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
@@ -65,7 +56,6 @@ public class FlinkCore {
 				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
 		this.filePath = "/home/aljoscha/graph-viewport-driven/csvGraphs/adjacency/one10thousand_sample_2_third_degrees_layout";
 		System.out.println("initiated Flink.");
-
 	}
 	
 	public void setTopModelPos(Float topModelPos) {
@@ -129,9 +119,7 @@ public class FlinkCore {
 		try {
 			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
 			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
-//			if (graphOperationLogic.equals("serverSide")) {
-				this.graphUtil.buildAdjacencyMatrix();
-//			}
+			this.graphUtil.buildAdjacencyMatrix();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}	
@@ -140,30 +128,22 @@ public class FlinkCore {
 	
 	public GraphUtil initializeCSVGraphUtilJoin() {
 		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.filePath, this.vertexFields, this.wrapperFields);
-//		if (graphOperationLogic.equals("serverSide")) {
 			try {
 				this.graphUtil.buildAdjacencyMatrix();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-//		}
 		return this.graphUtil;
 	}
 	
 	public GraphUtil initializeAdjacencyGraphUtil() {
 		this.graphUtil =  new AdjacencyGraphUtil(this.fsEnv, this.filePath);
-//		graphVis = new GraphVis();
-//		GraphVis.setGraphVis(((AdjacencyGraphUtil) this.graphUtil).getAdjMatrix());
 		return this.graphUtil;
 	}
 	
 	public GraphUtil getGraphUtil() {
 		return this.graphUtil;
 	}
-	
-//	public GraphVis getGraphVis() {
-//		return this.graphVis;
-//	}
 	
 	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(Integer maxVertices){
 		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, maxVertices);
@@ -267,8 +247,4 @@ public class FlinkCore {
 		graphUtil.initializeStreams();
 		return graphUtil.getWrapperStream();
 	}
-
-	
-
-
 }

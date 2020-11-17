@@ -18,8 +18,6 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 
-import com.nextbreakpoint.flinkclient.api.FlinkApi;
-
 import io.undertow.Undertow;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
@@ -31,37 +29,23 @@ public class Server implements Serializable{
 	private FlinkCore flinkCore;
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
     private String webSocketListenPath = "/graphData";
-    private int webSocketListenPort = 8897;
-//    private String webSocketHost = "localhost";
-    
+    private int webSocketListenPort = 8897;    
     private Integer maxVertices = 100;
     private Integer vertexCountNormalizationFactor = 5000;
-    
-//    private String graphOperationLogic;
     private boolean layout = true;
-    
     private int operationStep;
-    
     private Float viewportPixelX = (float) 1000;
     private Float viewportPixelY = (float) 1000;
-    
 	private String operation;
-//	private Integer capacity;  
-	
 	public boolean sentToClientInSubStep;
-//	private Row latestRow;
-//    private FlinkApi api = new FlinkApi();
     private WrapperHandler wrapperHandler;
     private FlinkResponseHandler flinkResponseHandler;
-    
     private String localMachinePublicIp4 = "localhost";
     private int flinkResponsePort = 8898;
-    
     private String clusterEntryPointIp4 = "localhost";
     private int clusterEntryPointPort = 8081;
-    
     private static Server server = null;
-    
+  
     public static Server getInstance() {
     	if (server == null) server = new Server();
 		return server;
@@ -80,23 +64,15 @@ public class Server implements Serializable{
 	                    channel.getReceiveSetter().set(getListener());
 	                    channel.resumeReceives();
 	                }))
-//                	.addPrefixPath("/", resource(new ClassPathResourceManager(Main.class.getClassLoader(),
-//                        Main.class.getPackage())).addWelcomeFiles("index.html")/*.setDirectoryListingEnabled(true)*/)
             	).build();
     	server.start();
-        System.out.println("Server started!");
-//        api.getApiClient().setBasePath("http://localhost:8081");  
-//        graphOperationLogic = "serverSide";
-        
-        
+        System.out.println("Server started!");  
     }
     
     public void initializeHandlers() {
-//    	flinkCore = new FlinkCore(graphOperationLogic);
-//  		wrapperHandler = WrapperHandler.getInstance();
     	wrapperHandler = new WrapperHandler();
   		wrapperHandler.initializeGraphRepresentation();
-  		wrapperHandler.initializeAPI();
+  		wrapperHandler.initializeAPI(localMachinePublicIp4);
   		
   		//initialize FlinkResponseHandler
         flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
@@ -133,22 +109,50 @@ public class Server implements Serializable{
                     WebSockets.sendText(messageData, session, null);
                 }
                 if (messageData.equals("preLayout")) {
-//                	layoutedVertices = new HashMap<String,VertexCustom>();
                 	wrapperHandler.resetLayoutedVertices();
                 	setLayoutMode(false);
                 } else if (messageData.equals("postLayout")) {
                 	setLayoutMode(true);
+                } else if (messageData.equals("resetWrapperHandler")) {
+                	wrapperHandler.initializeGraphRepresentation();
+                } else if (messageData.startsWith("fitted")) {
+                	String[] arrMessageData = messageData.split(";");
+                	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
+                	Float yRenderPos = Float.parseFloat(arrMessageData[2]);
+                	Float zoomLevel = Float.parseFloat(arrMessageData[3]);
+                	Float topModel = - yRenderPos / zoomLevel;
+                	Float leftModel = - xRenderPos / zoomLevel;
+                	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
+                	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
+                	setModelPositions(topModel, rightModel, bottomModel, leftModel);
                 } else if (messageData.startsWith("viewportSize")) {
                 	String[] arrMessageData = messageData.split(";");
-                	viewportPixelX = Float.parseFloat(arrMessageData[1]);
-                	viewportPixelY = Float.parseFloat(arrMessageData[2]);
-                	maxVertices = (int) (viewportPixelX * viewportPixelY / vertexCountNormalizationFactor);
+                	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
+                	Float yRenderPos = Float.parseFloat(arrMessageData[2]);
+                	Float zoomLevel = Float.parseFloat(arrMessageData[3]);
+                	viewportPixelX = Float.parseFloat(arrMessageData[4]);
+                	viewportPixelY = Float.parseFloat(arrMessageData[5]);                	
+                	Float topModel = - yRenderPos / zoomLevel;
+                	Float leftModel = - xRenderPos / zoomLevel;
+                	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
+                	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
+                	Integer tempMaxVertices = maxVertices;
+                	if (bottomModel - topModel > 4000) {
+                		maxVertices = (int) (viewportPixelX * viewportPixelX /vertexCountNormalizationFactor);
+                	} else if (rightModel - leftModel > 4000) {
+                		maxVertices = (int) (viewportPixelY * viewportPixelY /vertexCountNormalizationFactor);
+                	} else {
+                    	maxVertices = (int) (viewportPixelX * viewportPixelY / vertexCountNormalizationFactor);
+                	}
+                	if (tempMaxVertices != maxVertices) {
+                		//TODO: Resizing... Add or remove vertices, write new model coordinates to data structures
+                		//ideally find out, how much resizing in x and y direction and add vertices accordingly
+                	}
                 	System.out.println("maxVertices derived from viewport: " + maxVertices);
                 } else if (messageData.startsWith("layoutBaseString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
                 	list.remove(0);
-//                	for (VertexCustom vertex : innerVertices.values()) System.out.println(vertex.getIdGradoop());
                 	wrapperHandler.updateLayoutedVertices(list);
                 	nextSubStep();
                 } else if (messageData.startsWith("maxVertices")) {
@@ -156,19 +160,6 @@ public class Server implements Serializable{
                 	maxVertices = Integer.parseInt(arrMessageData[1]);
                 	wrapperHandler.setMaxVertices(maxVertices);
                 } 
-//                else if (messageData.startsWith("edgeIdString")) {
-//                	String[] arrMessageData = messageData.split(";");
-//                	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
-//                	list.remove(0);
-//                	Set<String> visualizedWrappers = new HashSet<String>(list);
-//                	flinkCore.getGraphUtil().setVisualizedWrappers(visualizedWrappers);
-//                } else if (messageData.startsWith("vertexIdString")) {
-//                	String[] arrMessageData = messageData.split(";");
-//                	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
-//                	list.remove(0);
-//                	Set<String> visualizedVertices = new HashSet<String>(list);
-//                	flinkCore.getGraphUtil().setVisualizedVertices(visualizedVertices);
-//                } 
                 else if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore(clusterEntryPointIp4, clusterEntryPointPort);
                   	Float topModel = (float) 0;
@@ -192,6 +183,7 @@ public class Server implements Serializable{
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
+                	Server.getInstance().sendToAll("fit");
                 	if (layout) wrapperHandler.clearOperation();
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
@@ -262,7 +254,6 @@ public class Server implements Serializable{
     private void buildTopViewRetract() {
     	flinkCore.initializeGradoopGraphUtil();
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract(maxVertices);
-//		if (graphOperationLogic.equals("serverSide")) {
 			wrapperHandler.initializeGraphRepresentation();
 			flinkResponseHandler.setOperation("initialRetract");
 			DataStream<String> wrapperLine;
@@ -274,29 +265,12 @@ public class Server implements Serializable{
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinatesRetract());
 			}
 			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-//			wrapperLine.addSink(new SocketClientSink<Tuple2<Boolean,String>>("localhost", flinkResponsePort, 
-//					new TypeInformationSerializationSchema<>(
-//			        wrapperLine.getType(), 
-//			        flinkCore.getFsEnv().getConfig()), 3));
-			
-			//local execution
-//			DataStream<Tuple2<Boolean,VVEdgeWrapper>> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperRetract()).setParallelism(1);
-//			wrapperStreamWrapper.addSink(new WrapperObjectSinkRetractInitial()).setParallelism(1);
-//		} else {
-//			wrapperStream.addSink(new WrapperRetractSink());
-//		}
     }
     
     private void buildTopViewAppendJoin() {
     	flinkCore.initializeCSVGraphUtilJoin();
 		DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
-//		if (graphOperationLogic.equals("serverSide")) {
-		
-		
-		
 			wrapperHandler.initializeGraphRepresentation();
-			
-			//remote execution
 			flinkResponseHandler.setOperation("initialAppend");
 			DataStream<String> wrapperLine;
 			if (layout) {
@@ -306,22 +280,7 @@ public class Server implements Serializable{
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 			}
-			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-			
-			
-
-			//local execution
-//			DataStream<VVEdgeWrapper> wrapperStreamWrapper;
-//			if (layout) {
-//				wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-//			} else {
-//				wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//			}
-//			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendInitial()).setParallelism(1);	
-//			
-//		} else {
-//			wrapperStream.addSink(new WrapperAppendSink());
-//		}
+			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));	
     }
     
     private void buildTopViewAdjacency() {
@@ -329,8 +288,7 @@ public class Server implements Serializable{
 		wrapperHandler.initializeGraphRepresentation();
 		flinkResponseHandler.setOperation("initialAppend");
 		DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
-//		if (graphOperationLogic.equals("serverSide")) {
-//			
+		wrapperStream.print();
 			DataStream<String> wrapperLine;
 			if (layout) {
 				flinkResponseHandler.setVerticesHaveCoordinates(true);
@@ -340,67 +298,35 @@ public class Server implements Serializable{
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 			}
 			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-			
-			//local execution
-//			DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-//			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendInitial());
-			
-//		} else {
-//			wrapperStream.addSink(new WrapperAppendSink());
-//		}
     }
     
     private void zoom() {
     	DataStream<Row> wrapperStream = flinkCore.zoom();
     	wrapperStream.print();
-//    	if (graphOperationLogic.equals("clientSide")) {
-//    		wrapperStream.addSink(new WrapperAppendSink());
-//    	} else {
-			
-			flinkResponseHandler.setVerticesHaveCoordinates(true);
-			System.out.println("executing zoom on server class");		    				
-			DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
-			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-			
-			//local execution
-//			DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-//			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
-//    	}
+		flinkResponseHandler.setVerticesHaveCoordinates(true);
+		System.out.println("executing zoom on server class");		    				
+		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
+		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//    	if (graphOperationLogic.equals("serverSide")) {
-//    		clearOperation();
-    		wrapperHandler.clearOperation();
-//    	}
+    	wrapperHandler.clearOperation();
+
     }
     
     private void pan() {
-    	DataStream<Row> wrapperStream = flinkCore.pan();
-//    	if (graphOperationLogic.equals("clientSide")) {
-//    		wrapperStream.addSink(new WrapperAppendSink());
-//    	} else {
-			
-			DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
-			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-			
-		//local execution
-//    		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppend());
-//			wrapperStreamWrapper.addSink(new WrapperObjectSinkAppend()).setParallelism(1);
-		
-//    	}
+    	DataStream<Row> wrapperStream = flinkCore.pan();			
+		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
+		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//    	if (graphOperationLogic.equals("serverSide")) {
-//    		clearOperation();
-    		wrapperHandler.clearOperation();
-//    	}
+    	wrapperHandler.clearOperation();
     }
     
     private void nextSubStep() {
@@ -408,10 +334,7 @@ public class Server implements Serializable{
     	System.out.println("operation: " + operation);
     	System.out.println("operationStep: " + operationStep);
     	if (operation.equals("initial")) {
-//    		if (graphOperationLogic.equals("serverSide")) {
-//    			clearOperation();
-        		wrapperHandler.clearOperation();
-//        	}
+        	wrapperHandler.clearOperation();
     	} else if (operation.startsWith("zoom")) {
     		if (operation.contains("In")) {
     			if (operationStep == 1) {
@@ -464,19 +387,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
 		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutSecondStep();
-
-    	//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		wrapperStream.addSink(new CheckEmptySink());
-//		latestRow = null;
-//		Main.sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (latestRow == null || Main.sentToClientInSubStep == false) zoomInLayoutSecondStep();
     }
     
     private void zoomInLayoutSecondStep() {
@@ -492,19 +402,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
 		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutThirdStep();
-    	
-    	//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		wrapperStream.addSink(new CheckEmptySink());
-//		latestRow = null;
-//		Main.sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (latestRow == null || Main.sentToClientInSubStep == false) zoomInLayoutThirdStep();
     }
     
     private  void zoomInLayoutThirdStep() {
@@ -519,17 +416,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
 		if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutFourthStep();
-    	
-		//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		Main.sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (Main.sentToClientInSubStep == false) zoomInLayoutFourthStep();
     }
     
     private void zoomInLayoutFourthStep() {
@@ -544,20 +430,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
     	wrapperHandler.clearOperation();
-    	
-    	//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-    	
-//		if (graphOperationLogic.equals("serverSide")) {
-//    		handler.clearOperation();
-//    		clearOperation();
-//    	}
     }
     
     private void zoomOutLayoutFirstStep() {
@@ -573,24 +445,6 @@ public class Server implements Serializable{
 		}
 		if (flinkResponseHandler.getLine() == "empty" || 
 				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
-		
-		//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		wrapperStream.addSink(new CheckEmptySink());
-//		latestRow = null;
-//		sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if ((sentToClientInSubStep == false || latestRow == null) 
-////				&& graphOperationLogic.equals("serverSide")
-//				) {
-//			handler.clearOperation();
-////			clearOperation();
-//		}
     }
     
     private void zoomOutLayoutSecondStep() {
@@ -605,19 +459,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
 		wrapperHandler.clearOperation();
-		
-		//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-////		if (graphOperationLogic.equals("serverSide")) {
-////			clearOperation(); 
-//			handler.clearOperation();
-////		}
     }
     
     
@@ -634,19 +475,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}		
 		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutSecondStep();
-
-    	//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		wrapperStream.addSink(new CheckEmptySink());
-//		latestRow = null;
-//		Main.sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutSecondStep();
     }
     
     private void panLayoutSecondStep() {
@@ -662,19 +490,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}		
 		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutThirdStep();
-		
-    	//local execution
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		wrapperStream.addSink(new CheckEmptySink());
-//		latestRow = null;
-//		Main.sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (latestRow == null || Main.sentToClientInSubStep == false) panLayoutThirdStep();
     }
     
     private void panLayoutThirdStep() {
@@ -689,17 +504,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}		
 		if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutFourthStep();
-		
-    	//local execution
-//		DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		Main.sentToClientInSubStep = false;
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		if (Main.sentToClientInSubStep == false) panLayoutFourthStep();
     }
     
     private void panLayoutFourthStep() {
@@ -714,18 +518,6 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}		
 		wrapperHandler.clearOperation();
-
-//    	DataStream<VVEdgeWrapper> wrapperStreamWrapper = wrapperStream.map(new WrapperMapVVEdgeWrapperAppendNoLayout());
-//		wrapperStreamWrapper.addSink(new WrapperObjectSinkAppendLayout()).setParallelism(1);
-//		try {
-//			flinkCore.getFsEnv().execute();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-////		if (graphOperationLogic.equals("serverSide")) {
-////    		clearOperation();
-//			handler.clearOperation();
-////    	}
     }
 
     /**
@@ -736,15 +528,6 @@ public class Server implements Serializable{
             WebSockets.sendText(message, session, null);
         }
     }
-	  
-//    private void initializeGraphRepresentation() {
-//    	System.out.println("initializing grpah representation");
-//		operation = "initial";
-//		globalVertices = new HashMap<String,Map<String,Object>>();
-//		innerVertices = new HashMap<String,VertexCustom>();
-//		newVertices = new HashMap<String,VertexCustom>();
-//		edges = new HashMap<String,VVEdgeWrapper>();
-//	}
 	
 	private void setOperation(String operation) {
 		wrapperHandler.setOperation(operation);
@@ -762,6 +545,8 @@ public class Server implements Serializable{
 	}
     
     private void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+    	System.out.println("Setting model positions: top, right, bottom, left ..." + topModel + " " + rightModel + " " + bottomModel 
+    			+ " " + leftModel);
     	flinkCore.setModelPositions(topModel, rightModel, bottomModel, leftModel);
     	wrapperHandler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
     }
@@ -773,8 +558,4 @@ public class Server implements Serializable{
     public FlinkResponseHandler getFlinkResponseHandler() {
     	return this.flinkResponseHandler;
     }
-	
-//	public void latestRow(Row element) {
-//		latestRow = element;
-//	}
 }

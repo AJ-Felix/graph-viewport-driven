@@ -1,12 +1,6 @@
-let ws = new WebSocket("ws://139.18.13.19:8897/graphData");
-
+// let ws = new WebSocket("ws://139.18.13.19:8897/graphData");
+let ws;
 let handler;
-
-ws.onopen = function() {
-    console.log("Opened!");
-    ws.send("Hello Server");
-	resizedw();
-};
 
 let messageQueue = new Array();
 let messageProcessing;
@@ -22,12 +16,6 @@ function addMessageToQueue(dataArray){
 			processMessage(); 
 		}
 	}
-
-ws.onmessage = function (evt) {
-	console.log(evt.data);
-	const dataArray = evt.data.split(";");
-	addMessageToQueue(dataArray);
-}
 	
 async function processMessage(){
 	if (messageQueue.length > 0){
@@ -75,6 +63,11 @@ async function processMessage(){
 					operation = dataArray[1];
 					operationStep = dataArray[2];
 					break;
+				case 'fit':
+					cy.fit();
+					const pan = cy.pan();
+					ws.send("fitted;" + pan.x + ";" + pan.y + ";" + cy.zoom());
+					break;
 			}
 			resolve(true);
 		});
@@ -85,115 +78,29 @@ async function processMessage(){
 	}
 }
 
-ws.onclose = function() {
-    console.log("Closed!");
-};
-
-ws.onerror = function(err) {
-    console.log("Error: " + err);
-};
-
 function sendSignalRetract(){
 	if (graphOperationLogic == "clientSide") handler = new RetractHandler(maxNumberVertices);
-	if (!layout) layoutBase = new Set();
-	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
+	buildTopViewOperations();
 	ws.send("buildTopView;retract");
 }
 
 function sendSignalAppendJoin(){
 	if (graphOperationLogic == "clientSide") handler = new AppendHandler(maxNumberVertices);
-	if (!layout) layoutBase = new Set();
-	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
+	buildTopViewOperations();
 	ws.send("buildTopView;appendJoin");
 }
 
 function sendSignalAdjacency(){
 	if (graphOperationLogic == "clientSide")	handler = new AppendHandler(maxNumberVertices);
-	if (!layout) layoutBase = new Set();
-	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
+	buildTopViewOperations();
 	ws.send("buildTopView;adjacency");
 }
 
-// function zoomOut(){
-	// handler.operation = "zoomOut";
-	// const topModel = 0;
-	// const rightModel = 4000;
-	// const bottomModel = 4000;
-	// const leftModel = 0;
-	// handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
-	// ws.send("zoomOut;0;0;0.25");
-// }
-
-// function zoomIn(){
-	// handler.operation = "zoomIn";
-	// const topModel = 0;
-	// const rightModel = 2000;
-	// const bottomModel = 2000;
-	// const leftModel = 0;
-	// handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
-	// ws.send("zoomIn;0;0;0.5");
-// }
-
-// function pan(){
-	// const topModel = 0;
-	// const rightModel = 3000;
-	// const bottomModel = 2000;
-	// const leftModel = 1000;
-	// handler.operation = "pan";
-	// handler.prepareOperation(topModel, rightModel, bottomModel, leftModel);
-	// ws.send("pan;" + 1000 + ";" + 0);
-// }
-
-// function displayAll(){
-	// handler = new AppendHandler();
-	// ws.send("displayAll");
-// }
-
-// function cancelJob(){
-	// let id;
-	// var x = new XMLHttpRequest();
-	// x.open("patch", "/");
-	// x.send(null);
-	// $.get('http://localhost:8081/jobs', function (data, textStatus, jqXHR) {
-        // console.log('status: ' + textStatus + ', data:' + Object.keys(data));
-		// console.log(data.jobs[0].id);
-		// id = data.jobs[0].id;
-		// // ws.send('cancel;' + id);
-		// $.get('http://localhost:8081/jobs/' + id, function (data, textStatus, jqXHR) {
-			// console.log('status: ' + textStatus + ', data:' + Object.keys(data));
-		// });
-		// var x = new XMLHttpRequest();
-		// x.open("PATCH",  'http://localhost:8081/jobs/' + id);
-		// x.send();
-		// fetch('http://localhost:8081/jobs/' + id, {method: 'PATCH'});
-		// $.ajax({
-			// type: 'GET',
-			// url: 'http://localhost:8081/jobs/' + id
-		// });
-		// $.ajax({
-			// type: 'PATCH',
-			// url: 'http://localhost:8081/jobs/' + id,
-			// data: JSON.stringify({}),
-			// processData: false,
-			// headers: {
-				// "Access-Control-Allow-Origin": '*',
-				// 'Accept' : 'application/json; charset=UTF-8',
-                // 'Content-Type' : 'application/json; charset=UTF-8'},
-				 // error : function(jqXHR, textStatus, errorThrown) {
-                // console.log("The following error occured: " + textStatus, errorThrown);
-
-            // },
-		// });
-    // });
-	// console.log(id);
-	// console.log("job cancelled");
-	// ws.send("cancel;" + id);
-// }
-
-// function testThread(){
-	// handler = new AppendHandler();
-	// ws.send("TestThread");
-// }
+function buildTopViewOperations(){
+	if (!layout) layoutBase = new Set();
+	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
+	cy.zoom(1 / (4000 / Math.min(cyWidth, cyHeight)));
+}
 
 function clientSideLogic(){
 	graphOperationLogic = "clientSide";
@@ -213,6 +120,22 @@ function sendMaxVertices(maxVertices){
 
 function resetVisualization(){
 	cy.elements().remove();
+	cy.pan({x: 0, y: 0});
+	nodeWidth = 50;
+	nodeHeight = 50;
+	nodeLabelFontSize = 32;
+	edgeWidth = 5;
+	edgeArrowSize = 2;
+	cy.style().selector('node').style({
+			'width': nodeWidth,
+			'height': nodeHeight,
+			'font-size': nodeLabelFontSize
+		}).update();
+		cy.style().selector('edge').style({
+			'width': edgeWidth,
+			'arrow-scale': edgeArrowSize
+		}).update();
+	ws.send("resetWrapperHandler");
 }
 
 function preLayout(){
@@ -238,23 +161,29 @@ document.getElementById('cy').addEventListener('mousedown',
 	}
 )
 
+$(document).ready(function(){
+    ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897/graphData");
+	
+	ws.onopen = function() {
+		console.log("Opened!");
+		ws.send("Hello Server");
+		resized();
+	}
 
-// const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
-// const heightOutput = document.querySelector('#height');
-// const widthOutput = document.querySelector('#width')
+	ws.onmessage = function (evt) {
+		console.log(evt.data);
+		const dataArray = evt.data.split(";");
+		addMessageToQueue(dataArray);
+	}
+	
+	ws.onclose = function() {
+		console.log("Closed!");
+	};
 
-// function reportWindowSize() {
-	// const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
-	// const cyWidth = boundingClientRect.width;
-	// const cyHeight = boundingClientRect.height;
-	// heightOutput.textContent = cyWidth;
-	// widthOutput.textContent = cyHeight;
-	// console.log("resized viewport!");
-	// ws.send("viewportSize;" + cyHeight ";" + cyWidth);
-// }
-
-// window.onresize = reportWindowSize;
-
+	ws.onerror = function(err) {
+		console.log("Error: " + err);
+	};
+});
 
 const heightOutput = document.querySelector('#height');
 const widthOutput = document.querySelector('#width');
@@ -262,22 +191,27 @@ const widthOutput = document.querySelector('#width');
 const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
 let cyHeight = boundingClientRect.height;
 let cyWidth = boundingClientRect.width;
+let cyHeightHalf = cyHeight / 2;
+let cyWidthHalf = cyWidth / 2;
 
 
 
-function resizedw(){
+function resized(){
 	const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
 	cyHeight = boundingClientRect.height;
 	cyWidth = boundingClientRect.width;
+	cyHeightHalf = cyHeight / 2;
+	cyWidthHalf = cyWidth / 2;
 	console.log("resizing after timeout");
 	heightOutput.textContent = cyWidth;
 	widthOutput.textContent = cyHeight;
-	ws.send("viewportSize;" + cyWidth + ";" + cyHeight);
+	const pan = cy.pan();
+	ws.send("viewportSize;" + pan.x + ";" + pan.y + ";" + cy.zoom() + ";" +  cyWidth + ";" + cyHeight);
 }
 
 
-var doit;
+var resizedTimeOut;
 window.onresize = function(){
-  clearTimeout(doit);
-  doit = setTimeout(resizedw, 100);
+  clearTimeout(resizedTimeOut);
+  resizedTimeOut = setTimeout(resized, 100);
 };

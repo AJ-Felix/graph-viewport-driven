@@ -37,19 +37,15 @@ public class FlinkResponseHandler extends Thread{
     
 	public FlinkResponseHandler(WrapperHandler wrapperHandler) {
 		this.wrapperHandler = wrapperHandler;
-		this.threadName = "someThreadName";
+		this.threadName = "flinkClusterListener";
         try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
     
     public void listen() {
-//    	FlinkResponseThread flinkResponseThread = new FlinkResponseThread();
-//    	Thread t = new Thread(flinkResponseThread, "flinkResponseThread");
-//    	t.start();
 	    try {
 	    	System.out.println("executing listen on flinkResponseHandler");
 			echoSocket = serverSocket.accept();
@@ -111,15 +107,6 @@ public class FlinkResponseHandler extends Thread{
 	    catch (IOException e) {
 	        e.printStackTrace();
 	    }
-//	    finally {
-//	        try {
-//	        	System.out.println("closing serverSocket!");
-//	            serverSocket.close();
-//	        }
-//	        catch (IOException e) {
-//	            e.printStackTrace();
-//	        }
-//	    }
 	    this.listen();
     }
     
@@ -164,10 +151,4 @@ public class FlinkResponseHandler extends Thread{
 	public String getLine() {
 		return this.line;
 	}
-	
-//	public void forwardToWrapperHandler(VVEdgeWrapper wrapper) {
-//		if (wrapperHandling == "standard") handler.addWrapperInitial(wrapper);
-//		else if (wrapperHandling == "layout") handler.addWrapperLayout(wrapper);
-//		else if (wrapperHandling == "initial") handler.addWrapper(wrapper);
-//	}
 }

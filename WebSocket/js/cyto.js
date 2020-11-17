@@ -1,5 +1,5 @@
-const vPix = 1000
-const vPixHalf = 500;
+// const vPix = 1000
+// const vPixHalf = 500;
 const zFactor = 2;
 let maxNumberVertices = 100;
 
@@ -93,32 +93,34 @@ let yRenderDiff = 0;
 function finalOperations(){
 	console.log(cy.elements.style);
 	console.log("in finalOperations funtion");
-	let layoutBaseString = "";
-	console.log("layoutBase size: " + layoutBase.size);
-	if (layoutBase.size > 0){
-		console.log("performing layout!");
-		console.log(boundingBoxVar);
-		let layoutOptions = {};
-		layoutOptions.name = "random";
-		layoutOptions.fit = false;
-		layoutOptions.boundingBox = boundingBoxVar;
-		layoutBaseCy = cy.collection();
-		console.log("layoutBase size" + layoutBase.size);
-		layoutBase.forEach(function (vertexId){
-			layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
-		});
-		let layout = layoutBaseCy.layout(layoutOptions);
-		layout.run();
-		console.log("layout performed");
-		layoutBaseCy.forEach(function(node){
-			// console.log(node.style({"width":"50" ,"height":"50", "font-size":"32px"}));
-			let pos = node.position();
-			layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
-		})
-		cy.nodes().lock();
-		layoutBase = new Set();
-	}	
-	ws.send("layoutBaseString" + layoutBaseString);
+	if (!layout){
+		let layoutBaseString = "";
+		console.log("layoutBase size: " + layoutBase.size);
+		if (layoutBase.size > 0){
+			console.log("performing layout!");
+			console.log(boundingBoxVar);
+			let layoutOptions = {};
+			layoutOptions.name = "random";
+			layoutOptions.fit = false;
+			layoutOptions.boundingBox = boundingBoxVar;
+			layoutBaseCy = cy.collection();
+			console.log("layoutBase size" + layoutBase.size);
+			layoutBase.forEach(function (vertexId){
+				layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
+			});
+			let layout = layoutBaseCy.layout(layoutOptions);
+			layout.run();
+			console.log("layout performed");
+			layoutBaseCy.forEach(function(node){
+				// console.log(node.style({"width":"50" ,"height":"50", "font-size":"32px"}));
+				let pos = node.position();
+				layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
+			})
+			cy.nodes().lock();
+			layoutBase = new Set();
+		}	
+		ws.send("layoutBaseString" + layoutBaseString);
+	}
 }
 
 function addVertexToLayoutBase(dataArray){
@@ -179,8 +181,8 @@ cyto.addEventListener("mouseup", function(e){
 	const yRenderPos = pan.y;
 	const topModelPos= - yRenderPos / zoomLevel;
 	const leftModelPos = - xRenderPos / zoomLevel;
-	const bottomModelPos = topModelPos + vPix / zoomLevel;
-	const rightModelPos = leftModelPos + vPix / zoomLevel;
+	const bottomModelPos = topModelPos + cyHeight / zoomLevel;
+	const rightModelPos = leftModelPos + cyWidth / zoomLevel;
 	console.log("Pan... top , right, bottom, left: " + topModelPos + " " + rightModelPos + " " + bottomModelPos + " " + leftModelPos);
 	boundingBoxVar = {x1: leftModelPos, y1: topModelPos, x2: rightModelPos, y2: bottomModelPos};
 	console.log("new boundingBox");
@@ -230,13 +232,13 @@ cyto.addEventListener("wheel", function(e) {
 			'arrow-scale': edgeArrowSize
 		}).update();
 		cy.zoom(cy.zoom() * zFactor);
-		cy.pan({x:-vPixHalf + zFactor * pan.x + (vPixHalf - cytoX) * zFactor, y:-vPixHalf + zFactor * pan.y + (vPixHalf - cytoY) * zFactor});
+		cy.pan({x:-cyWidthHalf + zFactor * pan.x + (cyWidthHalf - cytoX) * zFactor, y:-cyHeightHalf + zFactor * pan.y + (cyHeightHalf - cytoY) * zFactor});
 		pan = cy.pan();
 		const zoomLevel = cy.zoom();
 		const topModelPos = - pan.y / zoomLevel;
 		const leftModelPos = - pan.x / zoomLevel;
-		const bottomModelPos = topModelPos + vPix / zoomLevel;
-		const rightModelPos = leftModelPos + vPix / zoomLevel;
+		const bottomModelPos = topModelPos + cyHeight / zoomLevel;
+		const rightModelPos = leftModelPos + cyWidth / zoomLevel;
 		console.log("zoomIn... top , right, bottom, left: " + topModelPos + " " + rightModelPos + " " + bottomModelPos + " " + leftModelPos);
 		boundingBoxVar = {x1: leftModelPos, y1: topModelPos, x2: rightModelPos, y2: bottomModelPos};
 		console.log("new boundingBox");
@@ -263,14 +265,14 @@ cyto.addEventListener("wheel", function(e) {
 			'arrow-scale': edgeArrowSize
 		}).update();
 		cy.zoom(cy.zoom() / zFactor);
-		cy.pan({x:vPixHalf + pan.x - (vPixHalf + pan.x) / zFactor - (cytoX - vPixHalf) / zFactor, y:vPixHalf + pan.y - (vPixHalf + pan.y) / zFactor - (cytoY - vPixHalf) / zFactor});
+		cy.pan({x:cyWidthHalf + pan.x - (cyWidthHalf + pan.x) / zFactor - (cytoX - cyWidthHalf) / zFactor, y:cyHeightHalf + pan.y - (cyHeightHalf + pan.y) / zFactor - (cytoY - cyHeightHalf) / zFactor});
 		pan = cy.pan();
 		const zoomLevel = cy.zoom();
 		if (graphOperationLogic == "clientSide"){
 			const topModelPos = - pan.y / zoomLevel;
 			const leftModelPos = - pan.x / zoomLevel;
-			const bottomModelPos = topModelPos + vPix / zoomLevel;
-			const rightModelPos = leftModelPos + vPix / zoomLevel;
+			const bottomModelPos = topModelPos + cyHeight / zoomLevel;
+			const rightModelPos = leftModelPos + cyWidth / zoomLevel;
 			handler.operation = "zoomOut";
 			handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 		}

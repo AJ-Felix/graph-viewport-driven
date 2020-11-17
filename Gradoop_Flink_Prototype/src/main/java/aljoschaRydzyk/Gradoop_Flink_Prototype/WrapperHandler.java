@@ -36,21 +36,13 @@ public class WrapperHandler implements Serializable {
     private int operationStep;
     public boolean sentToClientInSubStep;
 
-//    private static final class InstanceHolder {
-//    	static final WrapperHandler INSTANCE = new WrapperHandler();
-//    }
-
     public WrapperHandler () {
     	System.out.println("wrapper handler constructor is executed");
     }
-	  
-//	public static WrapperHandler getInstance () {
-//		return InstanceHolder.INSTANCE;
-//	}
 	 
-	public void initializeAPI() {
+	public void initializeAPI(String localMachinePublicIp4) {
 		api = new FlinkApi();
-        api.getApiClient().setBasePath("http://localhost:8081");  
+        api.getApiClient().setBasePath("http://" + localMachinePublicIp4 + ":8081");  
 	}
 	
 	public void initializeGraphRepresentation() {
@@ -404,10 +396,6 @@ public class WrapperHandler implements Serializable {
 	}
 	
 	private void addNonIdentityWrapperLayout(VVEdgeWrapper wrapper) {
-		//checken welche Knoten bereits Koordinaten haben. Es muss NICHT immer mindestens ein Knoten bereits Koordinaten haben! (siehe zoomIn3 und pan4)
-		//Wenn beide Koordinaten haben, dann kann mit ihnen wie gewöhnlich verfahren werden
-		//Wenn nur ein Knoten Koordinaten hat, dann muss der andere inside sein und damit wird die Kapazität um mindestens 1 verringert
-			//TODO
 		VertexCustom sourceVertex = wrapper.getSourceVertex();
 		VertexCustom targetVertex = wrapper.getTargetVertex();
 		String sourceId = sourceVertex.getIdGradoop();
@@ -598,7 +586,6 @@ public class WrapperHandler implements Serializable {
 	private boolean addVertex(VertexCustom vertex) {
 		System.out.println("In addVertex");
 		String sourceId = vertex.getIdGradoop();
-//		System.out.println("globalVertices is null?: " + globalVertices);
 		if (!(globalVertices.containsKey(sourceId))) {
 			Map<String,Object> map = new HashMap<String,Object>();
 			map.put("incidence", (int) 1);
@@ -703,28 +690,12 @@ public class WrapperHandler implements Serializable {
 	
 	private Set<String> getNeighborhood(VertexCustom vertex){
 		Set<String> neighborIds = new HashSet<String>();
-//		for (VVEdgeWrapper wrapper : edges.values()) {
-//			String vertexId = vertex.getIdGradoop();
-//			String sourceId = wrapper.getSourceIdGradoop();
-//			String targetId = wrapper.getTargetIdGradoop();
-//			if (sourceId.equals(vertexId)) neighborIds.add(targetId);
-//			else if (targetId.equals(vertexId)) neighborIds.add(sourceId);
-//		}
-//		return neighborIds;
 		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
 		return neighborIds;
 	}
 	
 	private boolean hasVisualizedNeighborsInside(VertexCustom vertex) {
-//		for (VVEdgeWrapper wrapper : edges.values()) {
-//			String vertexId = vertex.getIdGradoop();
-//			String sourceId = wrapper.getSourceIdGradoop();
-//			String targetId = wrapper.getTargetIdGradoop();
-//			if (sourceId.equals(vertexId) && innerVertices.containsKey(targetId)) return true;
-//			else if (targetId.equals(vertexId) && innerVertices.containsKey(sourceId)) return true;
-//		}
-//		return false;
 		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
 		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
 		return false;
@@ -785,7 +756,6 @@ public class WrapperHandler implements Serializable {
 				minDegreeVertex = newVertices.values().iterator().next();
 			}
 		}
-//		operation = null;
 		Set<String> visualizedVertices = new HashSet<String>();
 		for (Map.Entry<String, VertexCustom> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();
@@ -794,13 +764,6 @@ public class WrapperHandler implements Serializable {
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
 		System.out.println("global size "+ globalVertices.size());
-//		for (Map.Entry<String, Map<String,Object>> map : globalVertices.entrySet()) {
-//			VertexCustom vertex = (VertexCustom) map.getValue().get("vertex");
-//			System.out.println("vertex id: "  + vertex.getIdGradoop());
-//			System.out.println("vertex degree: " + vertex.getDegree());
-//			System.out.println("vertex incidence: " + map.getValue().get("incidence"));
-//			System.out.println(vertex.getDegree() + 1 >= (Integer) map.getValue().get("incidence"));
-//		}
 	}
 
 	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {

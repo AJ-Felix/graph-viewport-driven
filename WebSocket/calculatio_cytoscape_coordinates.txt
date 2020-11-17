@@ -16,6 +16,11 @@ left = - xRender / zoom
 bottom = - yRender / zoom + 1000 / zoom
 right = -xRender / zoom + 1000 / zoom
 
+
+Viewportanpassung:
+zoom berechnen: zoom = 1 / (4000/(min(cyWidth, cyHeight)))
+
+
 Konstanten
 viewport pixel range 	1000;
 model pixel range 	4000;
