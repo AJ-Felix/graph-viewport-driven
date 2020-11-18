@@ -184,7 +184,8 @@ cyto.addEventListener("mouseup", function(e){
 	const bottomModelPos = topModelPos + cyHeight / zoomLevel;
 	const rightModelPos = leftModelPos + cyWidth / zoomLevel;
 	console.log("Pan... top , right, bottom, left: " + topModelPos + " " + rightModelPos + " " + bottomModelPos + " " + leftModelPos);
-	boundingBoxVar = {x1: leftModelPos, y1: topModelPos, x2: rightModelPos, y2: bottomModelPos};
+	// boundingBoxVar = {x1: leftModelPos, y1: topModelPos, x2: rightModelPos, y2: bottomModelPos};
+	boundingBoxVar = deriveboundingBox(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	console.log("new boundingBox");
 	console.log(boundingBoxVar);
 	cy.nodes().lock();
@@ -240,7 +241,8 @@ cyto.addEventListener("wheel", function(e) {
 		const bottomModelPos = topModelPos + cyHeight / zoomLevel;
 		const rightModelPos = leftModelPos + cyWidth / zoomLevel;
 		console.log("zoomIn... top , right, bottom, left: " + topModelPos + " " + rightModelPos + " " + bottomModelPos + " " + leftModelPos);
-		boundingBoxVar = {x1: leftModelPos, y1: topModelPos, x2: rightModelPos, y2: bottomModelPos};
+		// boundingBoxVar = {x1: leftModelPos, y1: topModelPos, x2: rightModelPos, y2: bottomModelPos};
+		boundingBoxVar = deriveboundingBox(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 		console.log("new boundingBox");
 		console.log(boundingBoxVar);
 		cy.nodes().lock();
@@ -280,6 +282,30 @@ cyto.addEventListener("wheel", function(e) {
 	}
 });
 
+function deriveboundingBox(topModel, rightModel, bottomModel, leftModel){
+	let x1Var, x2Var, y1Var, y2Var;
+	if (topModel < 0) {
+		y1Var = 0;
+	} else {
+		y1Var = topModel;
+	}
+	if (rightModel > 4000) {
+		x2Var = 4000;
+	} else {
+		x2Var = rightModel;
+	}
+	if (bottomModel > 4000) {
+		y2Var = 4000;
+	} else {
+		y2Var = bottomModel;
+	}
+	if (leftModel < 0) {
+		x1Var = 0;
+	} else {
+		x1Var = leftModel;
+	}
+	return {x1: x1Var, y1: y1Var, x2: x2Var, y2: y2Var};
+}
 
 
 

@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator;
 
 import java.nio.ByteBuffer;
 
@@ -15,7 +15,7 @@ import org.apache.flink.table.types.utils.LegacyTypeInfoDataTypeConverter;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.StringUtils;
 
-public class FlinkGradoopVerticesLoader {
+public class FlinkHBaseVerticesLoader {
 	public static DataStream<Row> load(
 			StreamTableEnvironment fsTableEnv,
 			Integer top_view_number) {

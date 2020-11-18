@@ -32,20 +32,20 @@ async function processMessage(){
 					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 					if (!layout){
 						clearTimeout(this.timeOut);
-						this.timeOut = setTimeout(finalOperations, 1000);
+						this.timeOut = setTimeout(finalOperations, 2000);
 					}
 					break;
 				case 'addVertexServerToBeLayouted':
 					addVertexToLayoutBase(dataArray);
 						clearTimeout(this.timeOut);
-						this.timeOut = setTimeout(finalOperations, 1000);
+						this.timeOut = setTimeout(finalOperations, 2000);
 					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
 					console.log(cy.$id(dataArray[1]).style());
 					if (!layout){
 						clearTimeout(this.timeOut);
-						this.timeOut = setTimeout(finalOperations, 1000);
+						this.timeOut = setTimeout(finalOperations, 2000);
 					}
 					break;
 				case 'removeObjectServer':

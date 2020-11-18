@@ -62,11 +62,6 @@ public class WrapperHandler implements Serializable {
 			if (operation != "zoomOut"){
 				for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) {
 					WrapperGVD wrapper = entry.getValue();
-					System.out.println("globalVertices in prepareOperation: ");
-					System.out.println(wrapper.getSourceVertex().getIdGradoop());
-					System.out.println((VertexGVD) globalVertices.get(wrapper.getSourceVertex().getIdGradoop()).get("vertex") == null);
-					System.out.println(wrapper.getTargetVertex().getIdGradoop());
-					System.out.println((VertexGVD) globalVertices.get(wrapper.getTargetVertex().getIdGradoop()).get("vertex") == null);
 					Integer sourceX;
 					Integer sourceY;
 					Integer targetX;
@@ -152,8 +147,10 @@ public class WrapperHandler implements Serializable {
 		System.out.println("WrapperLabel: " + wrapper.getEdgeLabel());
 		System.out.println("Size of innerVertices: " + innerVertices.size());
 		System.out.println("Size of newVertices: " + newVertices.size());
-		System.out.println("ID Gradoop minDegreeVertex: " + minDegreeVertex.getIdGradoop());
-		System.out.println("ID Gradoop secondMinDegreeVertex: " + secondMinDegreeVertex.getIdGradoop());
+		System.out.println("ID Gradoop minDegreeVertex, degree: " + minDegreeVertex.getIdGradoop() + " " +
+				minDegreeVertex.getIdGradoop());
+		System.out.println("ID Gradoop secondMinDegreeVertex, degree: " + secondMinDegreeVertex.getIdGradoop() +
+				" " + secondMinDegreeVertex.getIdGradoop());
 		System.out.println("Capacity: " + capacity);
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentity(wrapper.getSourceVertex());
@@ -361,8 +358,10 @@ public class WrapperHandler implements Serializable {
 		System.out.println("WrapperLabel: " + wrapper.getEdgeLabel());
 		System.out.println("Size of innerVertices: " + innerVertices.size());
 		System.out.println("Size of newVertices: " + newVertices.size());
-		System.out.println("ID Gradoop minDegreeVertex: " + minDegreeVertex.getIdGradoop());
-		System.out.println("ID Gradoop secondMinDegreeVertex: " + secondMinDegreeVertex.getIdGradoop());
+		System.out.println("ID Gradoop minDegreeVertex, degree: " + minDegreeVertex.getIdGradoop() + " " +
+				minDegreeVertex.getIdGradoop());
+		System.out.println("ID Gradoop secondMinDegreeVertex, degree: " + secondMinDegreeVertex.getIdGradoop() +
+				" " + secondMinDegreeVertex.getIdGradoop());
 		System.out.println("Capacity: " + capacity);
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentityLayout(wrapper.getSourceVertex());
@@ -766,6 +765,8 @@ public class WrapperHandler implements Serializable {
 		GraphUtil graphUtil =  Server.getInstance().getFlinkCore().getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
+		for (String key : visualizedVertices) System.out.println("clearoperation, visualizedVertices: " + key);
+		for (String key : visualizedWrappers) System.out.println("clearoperation, visualizedWrappers: " + key);
 		System.out.println("global size "+ globalVertices.size());
 	}
 
@@ -820,8 +821,9 @@ public class WrapperHandler implements Serializable {
     	for (String vertexData : list) {
     		String[] arrVertexData = vertexData.split(",");
     		String vertexId = arrVertexData[0];
-    		Integer x = Integer.parseInt(arrVertexData[1]);
-    		Integer y = Integer.parseInt(arrVertexData[2]);
+    		Integer x = Math.round(Float.parseFloat(arrVertexData[1]));
+    		Integer y = Math.round(Float.parseFloat(arrVertexData[2]));
+    		System.out.println("wrapperHandler, updateLayoutedVertices: " + vertexId + " " + x + " " + y);
 			VertexGVD vertex = new VertexGVD(vertexId, x, y);
 			if (layoutedVertices.containsKey(vertexId)) System.out.println("vertex already in layoutedVertices!!!");
 			layoutedVertices.put(vertexId, vertex);

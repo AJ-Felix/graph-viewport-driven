@@ -20,6 +20,7 @@ public class FlinkResponseHandler extends Thread{
     private Socket echoSocket;
     private PrintWriter out;
 	private BufferedReader in;
+	private int operationStep;
 	
 	@Override
 	public void start() {
@@ -56,25 +57,34 @@ public class FlinkResponseHandler extends Thread{
             if (!(operation.startsWith("initial"))) {
             	if (verticesHaveCoordinates) {
             		while((line = in.readLine()) != null)  {
-    	            	System.out.println(line);
+    	            	System.out.println("flinkResponseHandler: " + line);
     	            	wrapperHandler.addWrapper(parseWrapperString(line));
     	            }
+	                wrapperHandler.clearOperation();
             	} else {
             		while((line = in.readLine()) != null)  {
-    	            	System.out.println(line);
+    	            	System.out.println("flinkResponseHandler: " + line);
     	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
     	            }
+//            		if (
+//            				((operation.equals("zoomIn") || operation.equals("pan")) && operationStep == 4)	|| 
+//            				(operation.equals("zoomOut") && operationStep == 2) ||
+//            				((line == "empty" || wrapperHandler.getSentToClientInSubStep() == false) &&
+//            						(operation.equals("zoomOut") && operationStep == 1)) 
+//            			) {
+//            			wrapperHandler.clearOperation();
+//            		}
             	}	
             } else {
             	if (verticesHaveCoordinates) {
 	            	if (operation.contains("Append")) {
 	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println(line);
+	    	            	System.out.println("flinkResponseHandler: " + line);
 	    	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	    	            }
 	            	} else if (operation.contains("Retract")) {
 	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println(line);
+	    	            	System.out.println("flinkResponseHandler: " + line);
 	    	            	if (line.endsWith("true")) {
 	    		            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	    	            	} else if (line.endsWith("false")) {
@@ -82,15 +92,17 @@ public class FlinkResponseHandler extends Thread{
 	    	            	}
 	    	            }
 	            	}
+	            	Server.getInstance().sendToAll("fit");
+	                wrapperHandler.clearOperation();
             	} else  {
             		if (operation.contains("Append")) {
 	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println(line);
+	    	            	System.out.println("flinkResponseHandler: " + line);
 	    	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	    	            }
 	            	} else if (operation.contains("Retract")) {
 	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println(line);
+	    	            	System.out.println("flinkResponseHandler: " + line);
 	    	            	if (line.endsWith("true")) {
 	    		            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	    	            	} else if (line.endsWith("false")) {
@@ -98,7 +110,7 @@ public class FlinkResponseHandler extends Thread{
 	    	            	}
 	    	            }
 	            	}
-            	}
+            	}	
             }
             in.close();
     	    out.close();
@@ -132,6 +144,10 @@ public class FlinkResponseHandler extends Thread{
 
 	public void setOperation(String wrapperHandling) {
 		this.operation = wrapperHandling;
+	}
+	
+	public void setOperationStep(int operationStep) {
+		this.operationStep = operationStep;
 	}
 	
 	public void setVerticesHaveCoordinates(Boolean have) {

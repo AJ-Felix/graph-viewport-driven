@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.net.SocketException;
 
+import org.apache.log4j.BasicConfigurator;
+
 public class Main {
 	
     private static Server server;

@@ -18,6 +18,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinates;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinatesRetract;
@@ -152,6 +153,7 @@ public class Server implements Serializable{
                 		//TODO: Resizing... Add or remove vertices, write new model coordinates to data structures
                 		//ideally find out, how much resizing in x and y direction and add vertices accordingly
                 	}
+                	wrapperHandler.setMaxVertices(maxVertices);
                 	System.out.println("maxVertices derived from viewport: " + maxVertices);
                 } else if (messageData.startsWith("layoutBaseString")) {
                 	String[] arrMessageData = messageData.split(";");
@@ -187,8 +189,8 @@ public class Server implements Serializable{
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
-                	Server.getInstance().sendToAll("fit");
-                	if (layout) wrapperHandler.clearOperation();
+//                	Server.getInstance().sendToAll("fit");
+//                	if (layout) wrapperHandler.clearOperation();
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
         			Float xRenderPosition = Float.parseFloat(arrMessageData[1]);
@@ -205,7 +207,6 @@ public class Server implements Serializable{
         			setModelPositions(topModel, rightModel, bottomModel, leftModel);
 					flinkCore.setModelPositionsOld(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
 					System.out.println("Zoom ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
-					flinkResponseHandler.setOperation("zoom");
 					if (messageData.startsWith("zoomIn")) {
 						setOperation("zoomIn");
 						wrapperHandler.prepareOperation();
@@ -242,7 +243,6 @@ public class Server implements Serializable{
 					System.out.println("Pan ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					setOperation("pan");
     				wrapperHandler.prepareOperation();
-    				flinkResponseHandler.setOperation("pan");
 					if (!layout) {
 	    				flinkResponseHandler.setVerticesHaveCoordinates(false);
 	    				panLayoutFirstStep();
@@ -292,7 +292,6 @@ public class Server implements Serializable{
 		wrapperHandler.initializeGraphRepresentation();
 		flinkResponseHandler.setOperation("initialAppend");
 		DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
-		wrapperStream.print();
 			DataStream<String> wrapperLine;
 			if (layout) {
 				flinkResponseHandler.setVerticesHaveCoordinates(true);
@@ -306,31 +305,30 @@ public class Server implements Serializable{
     
     private void zoom() {
     	DataStream<Row> wrapperStream = flinkCore.zoom();
-    	wrapperStream.print();
 		flinkResponseHandler.setVerticesHaveCoordinates(true);
 		System.out.println("executing zoom on server class");		    				
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	try {
 			flinkCore.getFsEnv().execute();
+			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    	wrapperHandler.clearOperation();
-
+//    	wrapperHandler.clearOperation();
     }
     
     private void pan() {
-    	DataStream<Row> wrapperStream = flinkCore.pan();			
+    	DataStream<Row> wrapperStream = flinkCore.pan();	
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	try {
 			flinkCore.getFsEnv().execute();
+			System.out.println("executed flink job!");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	wrapperHandler.clearOperation();
+//    	wrapperHandler.clearOperation();
     }
     
     private void nextSubStep() {
@@ -338,7 +336,8 @@ public class Server implements Serializable{
     	System.out.println("operation: " + operation);
     	System.out.println("operationStep: " + operationStep);
     	if (operation.equals("initial")) {
-        	wrapperHandler.clearOperation();
+            wrapperHandler.clearOperation();
+        	Server.getInstance().sendToAll("fit");
     	} else if (operation.startsWith("zoom")) {
     		if (operation.contains("In")) {
     			if (operationStep == 1) {
@@ -355,9 +354,17 @@ public class Server implements Serializable{
     					System.out.println("nextSubStep 2, 4");
     					zoomInLayoutFourthStep();
     				}
-    			} else if (operationStep == 3) zoomInLayoutFourthStep();
+    			} else if (operationStep == 3) {
+    				zoomInLayoutFourthStep();
+    			} else if (operationStep == 4) {
+    	            wrapperHandler.clearOperation();
+    			}
     		} else {
-    			if (operationStep == 1) zoomOutLayoutSecondStep();
+    			if (operationStep == 1) {
+    				zoomOutLayoutSecondStep();
+    			} else {
+    				wrapperHandler.clearOperation();
+    			}
     		}
     	} else if (operation.startsWith("pan")) {
     		if (operationStep == 1) {
@@ -372,7 +379,11 @@ public class Server implements Serializable{
     			} else {
     				panLayoutFourthStep();
     			}
-    		} else if (operationStep == 3) panLayoutFourthStep();
+    		} else if (operationStep == 3) {
+    			panLayoutFourthStep();
+    		} else if (operationStep == 4) {
+	            wrapperHandler.clearOperation();
+			}
     	}
     }
 
@@ -433,7 +444,7 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    	wrapperHandler.clearOperation();
+//    	wrapperHandler.clearOperation();
     }
     
     private void zoomOutLayoutFirstStep() {
@@ -447,8 +458,8 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (flinkResponseHandler.getLine() == "empty" || 
-				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+//		if (flinkResponseHandler.getLine() == "empty" || 
+//				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
     }
     
     private void zoomOutLayoutSecondStep() {
@@ -462,7 +473,7 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		wrapperHandler.clearOperation();
+//		wrapperHandler.clearOperation();
     }
     
     
@@ -521,7 +532,7 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-		wrapperHandler.clearOperation();
+//		wrapperHandler.clearOperation();
     }
 
     /**
@@ -535,6 +546,7 @@ public class Server implements Serializable{
 	
 	private void setOperation(String operation) {
 		wrapperHandler.setOperation(operation);
+		flinkResponseHandler.setOperation(operation);
 		this.operation = operation;
 	}
 	

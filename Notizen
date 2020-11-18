@@ -181,12 +181,6 @@ late-TODO: Überlegung Client-seitige graph-semantik ganz zu löschen. Aber nur 
 Late-TODO: FrontEnd Sperre einbauen, bis Operation vollzogen
 Late-TODO: Visualisierung farbig etc.
 
-TODO: Flink Code von Java Code trennen
-
-TODO: Packages bauen
-
-TODO: Jar exportieren auschecken
-
 TODO: Threading wieder von flinkResponseHandler entfernen, weil das Flink-Konfigurationsproblem damit nicht behoben werden konnte
 
 TODO:cytoscape bug mit zufälligen label-verschwinden trouble shooten +  Manchmal werden Knoten bei zoom in gelöscht... ist wieder normal, seltsam...
@@ -195,8 +189,21 @@ late-TODO: Ausschnittvergrößerung/-verkleinerung: Graph neu zentrieren und ent
 
 TODO: parallelität > 1 ausprobieren
 
+TODO: Auf Galaxy Cluster testen
+
+TODO: Server ausführung über java -jar command line funktioniert nicht, BlinkExecutorFactory-class fehlt, obwohl in der Jar vorhanden
+
+TODO: sometimes frontend error when zooming in from initial view, but only rarely --> extensive debugging!
+
+TODO: retract not working with NOT-RUNNABLE jar, cannot be fixed by exporting the whole project --> probably the hbase add-on needs to be shipped in a seperate jar or be included in the jar
+
+TODO: Die Menge der zu visualisierenden Knoten (maxVertices) an den Ausschnitt der Modellierungskoordinaten die zu sehen sind, anpassen!!!
+
+TODO: Die Table API benötigt die FlinkCore Klasse --> herausfinden, was sonst aus der FlinkCore-Klasse geschmissen werden kann
 
 late-TODO: implement parser for different ports given by command-line arguments
+
+late-TODO: auf neue Flink-Version upgraden (HBase connector sieht dann anders aus...)
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
@@ -208,11 +215,15 @@ Port 8081 angesprochen werden
 BuildTopViewAppend:
 	- Server sendet alle relevanten Wrapper genau einmal. Daher ist kaum Kontrollstruktur notwendig.
 
+wrapperHandler.clearOperation() muss vom FlinkResponseHandler und nicht vom Server ausgeführt werden! Sonst gibt es Reihenfolgeprobleme
+
 Es muss gewährleistet sein, dass der Server keine Operation mehr auf den Knoten-Maps durchführt, wenn "layoutBaseString" ankommt!!!
 
 Die Flink-Konfigurationen müssen innerhalb des AbstractReceiveListeners durchgeführt werden. Wenn Sie vorher, z.B. während der Serverinitialisierung durchgeführt werden, kommt es bei der ersten Ausführung von Table API Operationen zu einem kryptischen Fehler. Möglicherweise liegt das daran, dass der gleiche Thread welcher die Flink config ausführt, auch das erste .execute() ausführen muss, um die Environment zu erstellen. Man kann .execute() aber nicht Exception-free ausführen, ohne vorher Flink Operator definiert zu haben. Die Ausführung der Flink-Konfiguration in einem Thread der anschließend terminiert, behebt das Problem NICHT. 
 
 FlinkSink (SocketClient Sink): Der Socket muss wirklich immer komplett neu geöffnet werden, weil Flink den Socket schließt.
+
+
 
 REST API: Aus irgendeinem Grund werden Patch requests über ajax, welche über javascript im browser-basierten Client ausgeführt werden, vom Server blockiert (CORS). GET requests funktionieren. Die Patch requests sind notwendig
 um Jobs zu terminieren. Ein Workaround wäre, Flink serverseitig in einem separaten Thread laufen zu lassen und den patch request über die java library der rest api vom server aus durch zuführen.

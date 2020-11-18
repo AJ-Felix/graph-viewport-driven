@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming; 
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator; 
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -19,6 +19,7 @@ import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
 import org.gradoop.storage.hbase.impl.factory.HBaseEPGMStoreFactory;
 import org.gradoop.storage.hbase.impl.io.HBaseDataSource;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.AdjacencyGraphUtil;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.CSVGraphUtilJoin;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GradoopGraphUtil;
@@ -151,7 +152,7 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(Integer maxVertices){
-		DataStream<Row> dataStreamDegree = FlinkGradoopVerticesLoader.load(fsTableEnv, maxVertices);
+		DataStream<Row> dataStreamDegree = FlinkHBaseVerticesLoader.load(fsTableEnv, maxVertices);
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
 			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
