@@ -18,6 +18,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <jdk.tools.path>/usr/lib/jvm/java-1.8.0-openjdk-amd64/lib/tools.jar</jdk.tools.path>
     <flink-version>1.10.0</flink-version>
+    <gradoop-version>0.5.2</gradoop-version>
   </properties>
   
   <repositories>
@@ -37,17 +38,24 @@
 	    <version>4.13</version>
 	    <scope>test</scope>
 	</dependency>
+		<dependency>
+	    <groupId>jdk.tools</groupId>
+	    <artifactId>jdk.tools</artifactId>
+	    <version>1.8</version>
+	    <scope>system</scope>
+	    <systemPath>${jdk.tools.path}</systemPath>
+	</dependency>
 	
-   <dependency>
+    <dependency>
       <groupId>org.apache.flink</groupId>
       <artifactId>flink-java</artifactId>
       <version>${flink-version}</version>
 	</dependency>
-<!-- 	<dependency>
+	<dependency>
       <groupId>org.apache.flink</groupId>
       <artifactId>flink-clients_2.11</artifactId>
       <version>${flink-version}</version>
-    </dependency> -->
+    </dependency>
     <dependency>
 	  <groupId>org.apache.flink</groupId>
 	  <artifactId>flink-table-api-java-bridge_2.11</artifactId>
@@ -66,11 +74,11 @@
 	  <version>${flink-version}</version>
 	  <scope>compile</scope>
 	</dependency>
-<!--   	<dependency>
+  	<dependency>
 	    <groupId>org.apache.flink</groupId>
 	    <artifactId>flink-table-uber_2.11</artifactId>
 	    <version>${flink-version}</version>
-	</dependency> -->
+	</dependency>
 	<dependency>
 	    <groupId>org.apache.flink</groupId>
 	    <artifactId>flink-table-planner-blink_2.11</artifactId>
@@ -87,16 +95,12 @@
 	    <artifactId>flink-table-uber-blink_2.11</artifactId>
 	    <version>${flink-version}</version>
 	</dependency>
+
 	<dependency>
-	    <groupId>org.apache.flink</groupId>
-	    <artifactId>flink-hbase_2.11</artifactId>
-	    <version>${flink-version}</version>
-	</dependency>
-<!--  	<dependency>
 	    <groupId>org.apache.flink</groupId>
 	    <artifactId>flink-optimizer_2.11</artifactId>
 	    <version>${flink-version}</version>
-	</dependency> -->
+	</dependency>
 	<!-- https://mvnrepository.com/artifact/org.apache.flink/flink-streaming-java -->
  	<dependency>
 	    <groupId>org.apache.flink</groupId>
@@ -109,20 +113,19 @@
 	<dependency>
       <groupId>org.gradoop</groupId>
       <artifactId>gradoop-flink</artifactId>
-      <version>0.6.0-SNAPSHOT</version>
+      <version>${gradoop-version}</version>
     </dependency>
 	<dependency>
 	    <groupId>org.gradoop</groupId>
 	    <artifactId>gradoop-hbase</artifactId>
-	    <version>0.6.0-SNAPSHOT</version>
+	    <version>${gradoop-version}</version>
 	</dependency>
-	<dependency>
-	    <groupId>jdk.tools</groupId>
-	    <artifactId>jdk.tools</artifactId>
-	    <version>1.8</version>
-	    <scope>system</scope>
-	    <systemPath>${jdk.tools.path}</systemPath>
+		<dependency>
+	    <groupId>org.apache.flink</groupId>
+	    <artifactId>flink-hbase_2.11</artifactId>
+	    <version>${flink-version}</version>
 	</dependency>
+
 <!-- 	<dependency>
 	    <groupId>org.glassfish.grizzly</groupId>
 	    <artifactId>grizzly-http-server</artifactId>
@@ -187,12 +190,12 @@
     <version>1.0.0</version>
   </dependency> -->
   <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-runtime-web -->
-<!-- <dependency>
+<dependency>
     <groupId>org.apache.flink</groupId>
     <artifactId>flink-runtime-web_2.11</artifactId>
     <version>${flink-version}</version>
     <scope>compile</scope>
-</dependency> -->
+</dependency>
   <dependency>
     <groupId>com.nextbreakpoint</groupId>
     <artifactId>com.nextbreakpoint.flinkclient</artifactId>
@@ -202,8 +205,8 @@
   <groupId>org.apache.flink</groupId>
   <artifactId>flink-connector-kafka_2.11</artifactId>
   <version>${flink-version}</version>
-</dependency> -->
-<!-- https://mvnrepository.com/artifact/io.undertow/undertow-core -->
+</dependency>
+https://mvnrepository.com/artifact/io.undertow/undertow-core -->
 <dependency>
     <groupId>io.undertow</groupId>
     <artifactId>undertow-core</artifactId>

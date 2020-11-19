@@ -1,0 +1,4 @@
+--clusterEntryPoint (z.B. "localhost")
+--gradoopCSVPath (Pfad zu als CSV-Dateien abgespeichertem/n Graph/en)
+--gradoopGraphId (z.B. "5ebe6813a7986cc7bd77f9c2")
+

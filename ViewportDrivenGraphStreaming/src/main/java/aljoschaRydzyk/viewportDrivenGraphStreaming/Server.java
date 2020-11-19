@@ -50,6 +50,7 @@ public class Server implements Serializable{
     private String clusterEntryPointIp4 = "localhost";
     private int clusterEntryPointPort = 8081;
     private static Server server = null;
+    private Boolean gradoopWithHBase = false;
   
     public static Server getInstance() {
     	if (server == null) server = new Server();
@@ -112,6 +113,9 @@ public class Server implements Serializable{
                 for (WebSocketChannel session : channel.getPeerConnections()) {
                     System.out.println(messageData);
                     WebSockets.sendText(messageData, session, null);
+                }                	
+                if (flinkCore == null) {
+                	flinkCore = new FlinkCore(clusterEntryPointIp4, clusterEntryPointPort);
                 }
                 if (messageData.equals("preLayout")) {
                 	wrapperHandler.resetLayoutedVertices();
@@ -120,6 +124,9 @@ public class Server implements Serializable{
                 	setLayoutMode(true);
                 } else if (messageData.equals("resetWrapperHandler")) {
                 	wrapperHandler.initializeGraphRepresentation();
+                } else if (messageData.equals("hbase")){
+                	gradoopWithHBase = true;
+                	flinkCore.setGradoopWithHBase(true);
                 } else if (messageData.startsWith("fitted")) {
                 	String[] arrMessageData = messageData.split(";");
                 	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
@@ -257,18 +264,41 @@ public class Server implements Serializable{
     
     private void buildTopViewRetract() {
     	flinkCore.initializeGradoopGraphUtil();
-		DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetract(maxVertices);
-			wrapperHandler.initializeGraphRepresentation();
-			flinkResponseHandler.setOperation("initialRetract");
-			DataStream<String> wrapperLine;
-			if (layout) {
-				flinkResponseHandler.setVerticesHaveCoordinates(true);
-				wrapperLine = wrapperStream.map(new WrapperMapLineRetract());
-			} else {
-				flinkResponseHandler.setVerticesHaveCoordinates(false);
-				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinatesRetract());
-			}
-			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+		wrapperHandler.initializeGraphRepresentation();
+		if (gradoopWithHBase) {
+			buildTopViewRetractHBase();
+		} else {
+			buildTopViewRetractCSV();
+		}
+    }
+    
+    private void buildTopViewRetractCSV() {
+    	DataStream<Row> wrapperStream = flinkCore.buildTopViewRetractCSV(maxVertices);
+		flinkResponseHandler.setOperation("initialAppend");
+		DataStream<String> wrapperLine;
+		if (layout) {
+			flinkResponseHandler.setVerticesHaveCoordinates(true);
+			wrapperLine = wrapperStream.map(new WrapperMapLine());
+		} else {
+			flinkResponseHandler.setVerticesHaveCoordinates(false);
+			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
+		}
+		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+
+    }
+    
+    private void buildTopViewRetractHBase() {
+		DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetractHBase(maxVertices);
+		flinkResponseHandler.setOperation("initialRetract");
+		DataStream<String> wrapperLine;
+		if (layout) {
+			flinkResponseHandler.setVerticesHaveCoordinates(true);
+			wrapperLine = wrapperStream.map(new WrapperMapLineRetract());
+		} else {
+			flinkResponseHandler.setVerticesHaveCoordinates(false);
+			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinatesRetract());
+		}
+		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     }
     
     private void buildTopViewAppendJoin() {

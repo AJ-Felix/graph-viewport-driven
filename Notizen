@@ -187,7 +187,9 @@ TODO:cytoscape bug mit zufälligen label-verschwinden trouble shooten +  Manchma
 
 late-TODO: Ausschnittvergrößerung/-verkleinerung: Graph neu zentrieren und entweder einzelne oder nur außerhalb verbundene Knoten rausschmeißen (verkleinerung) oder Knoten im äußeren Ring visualisieren bzw. entsprechende Anzahl nachladen und layouten, dann: TODO: Knoten- und Kantengröße generalisieren über User-zoom-operationen hinaus (auch resizing etc.)
 
-TODO: parallelität > 1 ausprobieren
+OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen mit Server auf dieser Maschine und Flink-Cluster in slurm session! (Wahrscheinlich gibt es Datentypen-Fehler, Integer etc.)
+
+TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 
 TODO: Auf Galaxy Cluster testen
 
@@ -195,11 +197,11 @@ TODO: Server ausführung über java -jar command line funktioniert nicht, BlinkE
 
 TODO: sometimes frontend error when zooming in from initial view, but only rarely --> extensive debugging!
 
-TODO: retract not working with NOT-RUNNABLE jar, cannot be fixed by exporting the whole project --> probably the hbase add-on needs to be shipped in a seperate jar or be included in the jar
-
 TODO: Die Menge der zu visualisierenden Knoten (maxVertices) an den Ausschnitt der Modellierungskoordinaten die zu sehen sind, anpassen!!!
 
 TODO: Die Table API benötigt die FlinkCore Klasse --> herausfinden, was sonst aus der FlinkCore-Klasse geschmissen werden kann
+
+TODO: buildTopViewRetract verursacht manchmal NullPointer bei Execution mit Fat-jar....
 
 late-TODO: implement parser for different ports given by command-line arguments
 
@@ -223,7 +225,11 @@ Die Flink-Konfigurationen müssen innerhalb des AbstractReceiveListeners durchge
 
 FlinkSink (SocketClient Sink): Der Socket muss wirklich immer komplett neu geöffnet werden, weil Flink den Socket schließt.
 
-
+Not-Runnable Jar, Retract Mode needs:
+	- HADOOP_HOME set
+	- flink-runtime-web package for Java application
+	- TaskManager memory > 8 GB
+	- gradoop-hbase and flink-hbase dependencies (3 in total, making up roughly 98% of Jar volume)
 
 REST API: Aus irgendeinem Grund werden Patch requests über ajax, welche über javascript im browser-basierten Client ausgeführt werden, vom Server blockiert (CORS). GET requests funktionieren. Die Patch requests sind notwendig
 um Jobs zu terminieren. Ein Workaround wäre, Flink serverseitig in einem separaten Thread laufen zu lassen und den patch request über die java library der rest api vom server aus durch zuführen.

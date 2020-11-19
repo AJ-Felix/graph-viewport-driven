@@ -219,7 +219,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 					} 
 				}
 			}
-		});
+		}).setParallelism(2);
 		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream

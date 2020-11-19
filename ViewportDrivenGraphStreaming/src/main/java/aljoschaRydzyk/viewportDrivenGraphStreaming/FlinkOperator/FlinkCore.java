@@ -13,6 +13,7 @@ import org.apache.flink.types.Row;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.io.api.DataSource;
+import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
@@ -34,6 +35,10 @@ public class FlinkCore {
 	  private StreamExecutionEnvironment fsEnv;
 	  private StreamTableEnvironment fsTableEnv;
 	  
+	  private String pathToGradoopCSV = "/home/aljoscha/graph-samples/one10thousand_sample_2_third_degrees_layout";
+	  private Boolean gradoopWithHBase = false;
+	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
+	  
 	  private GraphUtil graphUtil;
 	  private Float topNew;
 	  private Float bottomNew;
@@ -48,13 +53,14 @@ public class FlinkCore {
 	  private String filePath;
 	  
 	  
-	public  FlinkCore (String clusterEntryPointIp4, int clusterEntryPointPort) {
+	public FlinkCore (String clusterEntryPointIp4, int clusterEntryPointPort) {
 		this.env = ExecutionEnvironment.getExecutionEnvironment();
 	    this.graflink_cfg = GradoopFlinkConfig.createConfig(env);
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
-		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort , "/home/aljoscha/graph-viewport-driven/viewportDrivenGraphStreaming.jar");
+		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort , "/home/aljoscha/remoteEnvJars/combined.jar"); 
+//		this.fsEnv.setParallelism(4);
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		this.vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
 		this.wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
@@ -114,16 +120,27 @@ public class FlinkCore {
 		this.leftOld = leftModelOld;
 	}
 	
-	public LogicalGraph getLogicalGraph(String gradoopGraphID) throws IOException {
-		DataSource hbaseDataSource = new HBaseDataSource(HBaseEPGMStoreFactory.createOrOpenEPGMStore(hbase_cfg, gra_hbase_cfg), graflink_cfg);
-		LogicalGraph graph = hbaseDataSource.getGraphCollection().getGraph(GradoopId.fromString(gradoopGraphID));
+	public void setGradoopWithHBase(Boolean is) {
+		this.gradoopWithHBase = is;
+	}
+	
+	private LogicalGraph getLogicalGraph() throws IOException {
+		LogicalGraph graph;
+		if (gradoopWithHBase == false) {
+			DataSource source = new CSVDataSource(pathToGradoopCSV, this.graflink_cfg);
+			GradoopId id = GradoopId.fromString(gradoopGraphID);
+			graph = source.getGraphCollection().getGraph(id);
+		} else {
+			DataSource hbaseDataSource = new HBaseDataSource(HBaseEPGMStoreFactory.createOrOpenEPGMStore(hbase_cfg, gra_hbase_cfg), graflink_cfg);
+			graph = hbaseDataSource.getGraphCollection().getGraph(GradoopId.fromString(gradoopGraphID));
+		}
 		return graph;
 	}
 	
 	public GraphUtil initializeGradoopGraphUtil() {
 		LogicalGraph graph;
 		try {
-			graph = this.getLogicalGraph("5ebe6813a7986cc7bd77f9c2");	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
+			graph = this.getLogicalGraph();	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
 			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
 			this.graphUtil.buildAdjacencyMatrix();
 		} catch (Exception e) {
@@ -151,13 +168,24 @@ public class FlinkCore {
 		return this.graphUtil;
 	}
 	
-	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetract(Integer maxVertices){
+	public DataStream<Row> buildTopViewRetractCSV(Integer maxVertices){
+		GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
+		try {
+			graphUtil.initializeStreams();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		DataStream<Row> wrapperStream = graphUtil.getMaxDegreeSubsetCSV(maxVertices);
+		return wrapperStream;
+	}
+	
+	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetractHBase(Integer maxVertices){
 		DataStream<Row> dataStreamDegree = FlinkHBaseVerticesLoader.load(fsTableEnv, maxVertices);
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
 			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
 			graphUtil.initializeStreams();
-			wrapperStream = graphUtil.getMaxDegreeSubset(dataStreamDegree);
+			wrapperStream = graphUtil.getMaxDegreeSubsetHBase(dataStreamDegree);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

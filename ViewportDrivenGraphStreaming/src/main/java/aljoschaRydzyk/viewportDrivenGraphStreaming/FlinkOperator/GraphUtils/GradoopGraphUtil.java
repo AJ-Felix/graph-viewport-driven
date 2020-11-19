@@ -146,8 +146,22 @@ public class GradoopGraphUtil implements GraphUtil{
 		return this.wrapperStream;
 	}
 	
-	public DataStream<Tuple2<Boolean, Row>> getMaxDegreeSubset(DataStream<Row> vertexStreamDegree) {
-		
+	public DataStream<Row> getMaxDegreeSubsetCSV(Integer numberVertices){
+		return this.wrapperStream.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row value) throws Exception {
+				Integer sourceIdNumeric = (Integer) value.getField(2);
+				Integer targetIdNumeric = (Integer) value.getField(8);
+				if (sourceIdNumeric < numberVertices && targetIdNumeric < numberVertices) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+		});
+	}
+	
+	public DataStream<Tuple2<Boolean, Row>> getMaxDegreeSubsetHBase(DataStream<Row> vertexStreamDegree) {
 		//aggregate on vertexId to identify vertices that are part of the subset
 		Table degreeTable = fsTableEnv.fromDataStream(vertexStreamDegree).as("bool, vertexId, degree");
 		fsTableEnv.registerFunction("currentVertex", new CurrentVertex());

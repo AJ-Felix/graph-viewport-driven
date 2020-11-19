@@ -572,6 +572,8 @@ public class WrapperHandler implements Serializable {
 			}
 		}
 		String sourceId = wrapper.getSourceIdGradoop();
+		System.out.println("globalVertices, size: " + globalVertices.size());
+		System.out.println(globalVertices.get(sourceId));
 		int sourceIncidence = (int) globalVertices.get(sourceId).get("incidence");
 		if (sourceIncidence == 1) {
 			globalVertices.remove(sourceId);
@@ -593,6 +595,8 @@ public class WrapperHandler implements Serializable {
 			map.put("incidence", (int) 1);
 			map.put("vertex", vertex);
 			globalVertices.put(sourceId, map);
+			System.out.println("addVertex, globalVertices, incidence: " + 
+					globalVertices.get(sourceId).get("incidence"));
 			if (layout) {
 				System.out.println("channel size of Server: " + Server.getInstance().channels.size());
 				Server.getInstance().sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
