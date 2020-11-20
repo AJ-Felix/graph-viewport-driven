@@ -20,7 +20,6 @@ public class FlinkResponseHandler extends Thread{
     private Socket echoSocket;
     private PrintWriter out;
 	private BufferedReader in;
-	private int operationStep;
 	
 	@Override
 	public void start() {
@@ -66,14 +65,6 @@ public class FlinkResponseHandler extends Thread{
     	            	System.out.println("flinkResponseHandler: " + line);
     	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
     	            }
-//            		if (
-//            				((operation.equals("zoomIn") || operation.equals("pan")) && operationStep == 4)	|| 
-//            				(operation.equals("zoomOut") && operationStep == 2) ||
-//            				((line == "empty" || wrapperHandler.getSentToClientInSubStep() == false) &&
-//            						(operation.equals("zoomOut") && operationStep == 1)) 
-//            			) {
-//            			wrapperHandler.clearOperation();
-//            		}
             	}	
             } else {
             	if (verticesHaveCoordinates) {
@@ -144,10 +135,6 @@ public class FlinkResponseHandler extends Thread{
 
 	public void setOperation(String wrapperHandling) {
 		this.operation = wrapperHandling;
-	}
-	
-	public void setOperationStep(int operationStep) {
-		this.operationStep = operationStep;
 	}
 	
 	public void setVerticesHaveCoordinates(Boolean have) {

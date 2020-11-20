@@ -189,6 +189,8 @@ late-TODO: Ausschnittvergrößerung/-verkleinerung: Graph neu zentrieren und ent
 
 OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen mit Server auf dieser Maschine und Flink-Cluster in slurm session! (Wahrscheinlich gibt es Datentypen-Fehler, Integer etc.)
 
+TODO: Überlegen ob es besser ist Argumente über CLI oder FrontEnd zu übergeben
+
 TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 
 TODO: Auf Galaxy Cluster testen

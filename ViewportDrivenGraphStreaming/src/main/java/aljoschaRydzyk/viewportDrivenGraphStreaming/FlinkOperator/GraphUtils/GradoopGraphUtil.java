@@ -41,12 +41,6 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.Wrapper
 //graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
 //targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
 
-//Viewport Zones:
-//		A : Area that remains outside of the viewport before and after operation
-//		B : Area that is newly inside the viewport after operation
-//		C : Area that reamins inside of the viewport before and after operation
-//		D : Area that is newly outside the viewport after operation
-
 public class GradoopGraphUtil implements GraphUtil{
 	
 	private DataStreamSource<Row> vertexStream;

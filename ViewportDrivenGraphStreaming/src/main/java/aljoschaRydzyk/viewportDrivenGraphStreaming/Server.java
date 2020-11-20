@@ -47,10 +47,11 @@ public class Server implements Serializable{
     private FlinkResponseHandler flinkResponseHandler;
     private String localMachinePublicIp4 = "localhost";
     private int flinkResponsePort = 8898;
-    private String clusterEntryPointIp4 = "localhost";
+//    private String clusterEntryPointIp4;
     private int clusterEntryPointPort = 8081;
     private static Server server = null;
     private Boolean gradoopWithHBase = false;
+    private List<String> flinkCoreParameters;
   
     public static Server getInstance() {
     	if (server == null) server = new Server();
@@ -86,8 +87,12 @@ public class Server implements Serializable{
 //		flinkResponseHandler.listen();
     }
     
-    public void setPublicIp4Adresses(String clusterEntryPointIp4) throws SocketException {
-    	this.clusterEntryPointIp4 = clusterEntryPointIp4;
+    public void setParameters(List<String> flinkCoreParameters) {
+    	this.flinkCoreParameters = flinkCoreParameters;
+    }
+    
+    public void setPublicIp4Adress() throws SocketException {
+//    	this.clusterEntryPointIp4 = clusterEntryPointIp4;
     	Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()){
             NetworkInterface intFace = interfaces.nextElement();
@@ -100,6 +105,9 @@ public class Server implements Serializable{
                 if (address instanceof Inet4Address) {
                 	localMachinePublicIp4 = address.getHostAddress().toString();
                 	System.out.println("adress :" + address.getHostAddress().toString());
+                	
+                	//debug
+//                	localMachinePublicIp4 = "localhost";
                 }
             }
         }
@@ -115,7 +123,7 @@ public class Server implements Serializable{
                     WebSockets.sendText(messageData, session, null);
                 }                	
                 if (flinkCore == null) {
-                	flinkCore = new FlinkCore(clusterEntryPointIp4, clusterEntryPointPort);
+                	flinkCore = new FlinkCore(flinkCoreParameters, clusterEntryPointPort);
                 }
                 if (messageData.equals("preLayout")) {
                 	wrapperHandler.resetLayoutedVertices();
@@ -174,7 +182,7 @@ public class Server implements Serializable{
                 	wrapperHandler.setMaxVertices(maxVertices);
                 } 
                 else if (messageData.startsWith("buildTopView")) {
-                	flinkCore = new FlinkCore(clusterEntryPointIp4, clusterEntryPointPort);
+                	flinkCore = new FlinkCore(flinkCoreParameters, clusterEntryPointPort);
                   	Float topModel = (float) 0;
                 	Float rightModel = (float) 4000;
                 	Float bottomModel = (float) 4000;
@@ -196,8 +204,6 @@ public class Server implements Serializable{
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
-//                	Server.getInstance().sendToAll("fit");
-//                	if (layout) wrapperHandler.clearOperation();
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
         			Float xRenderPosition = Float.parseFloat(arrMessageData[1]);
@@ -283,8 +289,8 @@ public class Server implements Serializable{
 			flinkResponseHandler.setVerticesHaveCoordinates(false);
 			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 		}
-		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-
+		wrapperLine.print();
+//		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     }
     
     private void buildTopViewRetractHBase() {
