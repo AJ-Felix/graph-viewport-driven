@@ -2,7 +2,6 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -38,12 +37,17 @@ public class FlinkCore {
 	  private StreamTableEnvironment fsTableEnv;
 	  private String flinkJobJarPath = "/home/aljoscha/remoteEnvJars/combined.jar";
 	  
+//	  private String clusterEntryPointAddress = "localhost";
+	  private int clusterEntryPointPort = 8081;
+//	  private String hdfsEntryPointAddress = "localhost";
+//	  private int hdfsEntryPointPort = 9000;
+//	  private String hdfsGraphFilesDirectory;
+	  private String hdfsFullPath;
+	  private Boolean degreesCalculated = false;
 	  
-	  private String viDGraSCSVPath;
-	  private String gradoopCSVPath;
-	  private Boolean gradoopWithHBase = false;
-	  private String gradoopGraphID;
-	  private String vertexDegrees = "false";
+	  
+	  private Boolean gradoopWithHBase;
+	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
 	  
 	  private GraphUtil graphUtil;
 	  private Float topNew;
@@ -60,23 +64,25 @@ public class FlinkCore {
 				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
 	  
 	  
-	public FlinkCore (List<String> flinkCoreParameters, int clusterEntryPointPort) {
-		String clusterEntryPointIp4 = flinkCoreParameters.get(0);
-		this.gradoopCSVPath = flinkCoreParameters.get(1);
-		this.gradoopGraphID = flinkCoreParameters.get(2);
-		this.viDGraSCSVPath = flinkCoreParameters.get(3);
-		this.vertexDegrees = flinkCoreParameters.get(4);
+	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId,
+			Boolean degreesCalculated) {
+//		String clusterEntryPointIp4 = flinkCoreParameters.get(0);
+//		this.gradoopCSVPath = flinkCoreParameters.get(1);
+//		this.gradoopGraphID = flinkCoreParameters.get(2);
+//		this.viDGraSCSVPath = flinkCoreParameters.get(
 //		this.env = ExecutionEnvironment.getExecutionEnvironment();
-		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort, 
+		this.degreesCalculated = degreesCalculated;
+		this.hdfsFullPath = hdfsFullPath;
+		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, 
 				flinkJobJarPath);
 		
-		this.env.setParallelism(4);
+		this.env.setParallelism(1);
 		
 	    this.graflink_cfg = GradoopFlinkConfig.createConfig(env);
 		this.gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
 		this.hbase_cfg = HBaseConfiguration.create();
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
-		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointIp4, clusterEntryPointPort,
+		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort,
 				flinkJobJarPath); 
 		
 		this.fsEnv.setParallelism(1);
@@ -85,41 +91,46 @@ public class FlinkCore {
 		System.out.println("initiated Flink.");
 	}
 	
-	public void setTopModelPos(Float topModelPos) {
-		this.topNew = topModelPos;
-	}
-	
-	public Float getTopModel() {
-		return this.topNew;
-	}
-	
-	public void setBottomModelPos(Float bottomModelPos) {
-		this.bottomNew = bottomModelPos;
-	}
-	
-	public Float getBottomModel() {
-		return this.bottomNew;
-	}
-	
-	public void setRightModelPos(Float rightModelPos) {
-		this.rightNew = rightModelPos;
-	}
-	
-	public Float getRightModel() {
-		return this.rightNew;
-	}
-	
-	public void setLeftModelPos(Float leftModelPos) {
-		this.leftNew = leftModelPos;
-	}
-	
-	public Float getLeftModel() {
-		return this.leftNew;
-	}
-	
 	public StreamExecutionEnvironment getFsEnv() {
 		return this.fsEnv;
 	}
+	
+	public ExecutionEnvironment getEnv() {
+		return this.env;
+	}
+	
+//	public void setClusterEntryPointAdress(String address) {
+//		this.clusterEntryPointAddress = address;
+//	}
+//	
+//	public void setHDFSEntryPointAdress(String address) {
+//		this.hdfsEntryPointAddress = address;
+//		this.setHDFSFullPath();
+//	}
+//	
+//	public void setHDFSEntryPointPort(int port) {
+//		this.hdfsEntryPointPort = port;
+//		this.setHDFSFullPath();
+//	}
+	
+//	public void setGraphId(String Id) {
+//		this.gradoopGraphID = Id;
+//	}
+	
+//	public void setHDFSGraphFilesDirectory(String directory) {
+//		this.hdfsGraphFilesDirectory = directory;
+//		this.setHDFSFullPath();
+//	}
+	
+//	public void setDegreesCalculated(Boolean calculated) {
+//		this.degreesCalculated = calculated;
+//	}
+	
+//	private void setHDFSFullPath() {
+//		this.hdfsFullPath = "hdfs://" + this.hdfsEntryPointAddress + ":" + String.valueOf(this.hdfsEntryPointPort)
+//				+ this.hdfsGraphFilesDirectory;
+//		System.out.println(this.hdfsFullPath);
+//	}
 	
 	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
 		this.topNew = topModel;
@@ -128,11 +139,15 @@ public class FlinkCore {
 		this.leftNew = leftModel;
 	}
 	
-	public void setModelPositionsOld(Float topModelOld, Float rightModelOld, Float bottomModelOld, Float leftModelOld) {
-		this.topOld = topModelOld;
-		this.rightOld = rightModelOld;
-		this.bottomOld = bottomModelOld;
-		this.leftOld = leftModelOld;
+	public float[] getModelPositions() {
+		return new float[]{topNew, rightNew, bottomNew, leftNew};
+	}
+	
+	public void setModelPositionsOld() {
+		this.topOld = this.topNew;
+		this.rightOld = this.topNew;
+		this.bottomOld = this.bottomNew;
+		this.leftOld = this.leftNew;
 	}
 	
 	public void setGradoopWithHBase(Boolean is) {
@@ -142,14 +157,14 @@ public class FlinkCore {
 	private LogicalGraph getLogicalGraph() throws IOException {
 		LogicalGraph graph;
 		if (gradoopWithHBase == false) {
-			DataSource source = new CSVDataSource(gradoopCSVPath, this.graflink_cfg);
+			DataSource source = new CSVDataSource(this.hdfsFullPath, this.graflink_cfg);
 			GradoopId id = GradoopId.fromString(gradoopGraphID);
 			graph = source.getGraphCollection().getGraph(id);
 		} else {
 			DataSource hbaseDataSource = new HBaseDataSource(HBaseEPGMStoreFactory.createOrOpenEPGMStore(hbase_cfg, gra_hbase_cfg), graflink_cfg);
 			graph = hbaseDataSource.getGraphCollection().getGraph(GradoopId.fromString(gradoopGraphID));
 		}
-		if (vertexDegrees == "false") {
+		if (!degreesCalculated) {
 			graph = graph.callForGraph(new DistinctVertexDegrees("degree", "inDegree", "outDegree", true));
 		}
 		return graph;
@@ -160,6 +175,7 @@ public class FlinkCore {
 		try {
 			graph = this.getLogicalGraph();	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
 			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
+			((GradoopGraphUtil) this.graphUtil).loadDataSets();
 			this.graphUtil.buildAdjacencyMatrix();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -168,7 +184,7 @@ public class FlinkCore {
 	}
 	
 	public GraphUtil initializeCSVGraphUtilJoin() {
-		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.viDGraSCSVPath, this.vertexFields, this.wrapperFields);
+		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.hdfsFullPath, this.vertexFields, this.wrapperFields);
 			try {
 				this.graphUtil.buildAdjacencyMatrix();
 			} catch (Exception e) {
@@ -178,7 +194,7 @@ public class FlinkCore {
 	}
 	
 	public GraphUtil initializeAdjacencyGraphUtil() {
-		this.graphUtil =  new AdjacencyGraphUtil(this.fsEnv, this.viDGraSCSVPath);
+		this.graphUtil =  new AdjacencyGraphUtil(this.fsEnv, this.hdfsFullPath);
 		return this.graphUtil;
 	}
 	
@@ -186,7 +202,7 @@ public class FlinkCore {
 		return this.graphUtil;
 	}
 	
-	public DataStream<Row> buildTopViewRetractCSV(Integer maxVertices){
+	public DataStream<Row> buildTopViewGradoop(Integer maxVertices){
 		GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
 		try {
 			graphUtil.initializeStreams();
@@ -197,7 +213,7 @@ public class FlinkCore {
 		return wrapperStream;
 	}
 	
-	public DataStream<Tuple2<Boolean, Row>> buildTopViewRetractHBase(Integer maxVertices){
+	public DataStream<Tuple2<Boolean, Row>> buildTopViewHBase(Integer maxVertices){
 		DataStream<Row> dataStreamDegree = FlinkHBaseVerticesLoader.load(fsTableEnv, maxVertices);
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
@@ -210,7 +226,7 @@ public class FlinkCore {
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> buildTopViewAppendJoin(Integer maxVertices){
+	public DataStream<Row> buildTopViewCSV(Integer maxVertices){
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
 		graphUtil.initializeStreams();
 		return graphUtil.getMaxDegreeSubset(maxVertices);

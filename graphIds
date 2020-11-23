@@ -1,0 +1,20 @@
+
+
+Local HDFS:	localhost:9000
+
+Galaxy HDFS:	galaxymaster01.sc.uni-leipzig.de:8020
+
+
+
+HDFS Sample Graph
+ID:			5ebe6813a7986cc7bd77f9c2
+Galaxy Path Gradoop:	/user/au130tane/graph-samples
+Local Path Gradoop: 	/one10thousand_sample_2_third_degrees_layout
+Local Path Own:		/sample-graph-OwnCSV/one10thousand_sample_2_third_degrees_layout
+
+
+
+HDFS LDBC_1
+ID:			5c6ab3de71ff1425aed68b34
+Galaxy Path Gradoop:	/user/au130tane/ldbc_1
+Local Path Gradoop: 	/ldbc_1

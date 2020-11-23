@@ -59,6 +59,8 @@ public class GradoopGraphUtil implements GraphUtil{
 	private Table wrapperTable;
 	private Map<String,Map<String,String>> adjMatrix;
 	private FilterFunction<Row> zoomOutVertexFilter;
+	private List<EPGMVertex> vertexCollection;
+	private List<EPGMEdge> edgeCollection;
 	
 	//Area Definition
 			//A	: Inside viewport after operation
@@ -81,33 +83,42 @@ public class GradoopGraphUtil implements GraphUtil{
 		this.wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 	}
 	
+	public void loadDataSets() {
+		try {
+			vertexCollection = this.graph.getVertices().collect();
+			edgeCollection = this.graph.getEdges().collect();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	@Override
 	public void initializeStreams() throws Exception{
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
-		List<EPGMVertex> vertices = this.graph.getVertices().collect();
-		vertices.sort(new VertexDegreeComparator());
+		List<EPGMVertex> vertexCollection = this.graph.getVertices().collect();
+		vertexCollection.sort(new VertexDegreeComparator());
 		this.vertexIdMap = new HashMap<String, Integer>();
 		List<Row> customVertices = new ArrayList<Row>();
 		List<Row> edgeRow = new ArrayList<Row>();
-		for (int i = 0; i < vertices.size(); i++) {
-			String vertexIdGradoop = vertices.get(i).getId().toString();
+		for (int i = 0; i < vertexCollection.size(); i++) {
+			String vertexIdGradoop = vertexCollection.get(i).getId().toString();
 			Integer vertexIdNumeric = (Integer) i;
 			this.vertexIdMap.put(vertexIdGradoop, vertexIdNumeric);
-			Integer x = ((Integer) vertices.get(i).getPropertyValue("X").getInt());
-			Integer y = ((Integer) vertices.get(i).getPropertyValue("Y").getInt());
-			Long degree = ((Long) vertices.get(i).getPropertyValue("degree").getLong());
-			String vertexLabel = vertices.get(i).getLabel();
+			Integer x = ((Integer) vertexCollection.get(i).getPropertyValue("X").getInt());
+			Integer y = ((Integer) vertexCollection.get(i).getPropertyValue("Y").getInt());
+			Long degree = ((Long) vertexCollection.get(i).getPropertyValue("degree").getLong());
+			String vertexLabel = vertexCollection.get(i).getLabel();
 			customVertices.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, degree));
 			edgeRow.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel,
 					x, y, degree, vertexIdGradoop, vertexIdNumeric, vertexLabel,
 					x, y, degree, "identityEdge", "identityEdge"));
 		}	
-		List<EPGMEdge> edges = this.graph.getEdges().collect();
-		for (int i = 0; i < edges.size(); i++) {
-			String edgeIdGradoop = edges.get(i).getId().toString();
-			String edgeLabel = edges.get(i).getLabel();
-			String sourceVertexIdGradoop = edges.get(i).getSourceId().toString();
-			String targetVertexIdGradoop = edges.get(i).getTargetId().toString();		
+		List<EPGMEdge> edgeCollection = this.graph.getEdges().collect();
+		for (int i = 0; i < edgeCollection.size(); i++) {
+			String edgeIdGradoop = edgeCollection.get(i).getId().toString();
+			String edgeLabel = edgeCollection.get(i).getLabel();
+			String sourceVertexIdGradoop = edgeCollection.get(i).getSourceId().toString();
+			String targetVertexIdGradoop = edgeCollection.get(i).getTargetId().toString();		
 			for (Row sourceVertex: customVertices) {
 				if (sourceVertex.getField(1).equals(sourceVertexIdGradoop)) {
 					for (Row targetVertex: customVertices) {
@@ -140,8 +151,8 @@ public class GradoopGraphUtil implements GraphUtil{
 		return this.wrapperStream;
 	}
 	
-	public DataStream<Row> getMaxDegreeSubsetCSV(Integer numberVertices){
-		return this.wrapperStream.filter(new FilterFunction<Row>() {
+	public DataStream<Row> getMaxDegreeSubsetCSV(Integer numberVertices){	
+		return wrapperStream.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
 				Integer sourceIdNumeric = (Integer) value.getField(2);
@@ -316,10 +327,8 @@ public class GradoopGraphUtil implements GraphUtil{
 	@Override
 	public Map<String, Map<String, String>> buildAdjacencyMatrix() throws Exception {
 		this.adjMatrix = new HashMap<String,Map<String,String>>();
-		List<EPGMVertex> vertices = this.graph.getVertices().collect();
-		for (EPGMVertex vertex : vertices) this.adjMatrix.put(vertex.getId().toString(), new HashMap<String,String>());
-		List<EPGMEdge> edges = this.graph.getEdges().collect();
-		for (EPGMEdge edge : edges) {
+		for (EPGMVertex vertex : vertexCollection) this.adjMatrix.put(vertex.getId().toString(), new HashMap<String,String>());
+		for (EPGMEdge edge : edgeCollection) {
 			String sourceId = edge.getSourceId().toString();
 			String targetId = edge.getTargetId().toString();
 			String edgeId = edge.getId().toString();
@@ -327,7 +336,6 @@ public class GradoopGraphUtil implements GraphUtil{
 			this.adjMatrix.get(targetId).put(sourceId, edgeId);
 		}
 		System.out.println("adjMatrix built");
-		for (Map.Entry<String, Map<String, String>> entry : this.adjMatrix.entrySet()) System.out.println(entry);
 		return this.adjMatrix;
 	}
 	
@@ -498,4 +506,6 @@ public class GradoopGraphUtil implements GraphUtil{
 		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		return wrapperStream;
 	}
+
+
 }

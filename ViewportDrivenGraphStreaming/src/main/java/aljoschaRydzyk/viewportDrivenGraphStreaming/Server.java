@@ -31,6 +31,14 @@ import io.undertow.websockets.core.WebSockets;
 
 public class Server implements Serializable{
 	
+	private String clusterEntryPointAddress = "localhost";
+	private String hdfsEntryPointAddress = "localhost";
+	private int hdfsEntryPointPort = 9000;
+	private String hdfsGraphFilesDirectory;
+	private Boolean degreesCalculated = false;
+	private String gradoopGraphId = "5ebe6813a7986cc7bd77f9c2";
+
+	
 	private FlinkCore flinkCore;
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
     private String webSocketListenPath = "/graphData";
@@ -48,10 +56,7 @@ public class Server implements Serializable{
     private String localMachinePublicIp4 = "localhost";
     private int flinkResponsePort = 8898;
 //    private String clusterEntryPointIp4;
-    private int clusterEntryPointPort = 8081;
     private static Server server = null;
-    private Boolean gradoopWithHBase = false;
-    private List<String> flinkCoreParameters;
   
     public static Server getInstance() {
     	if (server == null) server = new Server();
@@ -87,9 +92,9 @@ public class Server implements Serializable{
 //		flinkResponseHandler.listen();
     }
     
-    public void setParameters(List<String> flinkCoreParameters) {
-    	this.flinkCoreParameters = flinkCoreParameters;
-    }
+//    public void setParameters(List<String> flinkCoreParameters) {
+//    	this.flinkCoreParameters = flinkCoreParameters;
+//    }
     
     public void setPublicIp4Adress() throws SocketException {
 //    	this.clusterEntryPointIp4 = clusterEntryPointIp4;
@@ -122,9 +127,10 @@ public class Server implements Serializable{
                     System.out.println(messageData);
                     WebSockets.sendText(messageData, session, null);
                 }                	
-                if (flinkCore == null) {
-                	flinkCore = new FlinkCore(flinkCoreParameters, clusterEntryPointPort);
-                }
+//                if (flinkCore == null) {
+//                	flinkCore = new FlinkCore(clusterEntryPointAddress, hdfsFullPath, gradoopGraphId, 
+//                			degreesCalculated);
+//                }
                 if (messageData.equals("preLayout")) {
                 	wrapperHandler.resetLayoutedVertices();
                 	setLayoutMode(false);
@@ -132,9 +138,30 @@ public class Server implements Serializable{
                 	setLayoutMode(true);
                 } else if (messageData.equals("resetWrapperHandler")) {
                 	wrapperHandler.initializeGraphRepresentation();
-                } else if (messageData.equals("hbase")){
-                	gradoopWithHBase = true;
-                	flinkCore.setGradoopWithHBase(true);
+                } else if (messageData.startsWith("clusterEntryAddress")) {
+                	clusterEntryPointAddress = messageData.split(";")[1];
+//                	flinkCore.setClusterEntryPointAdress(messageData.split(";")[1]);
+                } else if (messageData.startsWith("hDFSEntryAddress")) {
+                	hdfsEntryPointAddress = messageData.split(";")[1];
+//                	flinkCore.setHDFSEntryPointAdress(messageData.split(";")[1]);
+                } else if (messageData.startsWith("hDFSEntryPointPort")) {
+                	hdfsEntryPointPort = Integer.parseInt(messageData.split(";")[1]);
+//                	flinkCore.setHDFSEntryPointPort(Integer.parseInt(messageData.split(";")[1]));
+                } else if (messageData.startsWith("hDFSGraphFilesDirectory")) {
+                	hdfsGraphFilesDirectory = messageData.split(";")[1];
+//                	flinkCore.setHDFSGraphFilesDirectory(messageData.split(";")[1]);
+                } else if (messageData.startsWith("gradoopGraphId")) {
+                	gradoopGraphId = messageData.split(";")[1];
+//                	flinkCore.setGraphId(messageData.split(";")[1]);
+                } else if (messageData.startsWith("degrees")) {
+                	String calc = messageData.split(";")[1];
+                	if (calc.equals("true")) {
+//                		flinkCore.setDegreesCalculated(true);
+                		degreesCalculated = true;
+                	} else {
+//                		flinkCore.setDegreesCalculated(false);
+                		degreesCalculated = false;
+                	}
                 } else if (messageData.startsWith("fitted")) {
                 	String[] arrMessageData = messageData.split(";");
                 	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
@@ -182,7 +209,11 @@ public class Server implements Serializable{
                 	wrapperHandler.setMaxVertices(maxVertices);
                 } 
                 else if (messageData.startsWith("buildTopView")) {
-                	flinkCore = new FlinkCore(flinkCoreParameters, clusterEntryPointPort);
+//                	flinkCore = new FlinkCore();
+                	flinkCore = new FlinkCore(clusterEntryPointAddress, 
+                			"hdfs://" + hdfsEntryPointAddress + ":" + String.valueOf(hdfsEntryPointPort)
+            				+ hdfsGraphFilesDirectory, gradoopGraphId, 
+                			degreesCalculated);
                   	Float topModel = (float) 0;
                 	Float rightModel = (float) 4000;
                 	Float bottomModel = (float) 4000;
@@ -191,13 +222,17 @@ public class Server implements Serializable{
                 	setOperation("initial");
                 	String[] arrMessageData = messageData.split(";");
                 	System.out.println(arrMessageData[1]);
-                	if (arrMessageData[1].equals("retract")) {
-                		buildTopViewRetract();        			
-                	} else if (arrMessageData[1].equals("appendJoin")) {
+                	if (arrMessageData[1].equals("HBase")) {
+                    	flinkCore.setGradoopWithHBase(true);
+                		buildTopViewHBase();        			
+                	} else if (arrMessageData[1].equals("CSV")) {
                 		System.out.println("appendjoin??!?!?");
-                		buildTopViewAppendJoin();
-        			} else if (arrMessageData[1].contentEquals("adjacency")) {
+                		buildTopViewCSV();
+        			} else if (arrMessageData[1].equals("adjacency")) {
         				buildTopViewAdjacency();
+        			} else if (arrMessageData[1].equals("gradoop")) {
+                    	flinkCore.setGradoopWithHBase(false);
+        				buildTopViewGradoop();
         			}
                 	try {
         				flinkCore.getFsEnv().execute();
@@ -213,12 +248,8 @@ public class Server implements Serializable{
         			Float leftModel = (- xRenderPosition /zoomLevel);
         			Float bottomModel = (topModel + viewportPixelY / zoomLevel);
         			Float rightModel = (leftModel + viewportPixelX / zoomLevel);
-        			Float topModelOld = flinkCore.getTopModel();
-        			Float leftModelOld = flinkCore.getLeftModel();
-        			Float bottomModelOld = flinkCore.getBottomModel();
-        			Float rightModelOld = flinkCore.getRightModel();
+        			flinkCore.setModelPositionsOld();
         			setModelPositions(topModel, rightModel, bottomModel, leftModel);
-					flinkCore.setModelPositionsOld(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
 					System.out.println("Zoom ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					if (messageData.startsWith("zoomIn")) {
 						setOperation("zoomIn");
@@ -241,17 +272,18 @@ public class Server implements Serializable{
 					}
     			} else if (messageData.startsWith("pan")) {
         			String[] arrMessageData = messageData.split(";");
-        			Float topModelOld = flinkCore.getTopModel();
-        			Float bottomModelOld = flinkCore.getBottomModel();
-        			Float leftModelOld = flinkCore.getLeftModel();
-        			Float rightModelOld = flinkCore.getRightModel();
+        			float[] modelPositions = flinkCore.getModelPositions();
+        			Float topModelOld = modelPositions[0];
+        			Float bottomModelOld = modelPositions[1];
+        			Float leftModelOld = modelPositions[2];
+        			Float rightModelOld = modelPositions[3];
         			Float xModelDiff = Float.parseFloat(arrMessageData[1]); 
         			Float yModelDiff = Float.parseFloat(arrMessageData[2]);
         			Float topModel = topModelOld + yModelDiff;
         			Float bottomModel = bottomModelOld + yModelDiff;
         			Float leftModel = leftModelOld + xModelDiff;
         			Float rightModel = rightModelOld + xModelDiff;
-					flinkCore.setModelPositionsOld(topModelOld, rightModelOld, bottomModelOld, leftModelOld);
+					flinkCore.setModelPositionsOld();
 					setModelPositions(topModel, rightModel, bottomModel, leftModel);
 					System.out.println("Pan ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					setOperation("pan");
@@ -268,33 +300,10 @@ public class Server implements Serializable{
         };
     }
     
-    private void buildTopViewRetract() {
+    private void buildTopViewHBase() {
     	flinkCore.initializeGradoopGraphUtil();
 		wrapperHandler.initializeGraphRepresentation();
-		if (gradoopWithHBase) {
-			buildTopViewRetractHBase();
-		} else {
-			buildTopViewRetractCSV();
-		}
-    }
-    
-    private void buildTopViewRetractCSV() {
-    	DataStream<Row> wrapperStream = flinkCore.buildTopViewRetractCSV(maxVertices);
-		flinkResponseHandler.setOperation("initialAppend");
-		DataStream<String> wrapperLine;
-		if (layout) {
-			flinkResponseHandler.setVerticesHaveCoordinates(true);
-			wrapperLine = wrapperStream.map(new WrapperMapLine());
-		} else {
-			flinkResponseHandler.setVerticesHaveCoordinates(false);
-			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-		}
-		wrapperLine.print();
-//		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-    }
-    
-    private void buildTopViewRetractHBase() {
-		DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewRetractHBase(maxVertices);
+		DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewHBase(maxVertices);
 		flinkResponseHandler.setOperation("initialRetract");
 		DataStream<String> wrapperLine;
 		if (layout) {
@@ -307,9 +316,25 @@ public class Server implements Serializable{
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     }
     
-    private void buildTopViewAppendJoin() {
+    private void buildTopViewGradoop() {
+    	flinkCore.initializeGradoopGraphUtil();
+		wrapperHandler.initializeGraphRepresentation();
+    	DataStream<Row> wrapperStream = flinkCore.buildTopViewGradoop(maxVertices);
+		flinkResponseHandler.setOperation("initialAppend");
+		DataStream<String> wrapperLine;
+		if (layout) {
+			flinkResponseHandler.setVerticesHaveCoordinates(true);
+			wrapperLine = wrapperStream.map(new WrapperMapLine());
+		} else {
+			flinkResponseHandler.setVerticesHaveCoordinates(false);
+			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
+		}
+		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+    }
+    
+    private void buildTopViewCSV() {
     	flinkCore.initializeCSVGraphUtilJoin();
-		DataStream<Row> wrapperStream = flinkCore.buildTopViewAppendJoin(maxVertices);
+		DataStream<Row> wrapperStream = flinkCore.buildTopViewCSV(maxVertices);
 			wrapperHandler.initializeGraphRepresentation();
 			flinkResponseHandler.setOperation("initialAppend");
 			DataStream<String> wrapperLine;

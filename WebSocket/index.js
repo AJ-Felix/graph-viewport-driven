@@ -78,20 +78,53 @@ async function processMessage(){
 	}
 }
 
-function sendSignalRetract(){
-	if (graphOperationLogic == "clientSide") handler = new RetractHandler(maxNumberVertices);
-	buildTopViewOperations();
-	ws.send("buildTopView;retract");
+function sendClusterEntryAddress(address){
+	ws.send("clusterEntryAddress;" + address);
 }
 
-function sendSignalAppendJoin(){
-	if (graphOperationLogic == "clientSide") handler = new AppendHandler(maxNumberVertices);
+function sendHDFSEntryAddress(address){
+	ws.send("hDFSEntryAddress;" + address);
+}
+
+function sendHDFSEntryPort(port){
+	ws.send("hDFSEntryPointPort;" + port);
+}
+
+function sendHDFSGraphFilesDirectory(directory){
+	ws.send("hDFSGraphFilesDirectory;" + directory);
+}
+
+function sendGradoopGraphId(id){
+	ws.send("gradoopGraphId;" + id);
+}
+
+function sendVerticesHaveDegrees(){
+	ws.send("degrees;true");
+}
+
+function sendVerticesDoNotHaveDegrees(){
+	ws.send("degrees;false");
+}
+
+function sendSignalHBase(){
+	// if (graphOperationLogic == "clientSide") handler = new RetractHandler(maxNumberVertices);
 	buildTopViewOperations();
-	ws.send("buildTopView;appendJoin");
+	ws.send("buildTopView;HBase");
+}
+
+function sendSignalGradoop(){
+	buildTopViewOperations();
+	ws.send("buildTopView;gradoop");
+}
+
+function sendSignalCSV(){
+	// if (graphOperationLogic == "clientSide") handler = new AppendHandler(maxNumberVertices);
+	buildTopViewOperations();
+	ws.send("buildTopView;CSV");
 }
 
 function sendSignalAdjacency(){
-	if (graphOperationLogic == "clientSide")	handler = new AppendHandler(maxNumberVertices);
+	// if (graphOperationLogic == "clientSide")	handler = new AppendHandler(maxNumberVertices);
 	buildTopViewOperations();
 	ws.send("buildTopView;adjacency");
 }

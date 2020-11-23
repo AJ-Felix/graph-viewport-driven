@@ -117,6 +117,11 @@ public class WrapperHandler implements Serializable {
 	}
 	
 	public void addWrapperInitial(WrapperGVD wrapper) {
+		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
+		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
+		System.out.println("TargetIdNumeric: " + wrapper.getTargetIdNumeric());
+		System.out.println("TargetIdGradoop: " + wrapper.getTargetIdGradoop());
+		System.out.println("WrapperLabel: " + wrapper.getEdgeLabel());
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentityInitial(wrapper.getSourceVertex());
 		} else {
@@ -565,7 +570,7 @@ public class WrapperHandler implements Serializable {
 				globalVertices.remove(targetId);
 				if (innerVertices.containsKey(targetId)) innerVertices.remove(targetId);
 				if (newVertices.containsKey(targetId)) newVertices.remove(targetId);
-				System.out.println("removing object in removeWrapper, ID: " + wrapper.getTargetIdGradoop());
+				System.out.println("removing object in removeWrapper (target), ID: " + wrapper.getTargetIdGradoop());
 				Server.getInstance().sendToAll("removeObjectServer;" + wrapper.getTargetIdGradoop());
 			} else {
 				globalVertices.get(targetId).put("incidence", targetIncidence - 1);
@@ -573,6 +578,7 @@ public class WrapperHandler implements Serializable {
 		}
 		String sourceId = wrapper.getSourceIdGradoop();
 		System.out.println("globalVertices, size: " + globalVertices.size());
+		System.out.println(sourceId);
 		System.out.println(globalVertices.get(sourceId));
 		int sourceIncidence = (int) globalVertices.get(sourceId).get("incidence");
 		if (sourceIncidence == 1) {
@@ -580,7 +586,7 @@ public class WrapperHandler implements Serializable {
 			if (innerVertices.containsKey(sourceId)) innerVertices.remove(sourceId);
 			if (newVertices.containsKey(sourceId)) newVertices.remove(sourceId);
 			Server.getInstance().sendToAll("removeObjectServer;" + wrapper.getSourceIdGradoop());
-			System.out.println("removing object in removeWrapper, ID: " + wrapper.getSourceIdGradoop());
+			System.out.println("removing object in removeWrapper (source), ID: " + wrapper.getSourceIdGradoop());
 		} else {
 			globalVertices.get(sourceId).put("incidence", sourceIncidence - 1);
 		}

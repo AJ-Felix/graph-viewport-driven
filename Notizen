@@ -188,8 +188,11 @@ TODO:cytoscape bug mit zufälligen label-verschwinden trouble shooten +  Manchma
 late-TODO: Ausschnittvergrößerung/-verkleinerung: Graph neu zentrieren und entweder einzelne oder nur außerhalb verbundene Knoten rausschmeißen (verkleinerung) oder Knoten im äußeren Ring visualisieren bzw. entsprechende Anzahl nachladen und layouten, dann: TODO: Knoten- und Kantengröße generalisieren über User-zoom-operationen hinaus (auch resizing etc.)
 
 OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen mit Server auf dieser Maschine und Flink-Cluster in slurm session! (Wahrscheinlich gibt es Datentypen-Fehler, Integer etc.)
+	- Möglicherweise gibt es MemoryError, weil die Kanten und Knotendatenstrukturen im BackEnd gespeichert werden...
+	- Die Knoten des LDBC_1 können über DataSet API in eine Datei geschrieben werden. Ein '.print()'-Sink funktioniert nicht. Ein '.collect()' mit anschließendem Sink ebenfalls nicht (Caused by: java.io.IOException: The rpc invocation size 666780296 exceeds the maximum akka framesize.) Das Ganze wurde auf einem lokalen CLuster getestet, aber sollte entsprechend auch in einer Slurm-Session funktionieren.
 
-TODO: Überlegen ob es besser ist Argumente über CLI oder FrontEnd zu übergeben
+
+TODO: Front-End aufhübschen
 
 TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 
