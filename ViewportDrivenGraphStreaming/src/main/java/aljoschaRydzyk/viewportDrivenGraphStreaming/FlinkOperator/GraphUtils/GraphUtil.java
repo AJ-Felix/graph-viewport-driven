@@ -13,7 +13,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
 //targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
 
 public interface GraphUtil { 
-	void initializeStreams() throws Exception;
+	void initializeDataSets() throws Exception;
 	DataStream<Row> getVertexStream();
 	DataStream<Row> zoom(Float top, Float right, Float bottom, Float left) throws IOException;
 	DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, 

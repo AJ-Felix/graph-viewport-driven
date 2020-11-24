@@ -57,68 +57,101 @@
 	<p>Window width: <span id="width"></span></p>
 	
 	<div class="container-fluid" id="myContainer">
-		<div id="cy" style="border:10px solid #cecece;" >
+		<div class="row">
+			<div class="col-lg-9">
+				<div id="cy" style="border:10px solid #cecece;" >
+				</div>
+			</div>
+			<div class="col-lg-3">
+				<div id="buttons" >
+					<button type="button" onClick="resetVisualization()" class="btn" id="send">Reset</button>
+					<button type="button" onClick="sendSignalHBase()" class="btn" id="send">buildTopViewHBase</button>
+					<button type="button" onClick="sendSignalGradoop()" class="btn" id="send">buildTopViewGradoop</button>
+					<button type="button" onClick="sendSignalCSV()" class="btn" id="send">buildTopViewCSV</button>
+					<button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button>
+					<button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button>
+					<button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button>
+				</div>
+				<form>
+					<input id="graphIsLayouted" type="checkbox"/>
+					<button type="button" onclick="sendVerticesHaveDegrees(document.getElementById('graphIsLayouted').checked)">GraphAlready Calculated</button>
+				</form
+				<form>
+					<input id="verticesHaveDegrees" type="checkbox"/>
+					<button type="button" onclick="sendVerticesHaveDegrees(document.getElementById('verticesHaveDegrees').checked)">Vertex Degrees Already Calculated</button>
+				</form
+				<form>
+					<input id="maxVerticesInput" type="number"/>
+					<button type="button" onclick="sendMaxVertices(document.getElementById('maxVerticesInput').value)">Max. Vertices</button>
+				</form>
+				<form>
+					<input id="clusterEntryPointAddress" type="text"/>
+					<button type="button" onclick="sendClusterEntryAddress(document.getElementById('clusterEntryPointAddress').value)">Cluster Address</button>
+				</form>
+				<form>
+					<input id="hDFSEntryPointAddress" type="text"/>
+					<button type="button" onclick="sendHDFSEntryAddress(document.getElementById('hDFSEntryPointAddress').value)">HDFS Address</button>
+				</form>
+				<form>
+					<input id="hDFSEntryPointPort" type="text"/>
+					<button type="button" onclick="sendHDFSEntryPort(document.getElementById('hDFSEntryPointPort').value)">HDFS Port</button>
+				</form>
+				<form>
+					<input id="hDFSgraphFileDirectory" type="text"/>
+					<button type="button" onclick="sendHDFSGraphFilesDirectory(document.getElementById('hDFSgraphFileDirectory').value)">HDFS Graph Directory </button>
+				</form>
+				<form>
+					<input id="gradoopGraphID" type="text"/>
+					<button type="button" onclick="sendGradoopGraphId(document.getElementById('gradoopGraphID').value)">Gradoop Graph ID</button>
+				</form>
+			</div>
 		</div>
 	</div>
 	
 	<!-- <div id="cy" style="border:10px solid #cecece;" > -->
 	<!-- </div> -->
 
-	<div id="buttons" >
-		<button type="button" onClick="resetVisualization()" class="btn" id="send">Reset</button>
-		<button type="button" onClick="sendSignalHBase()" class="btn" id="send">buildTopViewHBase</button>
-		<button type="button" onClick="sendSignalGradoop()" class="btn" id="send">buildTopViewGradoop</button>
-		<button type="button" onClick="sendSignalCSV()" class="btn" id="send">buildTopViewCSV</button>
-		<button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button>
-		<!-- <button type="button" onClick="zoomIn()" class="btn" id="send">zoomIn</button> -->
-		<!-- <button type="button" onClick="zoomOut()" class="btn" id="send">zoomOut</button> -->
-		<!-- <button type="button" onClick="pan()" class="btn" id="send">panRight</button> -->
-		<!-- <button type="button" onClick="displayAll()" class="btn" id="send">diplayAll</button> -->
-		<!-- <button type="button" onClick="cancelJob()" class="btn" id="send">cancel</button> -->
-		<!-- <button type="button" onClick="testThread()" class="btn" id="send">TestThread</button> -->
-		<button type="button" onClick="clientSideLogic()" class="btn" id="send">clientSideLogic</button>
-		<button type="button" onClick="serverSideLogic()" class="btn" id="send">serverSideLogic</button>
-		<button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button>
-		<button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button>
-		<button type="button" onClick="verticesHaveDegrees()" class="btn" id="send">Vertex Degrees Already Calculated</button>
-		<button type="button" onClick="verticesDoNotHaveDegrees()" class="btn" id="send">Vertex Degrees Not Yet Calculated</button>
-	</div>
-	<form>
-		<input id="maxVerticesInput" type="number"/>
-		<button type="button" onclick="sendMaxVertices(document.getElementById('maxVerticesInput').value)"> Maximal Number of Vertices in Viewport</button>
-	</form>
-	<form>
-		<input id="clusterEntryPointAddress" type="text"/>
-		<button type="button" onclick="sendClusterEntryAddress(document.getElementById('clusterEntryPointAddress').value)"> Cluster Entry Point Address</button>
-	</form>
-	<form>
-		<input id="hDFSEntryPointAddress" type="text"/>
-		<button type="button" onclick="sendHDFSEntryAddress(document.getElementById('hDFSEntryPointAddress').value)"> HDFS Entry Point Address</button>
-	</form>
-	<form>
-		<input id="hDFSEntryPointPort" type="text"/>
-		<button type="button" onclick="sendHDFSEntryPort(document.getElementById('hDFSEntryPointPort').value)"> HDFS Entry Point Port</button>
-	</form>
-	<form>
-		<input id="hDFSgraphFileDirectory" type="text"/>
-		<button type="button" onclick="sendHDFSGraphFilesDirectory(document.getElementById('hDFSgraphFileDirectory').value)"> Graph Files HDFS Directory</button>
-	</form>
-	<form>
-		<input id="gradoopGraphID" type="text"/>
-		<button type="button" onclick="sendGradoopGraphId(document.getElementById('gradoopGraphID').value)"> Gradoop Graph ID</button>
-	</form>
+	<!-- <div id="buttons" > -->
+		<!-- <button type="button" onClick="resetVisualization()" class="btn" id="send">Reset</button> -->
+		<!-- <button type="button" onClick="sendSignalHBase()" class="btn" id="send">buildTopViewHBase</button> -->
+		<!-- <button type="button" onClick="sendSignalGradoop()" class="btn" id="send">buildTopViewGradoop</button> -->
+		<!-- <button type="button" onClick="sendSignalCSV()" class="btn" id="send">buildTopViewCSV</button> -->
+		<!-- <button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button> -->
+		<!-- <button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button> -->
+		<!-- <button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button> -->
+		<!-- <button type="button" onClick="verticesHaveDegrees()" class="btn" id="send">Vertex Degrees Already Calculated</button> -->
+		<!-- <button type="button" onClick="verticesDoNotHaveDegrees()" class="btn" id="send">Vertex Degrees Not Yet Calculated</button> -->
+	<!-- </div> -->
+	<!-- <form> -->
+		<!-- <input id="maxVerticesInput" type="number"/> -->
+		<!-- <button type="button" onclick="sendMaxVertices(document.getElementById('maxVerticesInput').value)"> Maximal Number of Vertices in Viewport</button> -->
+	<!-- </form> -->
+	<!-- <form> -->
+		<!-- <input id="clusterEntryPointAddress" type="text"/> -->
+		<!-- <button type="button" onclick="sendClusterEntryAddress(document.getElementById('clusterEntryPointAddress').value)"> Cluster Entry Point Address</button> -->
+	<!-- </form> -->
+	<!-- <form> -->
+		<!-- <input id="hDFSEntryPointAddress" type="text"/> -->
+		<!-- <button type="button" onclick="sendHDFSEntryAddress(document.getElementById('hDFSEntryPointAddress').value)"> HDFS Entry Point Address</button> -->
+	<!-- </form> -->
+	<!-- <form> -->
+		<!-- <input id="hDFSEntryPointPort" type="text"/> -->
+		<!-- <button type="button" onclick="sendHDFSEntryPort(document.getElementById('hDFSEntryPointPort').value)"> HDFS Entry Point Port</button> -->
+	<!-- </form> -->
+	<!-- <form> -->
+		<!-- <input id="hDFSgraphFileDirectory" type="text"/> -->
+		<!-- <button type="button" onclick="sendHDFSGraphFilesDirectory(document.getElementById('hDFSgraphFileDirectory').value)"> Graph Files HDFS Directory</button> -->
+	<!-- </form> -->
+	<!-- <form> -->
+		<!-- <input id="gradoopGraphID" type="text"/> -->
+		<!-- <button type="button" onclick="sendGradoopGraphId(document.getElementById('gradoopGraphID').value)"> Gradoop Graph ID</button> -->
+	<!-- </form> -->
 	
 	
 	
 	
 	
-    <!-- <script src="js/moment.min.js" type="script"></script> -->
-	<!-- <script -->
-			  <!-- src="https://code.jquery.com/jquery-3.5.1.js" -->
-			  <!-- integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" -->
-			  <!-- crossorigin="anonymous"></script> -->
-    <!-- <script src="http://code.jquery.com/jquery-1.10.1.min.js" type="text/javascript"></script> -->
-	<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.15.1/cytoscape.min.js" integrity="sha256-oYPiLQ2sL4jlYuCJE3rDZFD0OUy8t1fL6U0wIWyqUf8=" crossorigin="anonymous"></script> -->
+
 	<script src="cytoscape.min.js"></script>
 	<!-- <script src="https://unpkg.com/layout-base/layout-base.js"></script> -->
 	<!-- <script src="https://unpkg.com/cose-base/cose-base.js"></script> -->

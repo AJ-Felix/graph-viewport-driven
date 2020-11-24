@@ -8,10 +8,17 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.operators.Order;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
+import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -20,6 +27,7 @@ import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.types.Row;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
+import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
 import org.gradoop.common.model.impl.pojo.EPGMVertex;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
@@ -62,6 +70,10 @@ public class GradoopGraphUtil implements GraphUtil{
 	private List<EPGMVertex> vertexCollection;
 	private List<EPGMEdge> edgeCollection;
 	
+	//batch
+	private DataSet<Row> verticesIndexed;
+	private DataSet<EPGMEdge> edges;
+	
 	//Area Definition
 			//A	: Inside viewport after operation
 			//B : Outside viewport before and after operation
@@ -93,49 +105,99 @@ public class GradoopGraphUtil implements GraphUtil{
 	}
 	
 	@Override
-	public void initializeStreams() throws Exception{
+	public void initializeDataSets() throws Exception{
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
-		List<EPGMVertex> vertexCollection = this.graph.getVertices().collect();
-		vertexCollection.sort(new VertexDegreeComparator());
-		this.vertexIdMap = new HashMap<String, Integer>();
-		List<Row> customVertices = new ArrayList<Row>();
-		List<Row> edgeRow = new ArrayList<Row>();
-		for (int i = 0; i < vertexCollection.size(); i++) {
-			String vertexIdGradoop = vertexCollection.get(i).getId().toString();
-			Integer vertexIdNumeric = (Integer) i;
-			this.vertexIdMap.put(vertexIdGradoop, vertexIdNumeric);
-			Integer x = ((Integer) vertexCollection.get(i).getPropertyValue("X").getInt());
-			Integer y = ((Integer) vertexCollection.get(i).getPropertyValue("Y").getInt());
-			Long degree = ((Long) vertexCollection.get(i).getPropertyValue("degree").getLong());
-			String vertexLabel = vertexCollection.get(i).getLabel();
-			customVertices.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, degree));
-			edgeRow.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel,
-					x, y, degree, vertexIdGradoop, vertexIdNumeric, vertexLabel,
-					x, y, degree, "identityEdge", "identityEdge"));
-		}	
-		List<EPGMEdge> edgeCollection = this.graph.getEdges().collect();
-		for (int i = 0; i < edgeCollection.size(); i++) {
-			String edgeIdGradoop = edgeCollection.get(i).getId().toString();
-			String edgeLabel = edgeCollection.get(i).getLabel();
-			String sourceVertexIdGradoop = edgeCollection.get(i).getSourceId().toString();
-			String targetVertexIdGradoop = edgeCollection.get(i).getTargetId().toString();		
-			for (Row sourceVertex: customVertices) {
-				if (sourceVertex.getField(1).equals(sourceVertexIdGradoop)) {
-					for (Row targetVertex: customVertices) {
-						if (targetVertex.getField(1).equals(targetVertexIdGradoop)) {
-							edgeRow.add(Row.of(graphId, sourceVertexIdGradoop, sourceVertex.getField(2), 
-									sourceVertex.getField(3), sourceVertex.getField(4), sourceVertex.getField(5), sourceVertex.getField(6), 
-									targetVertexIdGradoop, targetVertex.getField(2), targetVertex.getField(3), targetVertex.getField(4), targetVertex.getField(5), 
-									targetVertex.getField(6), edgeIdGradoop, edgeLabel));
+		String[] somestring = {"hello"};
+		verticesIndexed = DataSetUtils.zipWithIndex((this.graph.getVertices()
+					.map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {
+						@Override
+						public Tuple2<EPGMVertex, Long> map(EPGMVertex vertex) throws Exception {
+							return Tuple2.of(vertex, vertex.getPropertyValue("degree").getLong());
 						}
+					})
+					.sortPartition(1, Order.DESCENDING).setParallelism(1)
+				))
+				.map(new MapFunction<Tuple2<Long,Tuple2<EPGMVertex,Long>>,Row>() {
+					@Override
+					public Row map(Tuple2<Long,Tuple2<EPGMVertex,Long>> tuple) throws Exception {
+						EPGMVertex vertex = tuple.f1.f0;
+						return Row.of(graphId, vertex.getId(), tuple.f0, vertex.getLabel(),
+								vertex.getPropertyValue("X").getInt(), vertex.getPropertyValue("Y").getInt(),
+								vertex.getPropertyValue("degree"));
 					}
-				}
-			}
-		}
-		this.vertexStream = fsEnv.fromCollection(customVertices);
-		this.wrapperStream = fsEnv.fromCollection(edgeRow);
-		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+				})
+				.returns(new TypeHint<Row>(){});
+		edges = this.graph.getEdges();
+		
 	}
+	
+	//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
+	//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
+	
+//		.collect().get(0).getId().toString();
+//		// Give a 
+//		DataSet<Tuple2<Long,EPGMVertex>> vertexIdTuple = DataSetUtils.zipWithUniqueId(this.graph.getVertices());
+//		
+//		//Sort vertices by degree, add consecutive unique long id to each vertex
+//		DataSet<Tuple2<EPGMVertex,Long>> vertexDegreeTuple = this.graph.getVertices().map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {
+//			@Override
+//			public Tuple2<EPGMVertex, Long> map(EPGMVertex vertex) throws Exception {
+//				return Tuple2.of(vertex, vertex.getPropertyValue("degree").getLong());
+//			}
+//		});
+//		DataSet<Tuple2<Long,Tuple2<EPGMVertex,Long>>> vertexDegreeTupleSorted = 
+//				DataSetUtils.zipWithUniqueId(vertexDegreeTuple.sortPartition(1, Order.DESCENDING).setParallelism(1));
+//		// get 100 highest degrees
+//		DataSet<Tuple2<Long,Tuple2<EPGMVertex,Long>>> highestTuples = vertexDegreeTupleSorted.filter(tuple -> tuple.f0 < 100);
+//		
+//		//Create identity wrapper
+//		
+//		
+//		//Create non-identity wrapper 
+//		//Union wrappers and create wrapper stream
+//		List<EPGMVertex> vertexCollection = new ArrayList<EPGMVertex>();
+//		this.graph.getVertices().output(new LocalCollectionOutputFormat<EPGMVertex>(vertexCollection));
+//		
+//		vertexCollection.sort(new VertexDegreeComparator());
+//		this.vertexIdMap = new HashMap<String, Integer>();
+//		List<Row> customVertices = new ArrayList<Row>();
+//		List<Row> edgeRow = new ArrayList<Row>();
+//		for (int i = 0; i < vertexCollection.size(); i++) {
+//			String vertexIdGradoop = vertexCollection.get(i).getId().toString();
+//			Integer vertexIdNumeric = (Integer) i;
+//			this.vertexIdMap.put(vertexIdGradoop, vertexIdNumeric);
+//			Integer x = ((Integer) vertexCollection.get(i).getPropertyValue("X").getInt());
+//			Integer y = ((Integer) vertexCollection.get(i).getPropertyValue("Y").getInt());
+//			Long degree = ((Long) vertexCollection.get(i).getPropertyValue("degree").getLong());
+//			String vertexLabel = vertexCollection.get(i).getLabel();
+//			customVertices.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, degree));
+//			edgeRow.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel,
+//					x, y, degree, vertexIdGradoop, vertexIdNumeric, vertexLabel,
+//					x, y, degree, "identityEdge", "identityEdge"));
+//		}	
+//		List<EPGMEdge> edgeCollection = this.graph.getEdges().collect();
+//		for (int i = 0; i < edgeCollection.size(); i++) {
+//			String edgeIdGradoop = edgeCollection.get(i).getId().toString();
+//			String edgeLabel = edgeCollection.get(i).getLabel();
+//			String sourceVertexIdGradoop = edgeCollection.get(i).getSourceId().toString();
+//			String targetVertexIdGradoop = edgeCollection.get(i).getTargetId().toString();		
+//			for (Row sourceVertex: customVertices) {
+//				if (sourceVertex.getField(1).equals(sourceVertexIdGradoop)) {
+//					for (Row targetVertex: customVertices) {
+//						if (targetVertex.getField(1).equals(targetVertexIdGradoop)) {
+//							edgeRow.add(Row.of(graphId, sourceVertexIdGradoop, sourceVertex.getField(2), 
+//									sourceVertex.getField(3), sourceVertex.getField(4), sourceVertex.getField(5), sourceVertex.getField(6), 
+//									targetVertexIdGradoop, targetVertex.getField(2), targetVertex.getField(3), targetVertex.getField(4), targetVertex.getField(5), 
+//									targetVertex.getField(6), edgeIdGradoop, edgeLabel));
+//						}
+//					}
+//				}
+//			}
+//		}
+//		this.vertexStream = fsEnv.fromCollection(customVertices);
+//		this.wrapperStream = fsEnv.fromCollection(edgeRow);
+//		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+//	}
 	
 	@Override
 	public void setVisualizedWrappers(Set<String> visualizedWrappers) {
@@ -151,19 +213,8 @@ public class GradoopGraphUtil implements GraphUtil{
 		return this.wrapperStream;
 	}
 	
-	public DataStream<Row> getMaxDegreeSubsetCSV(Integer numberVertices){	
-		return wrapperStream.filter(new FilterFunction<Row>() {
-			@Override
-			public boolean filter(Row value) throws Exception {
-				Integer sourceIdNumeric = (Integer) value.getField(2);
-				Integer targetIdNumeric = (Integer) value.getField(8);
-				if (sourceIdNumeric < numberVertices && targetIdNumeric < numberVertices) {
-					return true;
-				} else {
-					return false;
-				}
-			}
-		});
+	public DataSet<Row> getMaxDegreeSubsetCSV(Integer numberVertices){	
+		return verticesIndexed.filter(row -> (long) row.getField(2) < numberVertices);
 	}
 	
 	public DataStream<Tuple2<Boolean, Row>> getMaxDegreeSubsetHBase(DataStream<Row> vertexStreamDegree) {
@@ -216,52 +267,77 @@ public class GradoopGraphUtil implements GraphUtil{
 			accumulator.degree = degree;
 		}
 	}
-
-	@Override
-	public DataStream<Row> zoom (Float top, Float right, Float bottom, Float left){
-		/*
-		 * Zoom function for graphs with layout
-		 */
-		
-		System.out.println("Zoom, in csv zoom function ... top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
-
-		
-		//vertex stream filter for in-view and out-view area and conversion to Flink Tables
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
-		DataStream<Row> vertexStreamOuter = this.vertexStream.filter(new VertexFilterOuter(top, right, bottom, left));
-		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInner).as(this.vertexFields);		
-		Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(this.vertexFields);
-		
-		//produce wrapper stream from in-view area to in-view area
-		Table wrapperTableInIn = wrapperTable
-				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-		
-		//produce wrapper stream from in-view area to out-view area and vice versa
-		Table wrapperTableInOut = wrapperTable
-				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-				.join(vertexTableOuter).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-		Table wrapperTableOutIn = wrapperTable
-				.join(vertexTableOuter).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-		
-		//stream union
-		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo).union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo))
-				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, wrapperRowTypeInfo));
-		
-		//filter out already visualized edges in wrapper stream
-		 wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-		
-		//filter out already visualized vertices in wrapper stream (identity wrappers)
-		Set<String> visualizedVertices = this.visualizedVertices;
-		wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
+	
+	public DataStream<Row> zoom(Float top, Float right, Float bottom, Float left){
+		DataSet<Row> verticesInner = 
+				verticesIndexed.filter(new FilterFunction<Row>(){
 			@Override
-			public boolean filter(Row value) throws Exception {
-				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
+			public boolean filter(Row row) throws Exception {
+				int x = (int) row.getField(4);
+				int y = (int) row.getField(5);
+				return top <= y && y <= bottom && left <= x && x <= right;
 			}
-		});		
-		return wrapperStream;
+		});
+		DataSet<Tuple2<Tuple2<Row, EPGMEdge>, Row>> joined = verticesInner
+				.join(edges).where("vertexIdGradoop")
+				.equalTo("sourceVertexIdGradoop")
+				.join(verticesInner).where("vertexIdGradoop")
+				.equalTo("targetVertexIdGradoop");
+		try {
+			joined.print();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
+	
+
+//	@Override
+//	public DataStream<Row> zoom (Float top, Float right, Float bottom, Float left){
+//		/*
+//		 * Zoom function for graphs with layout
+//		 */
+//		
+//		System.out.println("Zoom, in csv zoom function ... top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
+//
+//		
+//		//vertex stream filter for in-view and out-view area and conversion to Flink Tables
+//		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
+//		DataStream<Row> vertexStreamOuter = this.vertexStream.filter(new VertexFilterOuter(top, right, bottom, left));
+//		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInner).as(this.vertexFields);		
+//		Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(this.vertexFields);
+//		
+//		//produce wrapper stream from in-view area to in-view area
+//		Table wrapperTableInIn = wrapperTable
+//				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+//				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+//		
+//		//produce wrapper stream from in-view area to out-view area and vice versa
+//		Table wrapperTableInOut = wrapperTable
+//				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+//				.join(vertexTableOuter).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+//		Table wrapperTableOutIn = wrapperTable
+//				.join(vertexTableOuter).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+//				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
+//		
+//		//stream union
+//		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo).union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo))
+//				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, wrapperRowTypeInfo));
+//		
+//		//filter out already visualized edges in wrapper stream
+//		 wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+//		
+//		//filter out already visualized vertices in wrapper stream (identity wrappers)
+//		Set<String> visualizedVertices = this.visualizedVertices;
+//		wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
+//			@Override
+//			public boolean filter(Row value) throws Exception {
+//				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
+//			}
+//		});		
+//		return wrapperStream;
+//	}
 	
 	@Override
 	public DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,

@@ -3,6 +3,8 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -202,15 +204,15 @@ public class FlinkCore {
 		return this.graphUtil;
 	}
 	
-	public DataStream<Row> buildTopViewGradoop(Integer maxVertices){
+	public DataSet<Row> buildTopViewGradoop(Integer maxVertices){
 		GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
 		try {
-			graphUtil.initializeStreams();
+			graphUtil.initializeDataSets();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		DataStream<Row> wrapperStream = graphUtil.getMaxDegreeSubsetCSV(maxVertices);
-		return wrapperStream;
+		DataSet<Row> something = graphUtil.getMaxDegreeSubsetCSV(maxVertices);
+		return something;
 	}
 	
 	public DataStream<Tuple2<Boolean, Row>> buildTopViewHBase(Integer maxVertices){
@@ -218,7 +220,7 @@ public class FlinkCore {
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
 			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
-			graphUtil.initializeStreams();
+			graphUtil.initializeDataSets();
 			wrapperStream = graphUtil.getMaxDegreeSubsetHBase(dataStreamDegree);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -228,13 +230,13 @@ public class FlinkCore {
 	
 	public DataStream<Row> buildTopViewCSV(Integer maxVertices){
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
-		graphUtil.initializeStreams();
+		graphUtil.initializeDataSets();
 		return graphUtil.getMaxDegreeSubset(maxVertices);
 	}
 	
 	public DataStream<Row> buildTopViewAdjacency(Integer maxVertices) {
 		AdjacencyGraphUtil graphUtil = (AdjacencyGraphUtil) this.graphUtil;
-		graphUtil.initializeStreams();
+		graphUtil.initializeDataSets();
 		DataStream<Row> stream = null;
 		try {
 			stream = graphUtil.getMaxDegreeSubset(maxVertices);
@@ -312,7 +314,7 @@ public class FlinkCore {
 		
 	public DataStream<Row> displayAll() {
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
-		graphUtil.initializeStreams();
+		graphUtil.initializeDataSets();
 		return graphUtil.getWrapperStream();
 	}
 }

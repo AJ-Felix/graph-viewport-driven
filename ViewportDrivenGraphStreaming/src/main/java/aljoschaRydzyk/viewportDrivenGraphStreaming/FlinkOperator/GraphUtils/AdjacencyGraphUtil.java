@@ -61,7 +61,7 @@ public class AdjacencyGraphUtil implements GraphUtil{
 	}
 
 	@Override
-	public void initializeStreams() {
+	public void initializeDataSets() {
 		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {Types.STRING, Types.STRING, Types.INT, Types.STRING, 
 				Types.INT, Types.INT, Types.LONG});

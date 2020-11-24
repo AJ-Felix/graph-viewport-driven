@@ -99,7 +99,7 @@ public class CSVGraphUtilJoin implements GraphUtil{
 	}
 	
 	@Override
-	public void initializeStreams(){
+	public void initializeDataSets(){
 		
 		//NOTE: Flink needs seperate instances of RowCsvInputFormat for each data import, although they might be identical		
 		//initialize wrapper stream

@@ -98,16 +98,12 @@ function sendGradoopGraphId(id){
 	ws.send("gradoopGraphId;" + id);
 }
 
-function sendVerticesHaveDegrees(){
-	ws.send("degrees;true");
-}
-
-function sendVerticesDoNotHaveDegrees(){
-	ws.send("degrees;false");
+function sendVerticesHaveDegrees(haveDegrees){
+	console.log(haveDegrees);
+	ws.send("degrees;" + haveDegrees.to);
 }
 
 function sendSignalHBase(){
-	// if (graphOperationLogic == "clientSide") handler = new RetractHandler(maxNumberVertices);
 	buildTopViewOperations();
 	ws.send("buildTopView;HBase");
 }
@@ -118,13 +114,11 @@ function sendSignalGradoop(){
 }
 
 function sendSignalCSV(){
-	// if (graphOperationLogic == "clientSide") handler = new AppendHandler(maxNumberVertices);
 	buildTopViewOperations();
 	ws.send("buildTopView;CSV");
 }
 
 function sendSignalAdjacency(){
-	// if (graphOperationLogic == "clientSide")	handler = new AppendHandler(maxNumberVertices);
 	buildTopViewOperations();
 	ws.send("buildTopView;adjacency");
 }
@@ -133,16 +127,6 @@ function buildTopViewOperations(){
 	if (!layout) layoutBase = new Set();
 	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
 	cy.zoom(1 / (4000 / Math.min(cyWidth, cyHeight)));
-}
-
-function clientSideLogic(){
-	graphOperationLogic = "clientSide";
-	ws.send("clientSideLogic");
-}
-
-function serverSideLogic(){
-	graphOperationLogic = "serverSide";
-	ws.send("serverSideLogic");
 }
 
 function sendMaxVertices(maxVertices){

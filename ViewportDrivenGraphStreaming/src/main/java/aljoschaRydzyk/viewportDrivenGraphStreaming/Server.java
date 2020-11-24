@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
@@ -156,10 +157,8 @@ public class Server implements Serializable{
                 } else if (messageData.startsWith("degrees")) {
                 	String calc = messageData.split(";")[1];
                 	if (calc.equals("true")) {
-//                		flinkCore.setDegreesCalculated(true);
                 		degreesCalculated = true;
                 	} else {
-//                		flinkCore.setDegreesCalculated(false);
                 		degreesCalculated = false;
                 	}
                 } else if (messageData.startsWith("fitted")) {
@@ -235,7 +234,8 @@ public class Server implements Serializable{
         				buildTopViewGradoop();
         			}
                 	try {
-        				flinkCore.getFsEnv().execute();
+//        				flinkCore.getFsEnv().execute();
+                		flinkCore.getEnv().execute();
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
@@ -319,17 +319,22 @@ public class Server implements Serializable{
     private void buildTopViewGradoop() {
     	flinkCore.initializeGradoopGraphUtil();
 		wrapperHandler.initializeGraphRepresentation();
-    	DataStream<Row> wrapperStream = flinkCore.buildTopViewGradoop(maxVertices);
-		flinkResponseHandler.setOperation("initialAppend");
-		DataStream<String> wrapperLine;
-		if (layout) {
-			flinkResponseHandler.setVerticesHaveCoordinates(true);
-			wrapperLine = wrapperStream.map(new WrapperMapLine());
-		} else {
-			flinkResponseHandler.setVerticesHaveCoordinates(false);
-			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
+    	DataSet<Row> something = flinkCore.buildTopViewGradoop(maxVertices);
+    	try {
+			something.print();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+//		flinkResponseHandler.setOperation("initialAppend");
+//		DataStream<String> wrapperLine;
+//		if (layout) {
+//			flinkResponseHandler.setVerticesHaveCoordinates(true);
+//			wrapperLine = wrapperStream.map(new WrapperMapLine());
+//		} else {
+//			flinkResponseHandler.setVerticesHaveCoordinates(false);
+//			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
+//		}
+//		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     }
     
     private void buildTopViewCSV() {
@@ -366,12 +371,13 @@ public class Server implements Serializable{
     
     private void zoom() {
     	DataStream<Row> wrapperStream = flinkCore.zoom();
-		flinkResponseHandler.setVerticesHaveCoordinates(true);
+//		flinkResponseHandler.setVerticesHaveCoordinates(true);
 		System.out.println("executing zoom on server class");		    				
-		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
-		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+//		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
+//		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	try {
-			flinkCore.getFsEnv().execute();
+//			flinkCore.getFsEnv().execute();
+    		flinkCore.getEnv().execute();
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
