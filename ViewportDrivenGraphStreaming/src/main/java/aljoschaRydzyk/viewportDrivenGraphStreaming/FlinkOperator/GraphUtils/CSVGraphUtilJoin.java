@@ -38,7 +38,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
-public class CSVGraphUtilJoin implements GraphUtil{
+public class CSVGraphUtilJoin implements GraphUtilStream{
 	private StreamExecutionEnvironment fsEnv;
 	private StreamTableEnvironment fsTableEnv;
 	private String inPath;

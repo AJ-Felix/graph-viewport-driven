@@ -14,6 +14,7 @@ import java.util.Enumeration;
 import java.util.List;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
@@ -39,6 +40,10 @@ public class Server implements Serializable{
 	private Boolean degreesCalculated = false;
 	private String gradoopGraphId = "5ebe6813a7986cc7bd77f9c2";
 
+	private Boolean stream = true;
+	
+	
+	private List<Row> wrapperCollection;
 	
 	private FlinkCore flinkCore;
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
@@ -231,14 +236,19 @@ public class Server implements Serializable{
         				buildTopViewAdjacency();
         			} else if (arrMessageData[1].equals("gradoop")) {
                     	flinkCore.setGradoopWithHBase(false);
+                    	stream = false;
         				buildTopViewGradoop();
         			}
                 	try {
-//        				flinkCore.getFsEnv().execute();
-                		flinkCore.getEnv().execute();
+                		if (stream)	flinkCore.getFsEnv().execute();
+                		else flinkCore.getEnv().execute();
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
+                	if (!stream) {
+	                	//do stuff with wrapperCollection
+	                	System.out.println("wrapperCollection size: " + wrapperCollection.size());
+                	}
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
         			Float xRenderPosition = Float.parseFloat(arrMessageData[1]);
@@ -254,7 +264,10 @@ public class Server implements Serializable{
 					if (messageData.startsWith("zoomIn")) {
 						setOperation("zoomIn");
 						wrapperHandler.prepareOperation();
-						if (layout) zoom();
+						if (layout) {
+							if (stream) zoomStream();
+							else zoomSet();
+						}
 						else {
 							flinkResponseHandler.setVerticesHaveCoordinates(false);
 							System.out.println("in zoom in layout function");
@@ -263,7 +276,7 @@ public class Server implements Serializable{
 					} else {
 						setOperation("zoomOut");
 						wrapperHandler.prepareOperation();
-						if (layout) zoom();
+						if (layout) zoomStream();
 						else {
 							flinkResponseHandler.setVerticesHaveCoordinates(false);
 							System.out.println("in zoom out layout function");
@@ -319,12 +332,22 @@ public class Server implements Serializable{
     private void buildTopViewGradoop() {
     	flinkCore.initializeGradoopGraphUtil();
 		wrapperHandler.initializeGraphRepresentation();
-    	DataSet<Row> something = flinkCore.buildTopViewGradoop(maxVertices);
+    	DataSet<Row> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
+//    	wrapperCollection = new ArrayList<Row>();
+//    	System.out.println(wrapperCollection);
+//		wrapperSet.output(new LocalCollectionOutputFormat<Row>(wrapperCollection));
     	try {
-			something.print();
+			wrapperCollection = wrapperSet.collect();
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    	try {
+			wrapperSet.print();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    	
 //		flinkResponseHandler.setOperation("initialAppend");
 //		DataStream<String> wrapperLine;
 //		if (layout) {
@@ -369,20 +392,36 @@ public class Server implements Serializable{
 			wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     }
     
-    private void zoom() {
-    	DataStream<Row> wrapperStream = flinkCore.zoom();
-//		flinkResponseHandler.setVerticesHaveCoordinates(true);
-		System.out.println("executing zoom on server class");		    				
-//		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
-//		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-    	try {
-//			flinkCore.getFsEnv().execute();
-    		flinkCore.getEnv().execute();
+    private void zoomSet() {
+    	DataSet<Row> wrapperSet = flinkCore.zoomSet();
+		flinkResponseHandler.setVerticesHaveCoordinates(true);
+		System.out.println("executing zoomSet on server class");
+		List<Row> wrapperCollection = new ArrayList<Row>();
+		wrapperSet.output(new LocalCollectionOutputFormat<Row>(wrapperCollection));
+		try {
+			flinkCore.getEnv().execute();
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//    	wrapperHandler.clearOperation();
+		//do stuff with wrapperCollection
+		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+    	wrapperHandler.clearOperation();
+    }
+    
+    private void zoomStream() {
+    	DataStream<Row> wrapperStream = flinkCore.zoomStream();
+		flinkResponseHandler.setVerticesHaveCoordinates(true);
+		System.out.println("executing zoomStream on server class");		    				
+		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
+		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+    	try {
+			flinkCore.getFsEnv().execute();
+			System.out.println("executed flink job!");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	wrapperHandler.clearOperation();
     }
     
     private void pan() {

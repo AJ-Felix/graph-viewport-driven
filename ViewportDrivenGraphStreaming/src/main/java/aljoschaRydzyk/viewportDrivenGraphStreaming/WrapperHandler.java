@@ -14,7 +14,7 @@ import com.nextbreakpoint.flinkclient.api.FlinkApi;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilStream;
 
 import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview;
 
@@ -772,7 +772,7 @@ public class WrapperHandler implements Serializable {
 		for (Map.Entry<String, VertexGVD> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();
 		for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) visualizedWrappers.add(entry.getKey());
-		GraphUtil graphUtil =  Server.getInstance().getFlinkCore().getGraphUtil();
+		GraphUtilStream graphUtil =  Server.getInstance().getFlinkCore().getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
 		for (String key : visualizedVertices) System.out.println("clearoperation, visualizedVertices: " + key);

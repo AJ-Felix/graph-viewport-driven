@@ -17,8 +17,8 @@ public class VertexFilterOuter implements FilterFunction<Row> {
 	}
 	@Override
 	public boolean filter(Row value) throws Exception {
-		Integer x = (Integer) value.getField(4);
-		Integer y = (Integer) value.getField(5);
-		return (leftModel > x) || (x > rightModel) || (topModel > y) || (y > bottomModel);
+		int x = (int) value.getField(4);
+		int y = (int) value.getField(5);
+		return leftModel > x || x > rightModel || topModel > y || y > bottomModel;
 	}
 }

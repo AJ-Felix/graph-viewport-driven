@@ -43,7 +43,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMa
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperIDMapWrapper;
 
-public class AdjacencyGraphUtil implements GraphUtil{
+public class AdjacencyGraphUtil implements GraphUtilStream{
 	private StreamExecutionEnvironment fsEnv;
 	private String inPath;
 	private DataStreamSource<Row> vertexStream = null;

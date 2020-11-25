@@ -27,7 +27,8 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.AdjacencyGraphUtil;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.CSVGraphUtilJoin;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GradoopGraphUtil;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilSet;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilStream;
 
 public class FlinkCore {
 	  private ExecutionEnvironment env;
@@ -51,7 +52,8 @@ public class FlinkCore {
 	  private Boolean gradoopWithHBase;
 	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
 	  
-	  private GraphUtil graphUtil;
+	  private GraphUtilStream graphUtilStream;
+	  private GraphUtilSet graphUtilSet;
 	  private Float topNew;
 	  private Float bottomNew;
 	  private Float leftNew;
@@ -172,54 +174,52 @@ public class FlinkCore {
 		return graph;
 	}
 	
-	public GraphUtil initializeGradoopGraphUtil() {
+	public GraphUtilSet initializeGradoopGraphUtil() {
 		LogicalGraph graph;
 		try {
 			graph = this.getLogicalGraph();	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			this.graphUtil = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
-			((GradoopGraphUtil) this.graphUtil).loadDataSets();
-			this.graphUtil.buildAdjacencyMatrix();
+			this.graphUtilSet = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
+//			this.graphUtilSet.buildAdjacencyMatrix();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}	
-		return this.graphUtil;
+		return this.graphUtilSet;
 	}
 	
-	public GraphUtil initializeCSVGraphUtilJoin() {
-		this.graphUtil = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.hdfsFullPath, this.vertexFields, this.wrapperFields);
+	public GraphUtilStream initializeCSVGraphUtilJoin() {
+		this.graphUtilStream = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.hdfsFullPath, this.vertexFields, this.wrapperFields);
 			try {
-				this.graphUtil.buildAdjacencyMatrix();
+				this.graphUtilStream.buildAdjacencyMatrix();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		return this.graphUtil;
+		return this.graphUtilStream;
 	}
 	
-	public GraphUtil initializeAdjacencyGraphUtil() {
-		this.graphUtil =  new AdjacencyGraphUtil(this.fsEnv, this.hdfsFullPath);
-		return this.graphUtil;
+	public GraphUtilStream initializeAdjacencyGraphUtil() {
+		this.graphUtilStream =  new AdjacencyGraphUtil(this.fsEnv, this.hdfsFullPath);
+		return this.graphUtilStream;
 	}
 	
-	public GraphUtil getGraphUtil() {
-		return this.graphUtil;
+	public GraphUtilStream getGraphUtil() {
+		return this.graphUtilStream;
 	}
 	
 	public DataSet<Row> buildTopViewGradoop(Integer maxVertices){
-		GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
+		GradoopGraphUtil graphUtil = (GradoopGraphUtil) this.graphUtilSet;
 		try {
 			graphUtil.initializeDataSets();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		DataSet<Row> something = graphUtil.getMaxDegreeSubsetCSV(maxVertices);
-		return something;
+		return graphUtil.getMaxDegreeSubsetGradoop(maxVertices);
 	}
 	
 	public DataStream<Tuple2<Boolean, Row>> buildTopViewHBase(Integer maxVertices){
 		DataStream<Row> dataStreamDegree = FlinkHBaseVerticesLoader.load(fsTableEnv, maxVertices);
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
-			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtil);
+			GradoopGraphUtil graphUtil = ((GradoopGraphUtil) this.graphUtilStream);
 			graphUtil.initializeDataSets();
 			wrapperStream = graphUtil.getMaxDegreeSubsetHBase(dataStreamDegree);
 		} catch (Exception e) {
@@ -229,13 +229,13 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Row> buildTopViewCSV(Integer maxVertices){
-		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
+		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtilStream);
 		graphUtil.initializeDataSets();
 		return graphUtil.getMaxDegreeSubset(maxVertices);
 	}
 	
 	public DataStream<Row> buildTopViewAdjacency(Integer maxVertices) {
-		AdjacencyGraphUtil graphUtil = (AdjacencyGraphUtil) this.graphUtil;
+		AdjacencyGraphUtil graphUtil = (AdjacencyGraphUtil) this.graphUtilStream;
 		graphUtil.initializeDataSets();
 		DataStream<Row> stream = null;
 		try {
@@ -246,10 +246,14 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataStream<Row> zoom(){
+	public DataSet<Row> zoomSet(){
+		return this.graphUtilSet.zoom(topNew, rightNew, bottomNew, leftNew);
+	}
+	
+	public DataStream<Row> zoomStream(){
 		DataStream<Row> stream = null;
 		try {
-			stream = this.graphUtil.zoom(topNew, rightNew, bottomNew, leftNew);
+			stream = this.graphUtilStream.zoom(topNew, rightNew, bottomNew, leftNew);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -257,7 +261,7 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Row> zoomInLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices){
-		return this.graphUtil.panZoomInLayoutFirstStep(layoutedVertices, innerVertices, topNew, rightNew, 
+		return this.graphUtilStream.panZoomInLayoutFirstStep(layoutedVertices, innerVertices, topNew, rightNew, 
 				bottomNew, leftNew);
 	}
 	
@@ -265,55 +269,55 @@ public class FlinkCore {
 			Map<String, VertexGVD> newVertices){
 		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
 		unionMap.putAll(newVertices);
-		return this.graphUtil.panZoomInLayoutSecondStep(layoutedVertices, unionMap);
+		return this.graphUtilStream.panZoomInLayoutSecondStep(layoutedVertices, unionMap);
 	}
 	
 	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexGVD> layoutedVertices){
-		return this.graphUtil.panZoomInLayoutThirdStep(layoutedVertices);
+		return this.graphUtilStream.panZoomInLayoutThirdStep(layoutedVertices);
 	}
 	
 	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
 			Map<String, VertexGVD> newVertices){
-		return this.graphUtil.zoomInLayoutFourthStep(layoutedVertices, innerVertices, newVertices, 
+		return this.graphUtilStream.zoomInLayoutFourthStep(layoutedVertices, innerVertices, newVertices, 
 				topNew, rightNew, bottomNew, leftNew);
 	}
 	
 	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexGVD> layoutedVertices){
-		return this.graphUtil.zoomOutLayoutFirstStep(layoutedVertices, topNew, rightNew, 
+		return this.graphUtilStream.zoomOutLayoutFirstStep(layoutedVertices, topNew, rightNew, 
 				bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
 	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtil.zoomOutLayoutSecondStep(layoutedVertices, newVertices, topNew, 
+		return this.graphUtilStream.zoomOutLayoutSecondStep(layoutedVertices, newVertices, topNew, 
 				rightNew, bottomNew, leftNew);
 	}
 	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtil.panZoomInLayoutFirstStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+		return this.graphUtilStream.panZoomInLayoutFirstStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew);
 	}
 	
 	public DataStream<Row> panLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtil.panZoomInLayoutSecondStep(layoutedVertices, newVertices);
+		return this.graphUtilStream.panZoomInLayoutSecondStep(layoutedVertices, newVertices);
 	}
 	
 	public DataStream<Row> panLayoutThirdStep(Map<String, VertexGVD> layoutedVertices){
-		return this.graphUtil.panZoomInLayoutThirdStep(layoutedVertices);
+		return this.graphUtilStream.panZoomInLayoutThirdStep(layoutedVertices);
 	}
 	
 	public DataStream<Row> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtil.panLayoutFourthStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+		return this.graphUtilStream.panLayoutFourthStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
 	public DataStream<Row> pan(){
-		DataStream<Row> stream = this.graphUtil.pan(topNew, rightNew, bottomNew, leftNew, 
+		DataStream<Row> stream = this.graphUtilStream.pan(topNew, rightNew, bottomNew, leftNew, 
 				topOld, rightOld, bottomOld, leftOld);
 		return stream;
 	}
 		
 	public DataStream<Row> displayAll() {
-		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtil);
+		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtilStream);
 		graphUtil.initializeDataSets();
 		return graphUtil.getWrapperStream();
 	}
