@@ -23,10 +23,12 @@ import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
 import org.gradoop.storage.hbase.impl.factory.HBaseEPGMStoreFactory;
 import org.gradoop.storage.hbase.impl.io.HBaseDataSource;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.AdjacencyGraphUtil;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.CSVGraphUtilJoin;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GradoopGraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilSet;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilStream;
 
@@ -52,6 +54,7 @@ public class FlinkCore {
 	  private Boolean gradoopWithHBase;
 	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
 	  
+	  private Boolean stream = true;;
 	  private GraphUtilStream graphUtilStream;
 	  private GraphUtilSet graphUtilSet;
 	  private Float topNew;
@@ -101,6 +104,10 @@ public class FlinkCore {
 	
 	public ExecutionEnvironment getEnv() {
 		return this.env;
+	}
+	
+	public void setStreamBool(Boolean stream) {
+		this.stream = stream;
 	}
 	
 //	public void setClusterEntryPointAdress(String address) {
@@ -201,11 +208,12 @@ public class FlinkCore {
 		return this.graphUtilStream;
 	}
 	
-	public GraphUtilStream getGraphUtil() {
-		return this.graphUtilStream;
+	public GraphUtil getGraphUtil() {
+		if (stream)	return this.graphUtilStream;
+		else return this.graphUtilSet;
 	}
 	
-	public DataSet<Row> buildTopViewGradoop(Integer maxVertices){
+	public DataSet<WrapperGVD> buildTopViewGradoop(Integer maxVertices){
 		GradoopGraphUtil graphUtil = (GradoopGraphUtil) this.graphUtilSet;
 		try {
 			graphUtil.initializeDataSets();
@@ -246,7 +254,7 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataSet<Row> zoomSet(){
+	public DataSet<WrapperGVD> zoomSet(){
 		return this.graphUtilSet.zoom(topNew, rightNew, bottomNew, leftNew);
 	}
 	
@@ -314,6 +322,12 @@ public class FlinkCore {
 		DataStream<Row> stream = this.graphUtilStream.pan(topNew, rightNew, bottomNew, leftNew, 
 				topOld, rightOld, bottomOld, leftOld);
 		return stream;
+	}
+	
+	public DataSet<WrapperGVD> panSet(){
+		DataSet<WrapperGVD> set = this.graphUtilSet.pan(topNew, rightNew, bottomNew, leftNew, 
+				topOld, rightOld, bottomOld, leftOld);
+		return set;
 	}
 		
 	public DataStream<Row> displayAll() {

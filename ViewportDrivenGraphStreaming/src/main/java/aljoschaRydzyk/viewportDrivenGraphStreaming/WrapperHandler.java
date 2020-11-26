@@ -9,11 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.flink.types.Row;
+
 import com.nextbreakpoint.flinkclient.api.ApiException;
 import com.nextbreakpoint.flinkclient.api.FlinkApi;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilStream;
 
 import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview;
@@ -116,6 +121,11 @@ public class WrapperHandler implements Serializable {
 		System.out.println("Capacity after prepareOperation: " + capacity);
 	}
 	
+	public void addInitialWrapperCollection(List<WrapperGVD> wrapperCollection) {
+		Iterator<WrapperGVD> iter = wrapperCollection.iterator();
+		while (iter.hasNext()) addWrapperInitial(iter.next());
+	}
+	
 	public void addWrapperInitial(WrapperGVD wrapper) {
 		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
 		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
@@ -142,6 +152,11 @@ public class WrapperHandler implements Serializable {
 		boolean addedTarget = addVertex(targetVertex);
 		if (addedTarget) innerVertices.put(targetVertex.getIdGradoop(), targetVertex);
 		addEdge(wrapper);
+	}
+	
+	public void addWrapperCollection(List<WrapperGVD> wrapperCollection) {
+		Iterator<WrapperGVD> iter = wrapperCollection.iterator();
+		while (iter.hasNext()) addWrapper(iter.next());
 	}
 	  
 	public void addWrapper(WrapperGVD wrapper) {
@@ -634,9 +649,18 @@ public class WrapperHandler implements Serializable {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
 			Server.getInstance().sendToAll("removeObjectServer;" + vertex.getIdGradoop());
-			Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
-			Iterator<Map.Entry<String, WrapperGVD>> iter = edges.entrySet().iterator();
-			while (iter.hasNext()) if (vertexNeighborMap.values().contains(iter.next().getKey())) iter.remove();
+			Iterator<WrapperGVD> iter = edges.values().iterator();
+			while (iter.hasNext()) {
+				WrapperGVD wrapper = iter.next();
+				String sourceId = wrapper.getSourceIdGradoop();
+				String targetId = wrapper.getTargetIdGradoop();
+				String vertexId = vertex.getIdGradoop();
+				if (sourceId.equals(vertexId) || targetId.equals(vertexId)) iter.remove();
+			}
+			
+//			Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
+//			Iterator<Map.Entry<String, WrapperGVD>> iter = edges.entrySet().iterator();
+//			while (iter.hasNext()) {if (vertexNeighborMap.values().contains(iter.next().getKey())) iter.remove();
 			System.out.println("Removing Obect in removeVertex, ID: " + vertex.getIdGradoop());
 		}
 	}
@@ -691,13 +715,13 @@ public class WrapperHandler implements Serializable {
 	}
 	
 	private void reduceNeighborIncidence(VertexGVD vertex) {
-		Set<String> neighborIds = getNeighborhood(vertex);
-		for (String neighbor : neighborIds) {
-			if (globalVertices.containsKey(neighbor)) {
-				Map<String,Object> map = globalVertices.get(neighbor);
-				map.put("incidence", (int) map.get("incidence") - 1); 
-			}
-		}
+//		Set<String> neighborIds = getNeighborhood(vertex);
+//		for (String neighbor : neighborIds) {
+//			if (globalVertices.containsKey(neighbor)) {
+//				Map<String,Object> map = globalVertices.get(neighbor);
+//				map.put("incidence", (int) map.get("incidence") - 1); 
+//			}
+//		}
 	}
 	
 	private Set<String> getNeighborhood(VertexGVD vertex){
@@ -708,9 +732,20 @@ public class WrapperHandler implements Serializable {
 	}
 	
 	private boolean hasVisualizedNeighborsInside(VertexGVD vertex) {
-		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
-		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
+		for (WrapperGVD wrapper : edges.values()) {
+			String sourceId = wrapper.getSourceIdGradoop();
+			String targetId = wrapper.getTargetIdGradoop();
+			String vertexId = vertex.getIdGradoop();
+			if (sourceId.equals(vertexId)) {
+				if (innerVertices.containsKey(targetId)) return true;
+			} else if (targetId.equals(vertexId)) {
+				if (innerVertices.containsKey(sourceId)) return true;
+			}
+		}
 		return false;
+//		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
+//		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
+//		return false;
 	}
 	
 	public void clearOperation(){
@@ -734,16 +769,26 @@ public class WrapperHandler implements Serializable {
 			Iterator<Map.Entry<String, Map<String,Object>>> iter = globalVertices.entrySet().iterator();
 			while (iter.hasNext()) {
 				VertexGVD vertex = (VertexGVD) iter.next().getValue().get("vertex");
+				String vertexId = vertex.getIdGradoop();
 				if ((((vertex.getX() < left) || (right < vertex.getX()) || (vertex.getY() < top) || 
 						(bottom < vertex.getY())) && !hasVisualizedNeighborsInside(vertex)) ||
 							((vertex.getX() >= left) && (right >= vertex.getX()) && (vertex.getY() >= top) && (bottom >= vertex.getY()) 
-									&& !innerVertices.containsKey(vertex.getIdGradoop()))) {
-					System.out.println("removing in clear operation " + vertex.getIdGradoop());
-					Server.getInstance().sendToAll("removeObjectServer;" + vertex.getIdGradoop());
+									&& !innerVertices.containsKey(vertexId))) {
+					System.out.println("removing in clear operation " + vertexId);
+					Server.getInstance().sendToAll("removeObjectServer;" + vertexId);
+					Iterator<WrapperGVD> edgesIterator = edges.values().iterator();
+					while (edgesIterator.hasNext()) {
+						WrapperGVD wrapper = edgesIterator.next();
+						String sourceId = wrapper.getSourceIdGradoop();
+						String targetId = wrapper.getTargetIdGradoop();
+						if (sourceId.equals(vertexId) || targetId.equals(vertexId)) edgesIterator.remove();
+					}
 					iter.remove();
-					Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
-					Iterator<Map.Entry<String, WrapperGVD>> edgesIterator = edges.entrySet().iterator();
-					while (edgesIterator.hasNext()) if (vertexNeighborMap.values().contains(edgesIterator.next().getKey())) edgesIterator.remove();
+					
+					//delete all edges from 'edges' Object that belonged to deleted vertex
+//					Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
+//					Iterator<Map.Entry<String, WrapperGVD>> edgesIterator = edges.entrySet().iterator();
+//					while (edgesIterator.hasNext()) if (vertexNeighborMap.values().contains(edgesIterator.next().getKey())) edgesIterator.remove();
 				} 
 			}
 			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step before (e.g. in ZoomOut)
@@ -772,7 +817,7 @@ public class WrapperHandler implements Serializable {
 		for (Map.Entry<String, VertexGVD> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();
 		for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) visualizedWrappers.add(entry.getKey());
-		GraphUtilStream graphUtil =  Server.getInstance().getFlinkCore().getGraphUtil();
+		GraphUtil graphUtil =  Server.getInstance().getFlinkCore().getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
 		for (String key : visualizedVertices) System.out.println("clearoperation, visualizedVertices: " + key);

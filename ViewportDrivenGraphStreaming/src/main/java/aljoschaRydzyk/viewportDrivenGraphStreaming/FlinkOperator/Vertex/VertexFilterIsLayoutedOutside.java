@@ -5,7 +5,7 @@ import java.util.Map;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 
 public class VertexFilterIsLayoutedOutside implements FilterFunction<Row> {
 	private Map<String,VertexGVD> layoutedVertices;

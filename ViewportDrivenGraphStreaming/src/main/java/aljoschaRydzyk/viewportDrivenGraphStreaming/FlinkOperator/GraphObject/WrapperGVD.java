@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject;
 
 public class WrapperGVD {
 	private VertexGVD sourceVertex;
@@ -8,16 +8,16 @@ public class WrapperGVD {
 	private String edgeLabel;
 	private String sourceIdGradoop;
 	private String sourceLabel;
-	private Integer sourceX;
-	private Integer sourceY;
-	private Integer sourceIdNumeric;
-	private Long sourceDegree;
+	private int sourceX;
+	private int sourceY;
+	private long sourceIdNumeric;
+	private long sourceDegree;
 	private String targetIdGradoop;
 	private String targetLabel;
-	private Integer targetX;
-	private Integer targetY;
-	private Integer targetIdNumeric;
-	private Long targetDegree;
+	private int targetX;
+	private int targetY;
+	private long targetIdNumeric;
+	private long targetDegree;
 	
 	
 	public WrapperGVD() {
@@ -100,35 +100,35 @@ public class WrapperGVD {
 		return this.sourceLabel;
 	}
 	
-	public void setSourceIdNumeric(Integer sourceIdNumeric) {
+	public void setSourceIdNumeric(long sourceIdNumeric) {
 		this.sourceIdNumeric = sourceIdNumeric;
 	}
 	
-	public Integer getSourceIdNumeric() {
+	public long getSourceIdNumeric() {
 		return this.sourceIdNumeric;
 	}
 	
-	public void setSourceX(Integer sourceX) {
+	public void setSourceX(int sourceX) {
 		this.sourceX = sourceX;
 	}
 	
-	public Integer getSourceX() {
+	public int getSourceX() {
 		return this.sourceX;
 	}
 	
-	public void setSourceY(Integer sourceY) {
+	public void setSourceY(int sourceY) {
 		this.sourceY = sourceY;
 	}
 	
-	public Integer getSourceY() {
+	public int getSourceY() {
 		return this.sourceY;
 	}
 	
-	public void setSourceDegree(Long sourceDegree) {
+	public void setSourceDegree(long sourceDegree) {
 		this.sourceDegree = sourceDegree;
 	}
 	
-	public Long getSourceDegree() {
+	public long getSourceDegree() {
 		return this.sourceDegree;
 	}
 	
@@ -148,35 +148,35 @@ public class WrapperGVD {
 		return this.targetLabel;
 	}
 	
-	public void setTargetIdNumeric(Integer targetIdNumeric) {
+	public void setTargetIdNumeric(long targetIdNumeric) {
 		this.targetIdNumeric = targetIdNumeric;
 	}
 	
-	public Integer getTargetIdNumeric() {
+	public long getTargetIdNumeric() {
 		return this.targetIdNumeric;
 	}
 	
-	public void setTargetX(Integer targetX) {
+	public void setTargetX(int targetX) {
 		this.targetX = targetX;
 	}
 	
-	public Integer getTargetX() {
+	public int getTargetX() {
 		return this.targetX;
 	}
 	
-	public void setTargetY(Integer targetY) {
+	public void setTargetY(int targetY) {
 		this.targetY = targetY;
 	}
 	
-	public Integer getTargetY() {
+	public int getTargetY() {
 		return this.targetY;
 	}
 	
-	public void setTargetDegree(Long targetDegree){
+	public void setTargetDegree(long targetDegree){
 		this.targetDegree = targetDegree;
 	}
 	
-	public Long getTargetDegree() {
+	public long getTargetDegree() {
 		return this.targetDegree;
 	}
 }

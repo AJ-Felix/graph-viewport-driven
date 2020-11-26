@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject;
 
 public class EdgeGVD {
 	public String idGradoop;

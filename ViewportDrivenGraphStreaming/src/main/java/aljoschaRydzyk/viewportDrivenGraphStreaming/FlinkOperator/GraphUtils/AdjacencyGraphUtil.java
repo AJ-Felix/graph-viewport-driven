@@ -23,7 +23,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerNewNotOld;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerOldNotNew;
@@ -39,7 +39,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFl
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotLayoutedBi;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotLayoutedUni;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotVisualizedButLayoutedInsideUni;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapper;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperIDMapWrapper;
 
@@ -63,18 +63,11 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	@Override
 	public void initializeDataSets() {
 		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
-		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {Types.STRING, Types.STRING, Types.INT, Types.STRING, 
+		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {
+				Types.STRING, Types.STRING, Types.LONG, Types.STRING, 
 				Types.INT, Types.INT, Types.LONG});
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
-		
-		//debugging cluster launch
-		Set<Row> collection = new HashSet<Row>();
-		collection.add(Row.of("some_id", "some_other_id", 1, "some_label", 2, 3, (long) 10));
-		DataStream<Row> debug = fsEnv.fromCollection(collection, new RowTypeInfo(new TypeInformation[] {Types.STRING, Types.STRING, 
-				Types.INT, Types.STRING, 
-				Types.INT, Types.INT, Types.LONG}));
-		debug.print();
 	}
 	
 	@Override
@@ -127,7 +120,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = vertexStreamInner.map(new VertexMapIdentityWrapper());
+		DataStream<Row> identityWrapper = vertexStreamInner.map(new VertexMapIdentityWrapperRow());
 		Set<String> visualizedVertices = this.visualizedVertices;
 		identityWrapper = identityWrapper.filter(new FilterFunction<Row>() {
 			@Override
@@ -193,7 +186,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		wrapperMaybeVis = wrapperMaybeVis.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = vertexStreamInnerNewNotOld.map(new VertexMapIdentityWrapper());
+		DataStream<Row> identityWrapper = vertexStreamInnerNewNotOld.map(new VertexMapIdentityWrapperRow());
 		return wrapperMaybeVis.union(wrapperDefNotVis).union(identityWrapper);
 	}
 	
@@ -208,12 +201,12 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 			@Override
 			public void flatMap(Row value, Collector<String> out) throws Exception {
 				String sourceIdGradoop = (String) value.getField(1);
-				Integer sourceIdNumeric = (Integer) value.getField(2);
+				Long sourceIdNumeric = (Long) value.getField(2);
 				Map<String,String> map = adjMatrix.get(sourceIdGradoop);
 				for (Map.Entry<String, String> entry : map.entrySet()) {
 					String targetIdGradoop = entry.getKey();
 					Row targetVertex = vertexMap.get(targetIdGradoop);
-					Integer targetIdNumeric = (Integer) targetVertex.getField(2);
+					Long targetIdNumeric = (Long) targetVertex.getField(2);
 					if (targetIdNumeric < numberVertices && sourceIdNumeric > targetIdNumeric) {
 						out.collect(entry.getValue());
 					} 
@@ -223,7 +216,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapper());
+		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
@@ -301,7 +294,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapper());
+		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
@@ -333,7 +326,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = notLayoutedVertices.map(new VertexMapIdentityWrapper());
+		DataStream<Row> identityWrapper = notLayoutedVertices.map(new VertexMapIdentityWrapperRow());
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
@@ -398,7 +391,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		//produce Identity Wrapper Stream
-		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapper());
+		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	

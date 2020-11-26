@@ -33,13 +33,17 @@ import org.gradoop.common.model.impl.pojo.EPGMVertex;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexDegreeComparator;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperSourceIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTargetIDKeySelector;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleMapWrapperRow;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeSourceIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeTargetIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapIdentityWrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperRowMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerOldNotNew;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInnerNewNotOld;
@@ -51,7 +55,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapper;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
 //graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
@@ -133,7 +137,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 						EPGMVertex vertex = tuple.f1.f0;
 						return Row.of(graphId, vertex.getId(), tuple.f0, vertex.getLabel(),
 								vertex.getPropertyValue("X").getInt(), vertex.getPropertyValue("Y").getInt(),
-								vertex.getPropertyValue("degree"));
+								vertex.getPropertyValue("degree").getLong());
 					}
 				});
 //				.returns(new TypeHint<Row>(){});
@@ -155,6 +159,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				return Row.join(vertices, Row.of(edge.getId().toString(), edge.getLabel()));
 			}
 		});
+		
 		DataSet<Row> identityWrapper = verticesIndexed.map(new MapFunction<Row,Row>(){
 			@Override
 			public Row map(Row row) throws Exception {
@@ -166,73 +171,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.union(nonIdentityWrapper)
 				;
 	}
-	
-	
-	
-//		.collect().get(0).getId().toString();
-//		// Give a 
-//		DataSet<Tuple2<Long,EPGMVertex>> vertexIdTuple = DataSetUtils.zipWithUniqueId(this.graph.getVertices());
-//		
-//		//Sort vertices by degree, add consecutive unique long id to each vertex
-//		DataSet<Tuple2<EPGMVertex,Long>> vertexDegreeTuple = this.graph.getVertices().map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {
-//			@Override
-//			public Tuple2<EPGMVertex, Long> map(EPGMVertex vertex) throws Exception {
-//				return Tuple2.of(vertex, vertex.getPropertyValue("degree").getLong());
-//			}
-//		});
-//		DataSet<Tuple2<Long,Tuple2<EPGMVertex,Long>>> vertexDegreeTupleSorted = 
-//				DataSetUtils.zipWithUniqueId(vertexDegreeTuple.sortPartition(1, Order.DESCENDING).setParallelism(1));
-//		// get 100 highest degrees
-//		DataSet<Tuple2<Long,Tuple2<EPGMVertex,Long>>> highestTuples = vertexDegreeTupleSorted.filter(tuple -> tuple.f0 < 100);
-//		
-//		//Create identity wrapper
-//		
-//		
-//		//Create non-identity wrapper 
-//		//Union wrappers and create wrapper stream
-//		List<EPGMVertex> vertexCollection = new ArrayList<EPGMVertex>();
-//		this.graph.getVertices().output(new LocalCollectionOutputFormat<EPGMVertex>(vertexCollection));
-//		
-//		vertexCollection.sort(new VertexDegreeComparator());
-//		this.vertexIdMap = new HashMap<String, Integer>();
-//		List<Row> customVertices = new ArrayList<Row>();
-//		List<Row> edgeRow = new ArrayList<Row>();
-//		for (int i = 0; i < vertexCollection.size(); i++) {
-//			String vertexIdGradoop = vertexCollection.get(i).getId().toString();
-//			Integer vertexIdNumeric = (Integer) i;
-//			this.vertexIdMap.put(vertexIdGradoop, vertexIdNumeric);
-//			Integer x = ((Integer) vertexCollection.get(i).getPropertyValue("X").getInt());
-//			Integer y = ((Integer) vertexCollection.get(i).getPropertyValue("Y").getInt());
-//			Long degree = ((Long) vertexCollection.get(i).getPropertyValue("degree").getLong());
-//			String vertexLabel = vertexCollection.get(i).getLabel();
-//			customVertices.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, degree));
-//			edgeRow.add(Row.of(graphId, vertexIdGradoop, vertexIdNumeric, vertexLabel,
-//					x, y, degree, vertexIdGradoop, vertexIdNumeric, vertexLabel,
-//					x, y, degree, "identityEdge", "identityEdge"));
-//		}	
-//		List<EPGMEdge> edgeCollection = this.graph.getEdges().collect();
-//		for (int i = 0; i < edgeCollection.size(); i++) {
-//			String edgeIdGradoop = edgeCollection.get(i).getId().toString();
-//			String edgeLabel = edgeCollection.get(i).getLabel();
-//			String sourceVertexIdGradoop = edgeCollection.get(i).getSourceId().toString();
-//			String targetVertexIdGradoop = edgeCollection.get(i).getTargetId().toString();		
-//			for (Row sourceVertex: customVertices) {
-//				if (sourceVertex.getField(1).equals(sourceVertexIdGradoop)) {
-//					for (Row targetVertex: customVertices) {
-//						if (targetVertex.getField(1).equals(targetVertexIdGradoop)) {
-//							edgeRow.add(Row.of(graphId, sourceVertexIdGradoop, sourceVertex.getField(2), 
-//									sourceVertex.getField(3), sourceVertex.getField(4), sourceVertex.getField(5), sourceVertex.getField(6), 
-//									targetVertexIdGradoop, targetVertex.getField(2), targetVertex.getField(3), targetVertex.getField(4), targetVertex.getField(5), 
-//									targetVertex.getField(6), edgeIdGradoop, edgeLabel));
-//						}
-//					}
-//				}
-//			}
-//		}
-//		this.vertexStream = fsEnv.fromCollection(customVertices);
-//		this.wrapperStream = fsEnv.fromCollection(edgeRow);
-//		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
-//	}
 	
 	@Override
 	public void setVisualizedWrappers(Set<String> visualizedWrappers) {
@@ -248,20 +186,20 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		return this.wrapperStream;
 	}
 	
-	public DataSet<Row> getMaxDegreeSubsetGradoop(Integer numberVertices){
+	public DataSet<WrapperGVD> getMaxDegreeSubsetGradoop(Integer numberVertices){
 		//filter for vertices with degree above cut off
 		DataSet<Row> vertices = verticesIndexed.filter(row -> (long) row.getField(2) < numberVertices);
 		
 		//produce non-identity wrapper
-		DataSet<Row> wrapperSet = 
+		DataSet<WrapperGVD> wrapperSet = 
 				vertices.join(wrapper).where(new VertexIDRowKeySelector())
 			.equalTo(new WrapperSourceIDKeySelector())
 			.join(vertices).where(new WrapperTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector())
-			.map(new WrapperTupleMapWrapperRow());
+			.map(new WrapperTupleMapWrapperGVD());
 		
 		//produce identity wrapper
-		wrapperSet = wrapperSet.union(vertices.map(new VertexMapIdentityWrapper()));
+		wrapperSet = wrapperSet.union(vertices.map(new VertexMapIdentityWrapperGVD()));
 		
 		return wrapperSet;
 	}
@@ -313,7 +251,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		}
 	}
 	
-	public DataSet<Row> zoom(Float top, Float right, Float bottom, Float left){
+	public DataSet<WrapperGVD> zoom(Float top, Float right, Float bottom, Float left){
 		
 		//vertex set filter for in-view and out-view area
 		DataSet<Row> verticesInner = 
@@ -344,78 +282,97 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		//union
 		inIn = inIn.union(inOut).union(outIn);
 		
-		//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
-		//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
-		
 		//map to wrapper row 
-		DataSet<Row> wrapperSet = inIn.map(new WrapperTupleMapWrapperRow());
+		DataSet<Row> wrapperRow = inIn.map(new WrapperTupleMapWrapperRow());
 		
 		//filter out already visualized edges in wrapper set
-		wrapperSet = wrapperSet.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		wrapperRow = wrapperRow.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//filter out already visualized vertices in wrapper set (identity wrappers)
 		Set<String> visualizedVertices = this.visualizedVertices;
-		wrapperSet = wrapperSet.filter(new FilterFunction<Row>() {
+		wrapperRow = wrapperRow.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row value) throws Exception {
 				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
 			}
 		});		
 		
+		//map to wrapper GVD
+		DataSet<WrapperGVD> wrapperGVD = wrapperRow.map(new WrapperRowMapWrapperGVD());
+		
 		try {
 			inIn.print();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return wrapperSet;
+		return wrapperGVD;
 	}
 	
+	@Override
+	public DataSet<WrapperGVD> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, 
+			Float rightOld,
+			Float bottomOld, Float leftOld){
+		
+		//vertex set filter for areas A, B and C
+		DataSet<Row> verticesInner = verticesIndexed.filter(new VertexFilterInner(topNew, rightNew, bottomNew, 
+				leftNew));
+		DataSet<Row> verticesInnerNewNotOld = verticesIndexed.filter(new FilterFunction<Row>() {
+			@Override
+			public boolean filter(Row row) throws Exception {
+				int x = (int) row.getField(4);
+				int y = (int) row.getField(5);
+				return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
+			}
+		});
+		DataSet<Row> verticesOuterBoth = 
+				verticesIndexed.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, 
+						rightOld, topOld, bottomOld));
+		DataSet<Row> verticesOldInnerNotNewInner = 
+				verticesIndexed.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, 
+						rightOld, topOld, bottomOld));
+		
+		//produce wrapper set from A to B and vice versa
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperBToA = verticesInnerNewNotOld
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(verticesOuterBoth).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAToB = verticesOuterBoth
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(verticesInnerNewNotOld).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+		
+		//produce wrapper set from A to A
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAToA = verticesInnerNewNotOld
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(verticesInnerNewNotOld).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+		
+		//produce wrapper set from A+C to D and vice versa
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAPlusCToD = verticesInner
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(verticesOldInnerNotNewInner).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperDToAPlusC = verticesOldInnerNotNewInner
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(verticesInner).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+			//filter out already visualized edges
+			DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAPlusCD = wrapperAPlusCToD.union(wrapperDToAPlusC);
+			DataSet<Row> wrapperRow = wrapperAPlusCD.map(new WrapperTupleMapWrapperRow());
+			wrapperRow = wrapperRow.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+			DataSet<WrapperGVD> wrapperGVD = wrapperRow.map(new WrapperRowMapWrapperGVD());
+		
+		//dataset union
+		wrapperGVD = wrapperAToA.union(wrapperAToB).union(wrapperBToA).map(new WrapperTupleMapWrapperGVD())
+				.union(wrapperGVD);
+		return wrapperGVD;	
+	}
 
-//	@Override
-//	public DataStream<Row> zoom (Float top, Float right, Float bottom, Float left){
-//		/*
-//		 * Zoom function for graphs with layout
-//		 */
-//		
-//		System.out.println("Zoom, in csv zoom function ... top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
-//
-//		
-//		//vertex stream filter for in-view and out-view area and conversion to Flink Tables
-//		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
-//		DataStream<Row> vertexStreamOuter = this.vertexStream.filter(new VertexFilterOuter(top, right, bottom, left));
-//		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInner).as(this.vertexFields);		
-//		Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(this.vertexFields);
-//		
-//		//produce wrapper stream from in-view area to in-view area
-//		Table wrapperTableInIn = wrapperTable
-//				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-//		
-//		//produce wrapper stream from in-view area to out-view area and vice versa
-//		Table wrapperTableInOut = wrapperTable
-//				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTableOuter).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-//		Table wrapperTableOutIn = wrapperTable
-//				.join(vertexTableOuter).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-//		
-//		//stream union
-//		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo).union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo))
-//				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, wrapperRowTypeInfo));
-//		
-//		//filter out already visualized edges in wrapper stream
-//		 wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-//		
-//		//filter out already visualized vertices in wrapper stream (identity wrappers)
-//		Set<String> visualizedVertices = this.visualizedVertices;
-//		wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
-//			@Override
-//			public boolean filter(Row value) throws Exception {
-//				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
-//			}
-//		});		
-//		return wrapperStream;
-//	}
 	
 //	@Override
 //	public DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,
@@ -481,15 +438,15 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	@Override
 	public Map<String, Map<String, String>> buildAdjacencyMatrix() throws Exception {
 		this.adjMatrix = new HashMap<String,Map<String,String>>();
-		for (EPGMVertex vertex : vertexCollection) this.adjMatrix.put(vertex.getId().toString(), new HashMap<String,String>());
-		for (EPGMEdge edge : edgeCollection) {
-			String sourceId = edge.getSourceId().toString();
-			String targetId = edge.getTargetId().toString();
-			String edgeId = edge.getId().toString();
-			this.adjMatrix.get(sourceId).put(targetId, edgeId);
-			this.adjMatrix.get(targetId).put(sourceId, edgeId);
-		}
-		System.out.println("adjMatrix built");
+//		for (EPGMVertex vertex : vertexCollection) this.adjMatrix.put(vertex.getId().toString(), new HashMap<String,String>());
+//		for (EPGMEdge edge : edgeCollection) {
+//			String sourceId = edge.getSourceId().toString();
+//			String targetId = edge.getTargetId().toString();
+//			String edgeId = edge.getId().toString();
+//			this.adjMatrix.get(sourceId).put(targetId, edgeId);
+//			this.adjMatrix.get(targetId).put(sourceId, edgeId);
+//		}
+//		System.out.println("adjMatrix built");
 		return this.adjMatrix;
 	}
 	

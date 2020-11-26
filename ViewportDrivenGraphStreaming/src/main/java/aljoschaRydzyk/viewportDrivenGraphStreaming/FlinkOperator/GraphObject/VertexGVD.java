@@ -1,20 +1,20 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject;
 
 import java.io.Serializable;
 
 public class VertexGVD implements Serializable{
 	public String idGradoop;
 	public String label;
-	public Integer x;
-	public Integer y;
-	public Integer idNumeric;
-	public Long degree;
+	public int x;
+	public int y;
+	public long idNumeric;
+	public long degree;
 	
 	public VertexGVD() {
 		
 	}
 	
-	public VertexGVD(String idGradoop, String label, Integer idNumeric, Integer x, Integer y, Long degree) {
+	public VertexGVD(String idGradoop, String label, long idNumeric, int x, int y, long degree) {
 		this.idGradoop = idGradoop;
 		this.label = label;
 		this.x = x;
@@ -23,14 +23,14 @@ public class VertexGVD implements Serializable{
 		this.degree = degree;
 	}
 	
-	public VertexGVD(String idGradoop, String label, Integer idNumeric, Long degree) {
+	public VertexGVD(String idGradoop, String label, long idNumeric, long degree) {
 		this.idGradoop = idGradoop;
 		this.label = label;
 		this.idNumeric = idNumeric;
 		this.degree = degree;
 	}
 	
-	public VertexGVD(String idGradoop, Integer x, Integer y) {
+	public VertexGVD(String idGradoop, int x, int y) {
 		this.idGradoop = idGradoop;
 		this.x = x;
 		this.y = y;
@@ -44,15 +44,15 @@ public class VertexGVD implements Serializable{
 		return this.label;
 	}
 	
-	public Integer getX() {
+	public int getX() {
 		return this.x;
 	}
 	
-	public Integer getY() {
+	public int getY() {
 		return this.y;
 	}
 	
-	public Integer getIdNumeric() {
+	public long getIdNumeric() {
 		return this.idNumeric;
 	}
 	
@@ -64,15 +64,15 @@ public class VertexGVD implements Serializable{
 		this.label = label;
 	}
 	
-	public void setX(Integer x) {
+	public void setX(int x) {
 		this.x = x;
 	}
 	
-	public void setY(Integer y) {
+	public void setY(int y) {
 		this.y = y;
 	}
 	
-	public void setIdNumeric(Integer idNumeric) {
+	public void setIdNumeric(long idNumeric) {
 		this.idNumeric = idNumeric;
 	}
 	

@@ -6,7 +6,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 
 public class VertexFlatMapNotLayoutedUni implements FlatMapFunction<Row,String> {
 	Map<String,Map<String,String>> adjMatrix;

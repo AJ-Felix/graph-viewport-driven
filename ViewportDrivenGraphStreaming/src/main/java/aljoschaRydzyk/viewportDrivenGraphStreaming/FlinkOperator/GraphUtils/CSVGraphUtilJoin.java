@@ -23,7 +23,7 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerOldNotNew;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInnerNewNotOld;
@@ -72,9 +72,10 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		this.visualizedVertices = new HashSet<String>();
 		this.wrapperFields = wrapperFields;
 		this.wrapperFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, 
-				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
+				Types.LONG, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.LONG, 
+				Types.STRING, Types.INT, Types.INT, Types.LONG,
 				Types.STRING, Types.STRING};
-		this.vertexFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, Types.INT, Types.STRING, 
+		this.vertexFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, Types.LONG, Types.STRING, 
 				Types.INT, Types.INT, Types.LONG};
 		this.wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 	}

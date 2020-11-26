@@ -191,6 +191,18 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 	- Möglicherweise gibt es MemoryError, weil die Kanten und Knotendatenstrukturen im BackEnd gespeichert werden...
 	- Die Knoten des LDBC_1 können über DataSet API in eine Datei geschrieben werden. Ein '.print()'-Sink funktioniert nicht. Ein '.collect()' mit anschließendem Sink ebenfalls nicht (Caused by: java.io.IOException: The rpc invocation size 666780296 exceeds the maximum akka framesize.) Das Ganze wurde auf einem lokalen CLuster getestet, aber sollte entsprechend auch in einer Slurm-Session funktionieren.
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!GradoopGraphUtil mit Batch Processing bauen!
+		TODO: WrapperGVD schon in der Initialisierung erstellen
+		TODO: Gradoop-Variante aus dem FlinkResponseHandler rausnehmen
+
+TODO: adjacencyMatrixBuilding: Java-FileReader kann nicht mit HDFS umgehen
+
+TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
+
+TODO: Building Adjacency-Matrix is going to be a problem for wrapperHandler --> probably adjMatrix not necessary in WrapperHandler
+
+TODO: WrapperHandler: getNeighboorHood ohne Adjmatrix implementieren
+
+TODO: GRadoopgraphUtil pan: Wahrscheinlich ist es in A to A nicht notwendig identity edges herauszufiltern wie bisher
 
 TODO: Front-End aufhübschen
 
@@ -245,6 +257,16 @@ um Jobs zu terminieren. Ein Workaround wäre, Flink serverseitig in einem separa
 
 NEUES GRADOOP:
 	- .join() funktioniert nicht mir identityWrappern --> Workaround, indem aus der Knotenmenge gemappt wird
+	- Es werden downstream von flink die gleichen Funktionaliäten benutzt wie bei Streaming
+	- Aufwändig: 
+		Weitere Operationen auf Flink DataSets ausführen und damit gleichzeitig mit den Wrappern eine nach Knotengrad sortierte Liste der Knoten ausgeben lassen.
+		Wenn diese Liste länger als die Kapazität ist, werden alle Knoten genommen mit Knotengrad einschließlich minDegree.
+		Wenn die sich dann ergebende List immer noch länger als die Kapazität ist, werden soviele Knoten
+		Wenn der letzte Knoten der Liste kleiner als minDegree-Grad ist, dann wird die Liste entweder auf Kapazitätsgröße getrimmt.
+		Wenn dagegen  oder alle Knoten bis ausschließlich minDegree-Grad werden aufgenommen.
+		Dann wird durch alle Wrapper iteriert und entsprechend Knoten (und manchmal Kanten, je nachdem ob der andere Knoten innen oder außen liegt und/oder in der Liste weit genug oben ist).
+		Unfertig
+	- Layout-Aufwändig:
 
 
 Verschiedene Grundansätze der BackEnd-Struktur:
