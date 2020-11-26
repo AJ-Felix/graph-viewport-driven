@@ -220,7 +220,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
-	@Override
 	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws IOException {
 		this.adjMatrix = new HashMap<String, Map<String,String>>();
 		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_adjacency"));
@@ -278,7 +277,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	 */
 	
 	@Override
-	public DataStream<Row> panZoomInLayoutFirstStep(Map<String,VertexGVD> layoutedVertices, Map<String,VertexGVD> innerVertices,
+	public DataStream<Row> panZoomInLayoutStep1(Map<String,VertexGVD> layoutedVertices, Map<String,VertexGVD> innerVertices,
 			Float top, Float right, Float bottom, Float left) {
 		System.out.println("in panZoomInLayoutFirstStep");
 		/*
@@ -299,7 +298,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> panZoomInLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> unionMap){
+	public DataStream<Row> panZoomInLayoutStep2(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> unionMap){
 		/*
 		 * Second substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
@@ -314,7 +313,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> panZoomInLayoutThirdStep(Map<String, VertexGVD> layoutedVertices){		
+	public DataStream<Row> panZoomInLayoutStep3(Map<String, VertexGVD> layoutedVertices){		
 		/*
 		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * not yet layouted starting with highest degree.
@@ -331,7 +330,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices, 
+	public DataStream<Row> zoomInLayoutStep4(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices, 
 			Map<String, VertexGVD> newVertices, Float top, Float right, Float bottom, Float left){
 		/*
 		 * Fourth substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 

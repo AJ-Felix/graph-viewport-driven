@@ -16,11 +16,13 @@ import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperGVDMapWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinates;
@@ -38,10 +40,10 @@ public class Server implements Serializable{
 	private String hdfsEntryPointAddress = "localhost";
 	private int hdfsEntryPointPort = 9000;
 	private String hdfsGraphFilesDirectory;
-	private Boolean degreesCalculated = false;
+	private boolean degreesCalculated = false;
 	private String gradoopGraphId = "5ebe6813a7986cc7bd77f9c2";
 
-	private Boolean stream = true;
+	private boolean stream = true;
 	
 	
 	private List<WrapperGVD> wrapperCollection;
@@ -134,15 +136,13 @@ public class Server implements Serializable{
                     System.out.println(messageData);
                     WebSockets.sendText(messageData, session, null);
                 }                	
-//                if (flinkCore == null) {
-//                	flinkCore = new FlinkCore(clusterEntryPointAddress, hdfsFullPath, gradoopGraphId, 
-//                			degreesCalculated);
-//                }
-                if (messageData.equals("preLayout")) {
-                	wrapperHandler.resetLayoutedVertices();
-                	setLayoutMode(false);
-                } else if (messageData.equals("postLayout")) {
-                	setLayoutMode(true);
+                if (messageData.startsWith("layoutMode")) {
+                	if (messageData.split(";")[1].equals("true")) {
+                    	setLayoutMode(true);
+                	} else {
+                    	setLayoutMode(false);
+                    	wrapperHandler.resetLayoutedVertices();
+                	}
                 } else if (messageData.equals("resetWrapperHandler")) {
                 	wrapperHandler.initializeGraphRepresentation();
                 } else if (messageData.startsWith("clusterEntryAddress")) {
@@ -214,7 +214,6 @@ public class Server implements Serializable{
                 	wrapperHandler.setMaxVertices(maxVertices);
                 } 
                 else if (messageData.startsWith("buildTopView")) {
-//                	flinkCore = new FlinkCore();
                 	flinkCore = new FlinkCore(clusterEntryPointAddress, 
                 			"hdfs://" + hdfsEntryPointAddress + ":" + String.valueOf(hdfsEntryPointPort)
             				+ hdfsGraphFilesDirectory, gradoopGraphId, 
@@ -246,12 +245,14 @@ public class Server implements Serializable{
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
+                	//do stuff with wrapperCollection
                 	if (!stream) {
-	                	//do stuff with wrapperCollection
-	                	System.out.println("wrapperCollection size: " + wrapperCollection.size());
-	                	wrapperHandler.addInitialWrapperCollection(wrapperCollection);
-	                	wrapperHandler.clearOperation();
-		            	Server.getInstance().sendToAll("fit");
+                    	System.out.println("wrapperCollection size: " + wrapperCollection.size());
+                		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
+                		if (layout) {
+                			wrapperHandler.clearOperation();
+    		            	Server.getInstance().sendToAll("fit");
+                		}
                 	}
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
@@ -271,16 +272,18 @@ public class Server implements Serializable{
 						if (layout) {
 							if (stream) zoomStream();
 							else zoomSet();
-						}
-						else {
-							flinkResponseHandler.setVerticesHaveCoordinates(false);
+						} else {								
 							System.out.println("in zoom in layout function");
-							zoomInLayoutFirstStep();
+							if (stream) zoomInLayoutStep1Stream();
+							else  zoomInLayoutStep1Set();				
 						}
 					} else {
 						setOperation("zoomOut");
 						wrapperHandler.prepareOperation();
-						if (layout) zoomStream();
+						if (layout) {
+							if (stream) zoomStream();
+							else zoomSet();
+						}
 						else {
 							flinkResponseHandler.setVerticesHaveCoordinates(false);
 							System.out.println("in zoom out layout function");
@@ -291,9 +294,9 @@ public class Server implements Serializable{
         			String[] arrMessageData = messageData.split(";");
         			float[] modelPositions = flinkCore.getModelPositions();
         			Float topModelOld = modelPositions[0];
-        			Float bottomModelOld = modelPositions[1];
-        			Float leftModelOld = modelPositions[2];
-        			Float rightModelOld = modelPositions[3];
+        			Float rightModelOld = modelPositions[1];
+        			Float bottomModelOld = modelPositions[2];
+        			Float leftModelOld = modelPositions[3];
         			Float xModelDiff = Float.parseFloat(arrMessageData[1]); 
         			Float yModelDiff = Float.parseFloat(arrMessageData[2]);
         			Float topModel = topModelOld + yModelDiff;
@@ -337,31 +340,11 @@ public class Server implements Serializable{
     	flinkCore.initializeGradoopGraphUtil();
 		wrapperHandler.initializeGraphRepresentation();
     	DataSet<WrapperGVD> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
-//    	wrapperCollection = new ArrayList<Row>();
-//    	System.out.println(wrapperCollection);
-//		wrapperSet.output(new LocalCollectionOutputFormat<Row>(wrapperCollection));
     	try {
 			wrapperCollection = wrapperSet.collect();
 		} catch (Exception e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-    	try {
-			wrapperSet.print();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-    	
-//		flinkResponseHandler.setOperation("initialAppend");
-//		DataStream<String> wrapperLine;
-//		if (layout) {
-//			flinkResponseHandler.setVerticesHaveCoordinates(true);
-//			wrapperLine = wrapperStream.map(new WrapperMapLine());
-//		} else {
-//			flinkResponseHandler.setVerticesHaveCoordinates(false);
-//			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
-//		}
-//		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     }
     
     private void buildTopViewCSV() {
@@ -399,8 +382,6 @@ public class Server implements Serializable{
     private void zoomSet() {
     	DataSet<WrapperGVD> wrapperSet = flinkCore.zoomSet();
 		System.out.println("executing zoomSet on server class");
-//		List<Row> wrapperCollection = new ArrayList<Row>();
-//		wrapperSet.output(new LocalCollectionOutputFormat<Row>(wrapperCollection));
 		try {
 			wrapperCollection = wrapperSet.collect();
 			flinkCore.getEnv().execute();
@@ -469,20 +450,25 @@ public class Server implements Serializable{
     		if (operation.contains("In")) {
     			if (operationStep == 1) {
     				if (wrapperHandler.getCapacity() > 0) {
-    					zoomInLayoutSecondStep();
+    					if (stream)	zoomInLayoutStep2Stream();
+    					else zoomInLayoutStep2Set();
     				} else {
     					System.out.println("nextSubStep 1, 4");
-    					zoomInLayoutFourthStep();
+    					if (stream)	zoomInLayoutStep4Stream();
+    					else zoomInLayoutStep4Set();
     				}
     			} else if (operationStep == 2) {
     				if (wrapperHandler.getCapacity() > 0) {
-    					zoomInLayoutSecondStep();
+    					if (stream)	zoomInLayoutStep2Stream();
+    					else zoomInLayoutStep2Set();
     				} else {
     					System.out.println("nextSubStep 2, 4");
-    					zoomInLayoutFourthStep();
+    					if (stream)	zoomInLayoutStep4Stream();
+    					else zoomInLayoutStep4Set();
     				}
     			} else if (operationStep == 3) {
-    				zoomInLayoutFourthStep();
+    				if (stream)	zoomInLayoutStep4Stream();
+					else zoomInLayoutStep4Set();
     			} else if (operationStep == 4) {
     	            wrapperHandler.clearOperation();
     			}
@@ -513,12 +499,35 @@ public class Server implements Serializable{
 			}
     	}
     }
-
-	private void zoomInLayoutFirstStep() {
-		System.out.println("zoomInfirst, operationStep: " + wrapperHandler.getOperationStep());
+    
+    private void zoomInLayoutStep1Set() {
     	setOperationStep(1);
-		System.out.println("zoomInfirst, operationStep: " + wrapperHandler.getOperationStep());
-    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFirstStep(wrapperHandler.getLayoutedVertices(), 
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep1Set(wrapperHandler.getLayoutedVertices(), 
+    			wrapperHandler.getInnerVertices());
+
+    	//debug
+    	wrapperGVD.writeAsText("/home/aljoscha/debug/zoomIn1", WriteMode.OVERWRITE);
+    	
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		zoomInLayoutStep2Set();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+    	}
+    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+    }
+
+	private void zoomInLayoutStep1Stream() {
+		flinkResponseHandler.setVerticesHaveCoordinates(false);
+    	setOperationStep(1);
+    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutStep1Stream(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices());	
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
@@ -528,12 +537,36 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutSecondStep();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep2Stream();
     }
     
-    private void zoomInLayoutSecondStep() {
+	private void zoomInLayoutStep2Set() {
     	setOperationStep(2);
-    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutSecondStep(wrapperHandler.getLayoutedVertices(), 
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(), 
+    			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
+    	
+    	//debug
+    	wrapperGVD.writeAsText("/home/aljoscha/debug/zoomIn2", WriteMode.OVERWRITE);
+    	
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		zoomInLayoutStep3Set();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+    	}
+    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+    }
+	
+    private void zoomInLayoutStep2Stream() {
+    	setOperationStep(2);
+    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutStep2Stream(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
@@ -543,10 +576,33 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutThirdStep();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep3Stream();
     }
     
-    private  void zoomInLayoutThirdStep() {
+    private  void zoomInLayoutStep3Set() {
+    	setOperationStep(3);
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep3Set(wrapperHandler.getLayoutedVertices());
+
+    	//debug
+    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn3", WriteMode.OVERWRITE);
+    	
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		zoomInLayoutStep4Set();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+    	}
+    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+    }
+    
+    private  void zoomInLayoutStep3Stream() {
     	setOperationStep(3);
     	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutThirdStep(wrapperHandler.getLayoutedVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
@@ -557,12 +613,35 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutFourthStep();
+		if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep4Stream();
     }
     
-    private void zoomInLayoutFourthStep() {
+    private void zoomInLayoutStep4Set() {
     	setOperationStep(4);
-    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutFourthStep(wrapperHandler.getLayoutedVertices(),
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep4Set(wrapperHandler.getLayoutedVertices(),
+    			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
+
+    	//debug
+    	wrapperGVD.writeAsText("/home/aljoscha/debug/zoomIn4", WriteMode.OVERWRITE);
+    	
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+    	}
+    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+    }
+    
+    private void zoomInLayoutStep4Stream() {
+    	setOperationStep(4);
+    	DataStream<Row> wrapperStream = flinkCore.zoomInLayoutStep4Stream(wrapperHandler.getLayoutedVertices(),
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
@@ -571,7 +650,6 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//    	wrapperHandler.clearOperation();
     }
     
     private void zoomOutLayoutFirstStep() {
@@ -682,7 +760,7 @@ public class Server implements Serializable{
 		operationStep = step;
 	}
 	
-    private void setLayoutMode(Boolean layoutMode) {
+    private void setLayoutMode(boolean layoutMode) {
 		wrapperHandler.setLayoutMode(layoutMode);	
 		layout = layoutMode;
 	}
@@ -705,5 +783,6 @@ public class Server implements Serializable{
     public void setStreamBool(Boolean stream) {
     	this.stream = stream;
     	flinkCore.setStreamBool(stream);
+    	wrapperHandler.setStreamBool(stream);
     }
 }

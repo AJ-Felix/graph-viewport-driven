@@ -110,39 +110,6 @@ public class FlinkCore {
 		this.stream = stream;
 	}
 	
-//	public void setClusterEntryPointAdress(String address) {
-//		this.clusterEntryPointAddress = address;
-//	}
-//	
-//	public void setHDFSEntryPointAdress(String address) {
-//		this.hdfsEntryPointAddress = address;
-//		this.setHDFSFullPath();
-//	}
-//	
-//	public void setHDFSEntryPointPort(int port) {
-//		this.hdfsEntryPointPort = port;
-//		this.setHDFSFullPath();
-//	}
-	
-//	public void setGraphId(String Id) {
-//		this.gradoopGraphID = Id;
-//	}
-	
-//	public void setHDFSGraphFilesDirectory(String directory) {
-//		this.hdfsGraphFilesDirectory = directory;
-//		this.setHDFSFullPath();
-//	}
-	
-//	public void setDegreesCalculated(Boolean calculated) {
-//		this.degreesCalculated = calculated;
-//	}
-	
-//	private void setHDFSFullPath() {
-//		this.hdfsFullPath = "hdfs://" + this.hdfsEntryPointAddress + ":" + String.valueOf(this.hdfsEntryPointPort)
-//				+ this.hdfsGraphFilesDirectory;
-//		System.out.println(this.hdfsFullPath);
-//	}
-	
 	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
 		this.topNew = topModel;
 		this.rightNew = rightModel;
@@ -156,7 +123,7 @@ public class FlinkCore {
 	
 	public void setModelPositionsOld() {
 		this.topOld = this.topNew;
-		this.rightOld = this.topNew;
+		this.rightOld = this.rightNew;
 		this.bottomOld = this.bottomNew;
 		this.leftOld = this.leftNew;
 	}
@@ -195,11 +162,11 @@ public class FlinkCore {
 	
 	public GraphUtilStream initializeCSVGraphUtilJoin() {
 		this.graphUtilStream = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.hdfsFullPath, this.vertexFields, this.wrapperFields);
-			try {
-				this.graphUtilStream.buildAdjacencyMatrix();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+//			try {
+//				this.graphUtilStream.buildAdjacencyMatrix();
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
 		return this.graphUtilStream;
 	}
 	
@@ -268,25 +235,47 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataStream<Row> zoomInLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices){
-		return this.graphUtilStream.panZoomInLayoutFirstStep(layoutedVertices, innerVertices, topNew, rightNew, 
+	public DataSet<WrapperGVD> zoomInLayoutStep1Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices){
+		return this.graphUtilSet.panZoomInLayoutStep1(layoutedVertices, innerVertices, topNew, rightNew, 
 				bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> zoomInLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
+	public DataStream<Row> zoomInLayoutStep1Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices){
+		return this.graphUtilStream.panZoomInLayoutStep1(layoutedVertices, innerVertices, topNew, rightNew, 
+				bottomNew, leftNew);
+	}
+	
+	public DataSet<WrapperGVD> zoomInLayoutStep2Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
 			Map<String, VertexGVD> newVertices){
 		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
 		unionMap.putAll(newVertices);
-		return this.graphUtilStream.panZoomInLayoutSecondStep(layoutedVertices, unionMap);
+		return this.graphUtilSet.panZoomInLayoutStep2(layoutedVertices, unionMap);
+	}
+	
+	public DataStream<Row> zoomInLayoutStep2Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
+			Map<String, VertexGVD> newVertices){
+		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
+		unionMap.putAll(newVertices);
+		return this.graphUtilStream.panZoomInLayoutStep2(layoutedVertices, unionMap);
+	}
+	
+	public DataSet<WrapperGVD> zoomInLayoutStep3Set(Map<String, VertexGVD> layoutedVertices){
+		return this.graphUtilSet.panZoomInLayoutStep3(layoutedVertices);
 	}
 	
 	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexGVD> layoutedVertices){
-		return this.graphUtilStream.panZoomInLayoutThirdStep(layoutedVertices);
+		return this.graphUtilStream.panZoomInLayoutStep3(layoutedVertices);
+	}
+
+	public DataSet<WrapperGVD> zoomInLayoutStep4Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
+			Map<String, VertexGVD> newVertices){
+		return this.graphUtilSet.zoomInLayoutStep4(layoutedVertices, innerVertices, newVertices, 
+				topNew, rightNew, bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
+	public DataStream<Row> zoomInLayoutStep4Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
 			Map<String, VertexGVD> newVertices){
-		return this.graphUtilStream.zoomInLayoutFourthStep(layoutedVertices, innerVertices, newVertices, 
+		return this.graphUtilStream.zoomInLayoutStep4(layoutedVertices, innerVertices, newVertices, 
 				topNew, rightNew, bottomNew, leftNew);
 	}
 	
@@ -301,16 +290,16 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Row> panLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtilStream.panZoomInLayoutFirstStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+		return this.graphUtilStream.panZoomInLayoutStep1(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew);
 	}
 	
 	public DataStream<Row> panLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtilStream.panZoomInLayoutSecondStep(layoutedVertices, newVertices);
+		return this.graphUtilStream.panZoomInLayoutStep2(layoutedVertices, newVertices);
 	}
 	
 	public DataStream<Row> panLayoutThirdStep(Map<String, VertexGVD> layoutedVertices){
-		return this.graphUtilStream.panZoomInLayoutThirdStep(layoutedVertices);
+		return this.graphUtilStream.panZoomInLayoutStep3(layoutedVertices);
 	}
 	
 	public DataStream<Row> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
@@ -327,6 +316,8 @@ public class FlinkCore {
 	public DataSet<WrapperGVD> panSet(){
 		DataSet<WrapperGVD> set = this.graphUtilSet.pan(topNew, rightNew, bottomNew, leftNew, 
 				topOld, rightOld, bottomOld, leftOld);
+		System.out.println("FlinkCore, panSet... " + topNew + " " + rightNew + " " + bottomNew + " " + 
+				leftNew + " " +  topOld + " " + rightOld +" " + bottomOld + " " + leftOld);
 		return set;
 	}
 		

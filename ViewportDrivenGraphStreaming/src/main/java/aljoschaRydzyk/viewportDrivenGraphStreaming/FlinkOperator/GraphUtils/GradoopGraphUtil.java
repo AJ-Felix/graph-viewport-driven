@@ -20,6 +20,7 @@ import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.api.java.utils.DataSetUtils;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -109,19 +110,10 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		this.wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 	}
 	
-//	public void loadDataSets() {
-//		try {
-//			vertexCollection = this.graph.getVertices().collect();
-//			edgeCollection = this.graph.getEdges().collect();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//	}
 	
 	@Override
 	public void initializeDataSets() throws Exception{
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
-//		String[] somestring = {"hello"};
 		verticesIndexed = DataSetUtils.zipWithIndex((this.graph.getVertices()
 					.map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {
 						@Override
@@ -316,7 +308,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		//vertex set filter for areas A, B and C
 		DataSet<Row> verticesInner = verticesIndexed.filter(new VertexFilterInner(topNew, rightNew, bottomNew, 
 				leftNew));
-		DataSet<Row> verticesInnerNewNotOld = verticesIndexed.filter(new FilterFunction<Row>() {
+		DataSet<Row> verticesInnerNewNotOld = verticesInner.filter(new FilterFunction<Row>() {
 			@Override
 			public boolean filter(Row row) throws Exception {
 				int x = (int) row.getField(4);
@@ -330,6 +322,12 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		DataSet<Row> verticesOldInnerNotNewInner = 
 				verticesIndexed.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, 
 						rightOld, topOld, bottomOld));
+		try {
+			verticesInnerNewNotOld.print();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		//produce wrapper set from A to B and vice versa
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperBToA = verticesInnerNewNotOld
@@ -366,93 +364,107 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			DataSet<Row> wrapperRow = wrapperAPlusCD.map(new WrapperTupleMapWrapperRow());
 			wrapperRow = wrapperRow.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 			DataSet<WrapperGVD> wrapperGVD = wrapperRow.map(new WrapperRowMapWrapperGVD());
+		wrapperBToA.writeAsText("/home/aljoscha/debug/BToA", WriteMode.OVERWRITE);
+		wrapperAToB.writeAsText("/home/aljoscha/debug/AToB", WriteMode.OVERWRITE);
+		wrapperAToA.writeAsText("/home/aljoscha/debug/AToA", WriteMode.OVERWRITE);
+		wrapperGVD.writeAsText("/home/aljoscha/debug/APlusCToDViceVersa", WriteMode.OVERWRITE);
 		
 		//dataset union
 		wrapperGVD = wrapperAToA.union(wrapperAToB).union(wrapperBToA).map(new WrapperTupleMapWrapperGVD())
 				.union(wrapperGVD);
 		return wrapperGVD;	
 	}
-
 	
-//	@Override
-//	public DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,
-//			Float bottomOld, Float leftOld){
-//		/*
-//		 * Pan function for graphs with layout
-//		 */
-//		
-//		//vertex stream filter and conversion to Flink Tables for areas A, B and C
-//		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
-//		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
-//				@Override
-//				public boolean filter(Row value) throws Exception {
-//					Integer x = (Integer) value.getField(4);
-//					Integer y = (Integer) value.getField(5);
-//					return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
-//				}
-//			});
-//		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
-//		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
-//		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNewNotOld).as(this.vertexFields);
-//		Table vertexTableOldOuterExtend = fsTableEnv.fromDataStream(vertexStreamOldOuterBoth).as(this.vertexFields);
-//		Table vertexTableOldInNotNewIn = fsTableEnv.fromDataStream(vertexStreamOldInnerNotNewInner).as(this.vertexFields);
-//		Table vertexTableInner = fsTableEnv.fromDataStream(vertexStreamInner).as(this.vertexFields);
-//		
-//		//produce wrapperStream from A to B and vice versa
-//		Table wrapperTableInOut = wrapperTable
-//				.join(vertexTableInnerNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTableOldOuterExtend).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-//		Table wrapperTableOutIn = wrapperTable
-//				.join(vertexTableInnerNew).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTableOldOuterExtend).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields);
-//		
-//		//produce wrapperStream from A to A
-//		Table wrapperTableInIn = wrapperTable
-//				.join(vertexTableInnerNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTableInnerNew).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-//			//filter out redundant identity edges
-//			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo)
-////					.filter(new WrapperFilterIdentity())
-//					;
-//		
-//		//produce wrapperStream from A+C to D and vice versa
-//		Table wrapperTableOldInNewInInOut = wrapperTable
-//				.join(vertexTableInner).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTableOldInNotNewIn).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-//		Table wrapperTableOldInNewInOutIn = wrapperTable
-//				.join(vertexTableOldInNotNewIn).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-//				.join(vertexTableInner).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-//			//filter out already visualized edges
-//			DataStream<Row> wrapperStreamOldInNewIn = fsTableEnv.toAppendStream(wrapperTableOldInNewInInOut, wrapperRowTypeInfo)
-//					.union(fsTableEnv.toAppendStream(wrapperTableOldInNewInOutIn, wrapperRowTypeInfo));	
-//			wrapperStreamOldInNewIn = wrapperStreamOldInNewIn.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-//			
-//		//stream union
-//		DataStream<Row> wrapperStream = wrapperStreamInIn
-//				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, wrapperRowTypeInfo))
-//				.union(wrapperStreamOldInNewIn)
-//				.union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo));
-//		return wrapperStream;
-//	}
-
 	@Override
-	public Map<String, Map<String, String>> buildAdjacencyMatrix() throws Exception {
-		this.adjMatrix = new HashMap<String,Map<String,String>>();
-//		for (EPGMVertex vertex : vertexCollection) this.adjMatrix.put(vertex.getId().toString(), new HashMap<String,String>());
-//		for (EPGMEdge edge : edgeCollection) {
-//			String sourceId = edge.getSourceId().toString();
-//			String targetId = edge.getTargetId().toString();
-//			String edgeId = edge.getId().toString();
-//			this.adjMatrix.get(sourceId).put(targetId, edgeId);
-//			this.adjMatrix.get(targetId).put(sourceId, edgeId);
-//		}
-//		System.out.println("adjMatrix built");
-		return this.adjMatrix;
+	public DataSet<WrapperGVD> panZoomInLayoutStep1(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices, 
+			Float top, Float right, Float bottom, Float left){
+		/*
+		 * First substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that were
+		 * layouted before and have their coordinates in the current model window but are not visualized yet.
+		 */
+		DataSet<Row> vertices = verticesIndexed.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
+			.filter(new VertexFilterNotVisualized(innerVertices));
+		DataSet<WrapperGVD> wrapperGVDIdentity = vertices.map(new VertexMapIdentityWrapperGVD());
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTupleNonIdentity = vertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(vertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+		return wrapperGVDIdentity.union(wrapperTupleNonIdentity.map(new WrapperTupleMapWrapperGVD()));
 	}
 	
 	@Override
-	public Map<String, Map<String, String>> getAdjMatrix() {
-		return this.adjMatrix;
+	public DataSet<WrapperGVD> panZoomInLayoutStep2(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> unionMap){
+		/*
+		 * Second substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
+		 * other hand.
+		 */
+		DataSet<Row> visualizedVertices = verticesIndexed.filter(new VertexFilterIsVisualized(unionMap));
+		DataSet<Row> neighbours = verticesIndexed.filter(new VertexFilterNotLayouted(layoutedVertices));
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = visualizedVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(neighbours).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector())
+			.union(neighbours
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(visualizedVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector()));
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperGVD());
+		return wrapperGVD;
 	}
+	
+	@Override
+	public DataSet<WrapperGVD> panZoomInLayoutStep3(Map<String, VertexGVD> layoutedVertices){		
+		/*
+		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * not yet layouted starting with highest degree.
+		 */
+		System.out.println("layoutedVertices size" + layoutedVertices.size());
+		DataSet<Row> notLayoutedVertices = verticesIndexed.filter(new VertexFilterNotLayouted(layoutedVertices));
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = notLayoutedVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(notLayoutedVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+		DataSet<WrapperGVD> wrapperGVDIdentity = notLayoutedVertices.map(new VertexMapIdentityWrapperGVD());
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperGVD()).union(wrapperGVDIdentity);
+		return wrapperGVD;
+	}
+	
+	@Override
+	public DataSet<WrapperGVD> zoomInLayoutStep4(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices, 
+			Map<String, VertexGVD> newVertices, Float top, Float right, Float bottom, Float left){
+		/*
+		 * Fourth substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
+		 * outside the current model window on the other hand.
+		 */
+		
+		//unite maps of already visualized vertices before this zoom-in operation and vertices added in this zoom-in operation
+		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
+		unionMap.putAll(newVertices);
+		
+		DataSet<Row> visualizedVerticesSet = verticesIndexed.filter(new VertexFilterIsVisualized(unionMap));
+		DataSet<Row> layoutedVerticesSet = verticesIndexed.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, 
+			top, right, bottom, left));
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = visualizedVerticesSet
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(layoutedVerticesSet).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector())
+			.union(layoutedVerticesSet
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(visualizedVerticesSet).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector()));
 
+		//filter out already visualized edges in wrapper stream
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
+				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
+				.map(new WrapperRowMapWrapperGVD());
+		return wrapperGVD;
+	}
 }

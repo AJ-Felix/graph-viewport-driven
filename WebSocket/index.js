@@ -103,6 +103,12 @@ function sendVerticesHaveDegrees(haveDegrees){
 	ws.send("degrees;" + haveDegrees.to);
 }
 
+function sendGraphIsLayouted(IsLayouted){
+	console.log(IsLayouted);
+	layout = IsLayouted;
+	ws.send("layoutMode;" + IsLayouted);
+}
+
 function sendSignalHBase(){
 	buildTopViewOperations();
 	ws.send("buildTopView;HBase");
@@ -155,15 +161,15 @@ function resetVisualization(){
 	ws.send("resetWrapperHandler");
 }
 
-function preLayout(){
-	layout = false;
-	ws.send("preLayout");
-}
+// function preLayout(){
+	// layout = false;
+	// ws.send("preLayout");
+// }
 
-function postLayout(){
-	layout = true;
-	ws.send("postLayout");
-}
+// function postLayout(){
+	// layout = true;
+	// ws.send("postLayout");
+// }
 
 let header1 = document.getElementById('header1');
 header1.addEventListener("mousedown", 

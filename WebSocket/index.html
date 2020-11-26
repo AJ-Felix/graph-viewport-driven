@@ -114,12 +114,12 @@
 					<button type="button" onClick="sendSignalGradoop()" class="btn" id="send">buildTopViewGradoop</button>
 					<button type="button" onClick="sendSignalCSV()" class="btn" id="send">buildTopViewCSV</button>
 					<button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button>
-					<button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button>
-					<button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button>
+					<!-- <button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button> -->
+					<!-- <button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button> -->
 				</div>
 				<form>
 					<input id="graphIsLayouted" type="checkbox"/>
-					<button type="button" onclick="sendVerticesHaveDegrees(document.getElementById('graphIsLayouted').checked)">Graph Already Calculated</button>
+					<button type="button" onclick="sendGraphIsLayouted(document.getElementById('graphIsLayouted').checked)">Graph Already Layouted</button>
 				</form
 				<form>
 					<input id="verticesHaveDegrees" type="checkbox"/>

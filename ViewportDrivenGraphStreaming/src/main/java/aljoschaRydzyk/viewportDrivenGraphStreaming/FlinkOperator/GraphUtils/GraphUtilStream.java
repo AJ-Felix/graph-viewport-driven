@@ -23,13 +23,13 @@ public interface GraphUtilStream extends GraphUtil{
 	DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Float topNew,
 			Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,
 			Float bottomOld, Float leftOld);
-	DataStream<Row> zoomInLayoutFourthStep(Map<String, VertexGVD> layoutedVertices,
+	DataStream<Row> zoomInLayoutStep4(Map<String, VertexGVD> layoutedVertices,
 			Map<String, VertexGVD> innerVertices, Map<String, VertexGVD> newVertices, Float top,
 			Float right, Float bottom, Float left);
-	DataStream<Row> panZoomInLayoutThirdStep(Map<String, VertexGVD> layoutedVertices);
-	DataStream<Row> panZoomInLayoutSecondStep(Map<String, VertexGVD> layoutedVertices,
+	DataStream<Row> panZoomInLayoutStep3(Map<String, VertexGVD> layoutedVertices);
+	DataStream<Row> panZoomInLayoutStep2(Map<String, VertexGVD> layoutedVertices,
 			Map<String, VertexGVD> unionMap);
-	DataStream<Row> panZoomInLayoutFirstStep(Map<String, VertexGVD> layoutedVertices,
+	DataStream<Row> panZoomInLayoutStep1(Map<String, VertexGVD> layoutedVertices,
 			Map<String, VertexGVD> innerVertices, Float top, Float right, Float bottom,
 			Float left);
 	DataStream<Row> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices,

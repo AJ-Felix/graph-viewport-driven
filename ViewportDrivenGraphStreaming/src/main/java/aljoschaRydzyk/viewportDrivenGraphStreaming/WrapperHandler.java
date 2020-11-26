@@ -43,6 +43,7 @@ public class WrapperHandler implements Serializable {
     private FlinkApi api;
     private int operationStep;
     public boolean sentToClientInSubStep;
+	private boolean stream;
 
     public WrapperHandler () {
     	System.out.println("wrapper handler constructor is executed");
@@ -121,7 +122,7 @@ public class WrapperHandler implements Serializable {
 		System.out.println("Capacity after prepareOperation: " + capacity);
 	}
 	
-	public void addInitialWrapperCollection(List<WrapperGVD> wrapperCollection) {
+	public void addWrapperCollectionInitial(List<WrapperGVD> wrapperCollection) {
 		Iterator<WrapperGVD> iter = wrapperCollection.iterator();
 		while (iter.hasNext()) addWrapperInitial(iter.next());
 	}
@@ -347,6 +348,11 @@ public class WrapperHandler implements Serializable {
 		}											
 	}
 	
+	public void addWrapperCollectionLayout(List<WrapperGVD> wrapperCollection) {
+		Iterator<WrapperGVD> iter = wrapperCollection.iterator();
+		while (iter.hasNext()) addWrapperLayout(iter.next());
+	}
+	
 	public void addWrapperLayout(WrapperGVD wrapper) {
 		//if in zoomIn3 or pan3: cancel flinkjob if still running, close socket and reopen for next step and move to next step!
 		System.out.println("wrapperHandler, operationStep: " + operationStep);
@@ -365,7 +371,7 @@ public class WrapperHandler implements Serializable {
 							break;
 						}
 					}
-					Server.getInstance().getFlinkResponseHandler().closeAndReopen();
+					if (stream) Server.getInstance().getFlinkResponseHandler().closeAndReopen();
 				} catch (ApiException e) {
 					e.printStackTrace();
 				}
@@ -724,12 +730,12 @@ public class WrapperHandler implements Serializable {
 //		}
 	}
 	
-	private Set<String> getNeighborhood(VertexGVD vertex){
-		Set<String> neighborIds = new HashSet<String>();
-		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
-		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
-		return neighborIds;
-	}
+//	private Set<String> getNeighborhood(VertexGVD vertex){
+//		Set<String> neighborIds = new HashSet<String>();
+//		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
+//		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
+//		return neighborIds;
+//	}
 	
 	private boolean hasVisualizedNeighborsInside(VertexGVD vertex) {
 		for (WrapperGVD wrapper : edges.values()) {
@@ -801,7 +807,7 @@ public class WrapperHandler implements Serializable {
 			if (!layout) {
 				for (VertexGVD vertex : innerVertices.values()) {
 					VertexGVD layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
-					System.out.println(layoutedVertices.get(vertex.getIdGradoop()).getIdGradoop() + layoutedVertex.getX());
+					System.out.println(layoutedVertex.getIdGradoop() + layoutedVertex.getX());
 					vertex.setX(layoutedVertex.getX());
 					vertex.setY(layoutedVertex.getY());
 				}
@@ -841,6 +847,7 @@ public class WrapperHandler implements Serializable {
 	}
 
 	public void setLayoutMode(boolean layoutMode) {
+		System.out.println("Setting wrapperHandler layout Mode to " + layoutMode);
 		this.layout = layoutMode;
 	}
 
@@ -893,5 +900,9 @@ public class WrapperHandler implements Serializable {
 	
 	public int getOperationStep() {
 		return this.operationStep;
+	}
+
+	public void setStreamBool(Boolean stream) {
+		this.stream = stream;
 	}
 }

@@ -193,8 +193,11 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!GradoopGraphUtil mit Batch Processing bauen!
 		TODO: WrapperGVD schon in der Initialisierung erstellen
 		TODO: Gradoop-Variante aus dem FlinkResponseHandler rausnehmen
+		TODO: Trouble Shoot ZOomIn Layout Step3 Set
 
 TODO: adjacencyMatrixBuilding: Java-FileReader kann nicht mit HDFS umgehen
+
+TODO: Überlegung bei Panning-Gelayoutet: Manchmal leert sich der Viewport am Rand des Graph, weil keine Wrapper nachgeladen werden mit Knoten die vor und nach der Operation beide Inner waren (bzw. einer NewInner)
 
 TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
 
@@ -205,6 +208,8 @@ TODO: WrapperHandler: getNeighboorHood ohne Adjmatrix implementieren
 TODO: GRadoopgraphUtil pan: Wahrscheinlich ist es in A to A nicht notwendig identity edges herauszufiltern wie bisher
 
 TODO: Front-End aufhübschen
+
+TODO: Felder von Knoten und Kante private machen
 
 late-TODO: in den ganzen FlinkFunctionsKlassen die unbötigen Klammern entfernen und WrapperklassenCasts zu prim. Typ casts machen
 
