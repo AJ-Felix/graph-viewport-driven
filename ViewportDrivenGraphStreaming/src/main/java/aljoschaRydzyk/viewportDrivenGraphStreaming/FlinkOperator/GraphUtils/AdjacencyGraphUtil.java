@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,7 +15,13 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.CsvReader;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
+import org.apache.flink.api.java.tuple.Tuple15;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -45,6 +52,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.Wrapper
 
 public class AdjacencyGraphUtil implements GraphUtilStream{
 	private StreamExecutionEnvironment fsEnv;
+	private ExecutionEnvironment env;
 	private String inPath;
 	private DataStreamSource<Row> vertexStream = null;
 	private Map<String,Map<String,String>> adjMatrix;
@@ -55,9 +63,10 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	private FilterFunction<Row> zoomOutVertexFilter;
 
 	
-	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, String inPath) {
+	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, ExecutionEnvironment env, String inPath) {
 		this.fsEnv = fsEnv;
 		this.inPath = inPath;
+		this.env = env;
 	}
 
 	@Override
@@ -68,6 +77,13 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				Types.INT, Types.INT, Types.LONG});
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
+		try {
+			this.vertexMap = this.buildVertexMap();
+			this.wrapperMap = this.buildWrapperMap();
+			this.adjMatrix = this.buildAdjacencyMatrix();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Override
@@ -128,7 +144,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				return !(visualizedVertices.contains(value.getField(2).toString()));
 			}
 		});
-		nonIdentityWrapper.union(identityWrapper).print();
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
@@ -192,20 +207,25 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	
 	public DataStream<Row> getMaxDegreeSubset(Integer numberVertices) throws IOException{
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterMaxDegree(numberVertices));
-		Map<String, Map<String, String>> adjMatrix = this.buildAdjacencyMatrix();
-		this.buildWrapperMap();
-		Map<String, Row> vertexMap = this.buildVertexMap();
+		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
+		Map<String, Row> vertexMap = this.vertexMap;
 		
 		//produce NonIdentity Wrapper Stream
 		DataStream<String> wrapperKeys = vertices.flatMap(new FlatMapFunction<Row,String>(){
 			@Override
 			public void flatMap(Row value, Collector<String> out) throws Exception {
+				System.out.println("In MaxdegreeSubset flatmap");
 				String sourceIdGradoop = (String) value.getField(1);
 				Long sourceIdNumeric = (Long) value.getField(2);
 				Map<String,String> map = adjMatrix.get(sourceIdGradoop);
 				for (Map.Entry<String, String> entry : map.entrySet()) {
 					String targetIdGradoop = entry.getKey();
+					System.out.println(targetIdGradoop);
+					System.out.println(vertexMap.size());
 					Row targetVertex = vertexMap.get(targetIdGradoop);
+					System.out.println(targetVertex);
+					System.out.println(targetVertex.getField(0));
+					System.out.println(targetVertex.getField(1));
 					Long targetIdNumeric = (Long) targetVertex.getField(2);
 					if (targetIdNumeric < numberVertices && sourceIdNumeric > targetIdNumeric) {
 						out.collect(entry.getValue());
@@ -222,50 +242,84 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	
 	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws IOException {
 		this.adjMatrix = new HashMap<String, Map<String,String>>();
-		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_adjacency"));
-		String row;
-		while ((row = csvReader.readLine()) != null) {
-		    String[] arr = row.split(";");
-		    String vertexIdRow = arr[0];
-		    String[] vertexRows = Arrays.copyOfRange(arr, 1, arr.length);
-		    Map<String,String> map = new HashMap<String,String>();
-		    for (String column: vertexRows) {
-		    	String[] entry = column.split(","); 
-		    	map.put(entry[0], entry[1]);
-		    }
-		    this.adjMatrix.put(vertexIdRow, map);
+//		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_adjacency"));
+//		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {
+//				Types.STRING, Types.STRING, Types.STRING});
+		CsvReader reader = env.readCsvFile(this.inPath + "_adjacency");
+		reader.fieldDelimiter(";");
+		DataSet<Tuple3<String,String,String>> source = reader.types(String.class, String.class, String.class);
+
+		List<Tuple3<String,String,String>> list = null;
+		DataSet<String> lineSet = env.readTextFile(this.inPath + "_adjacency");
+		List<String> lineList = null;
+		try {
+			lineList = lineSet.collect();
+			env.execute();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		csvReader.close();
+		for (int i = 0; i < lineList.toArray().length; i++ ) {
+			String line = lineList.get(i);
+			String[] cols = line.split(";");
+			String sourceId = cols[0];
+			cols = Arrays.copyOfRange(cols, 1, cols.length);
+			Map<String,String> map = new HashMap<String,String>();
+			for (String col : cols) {
+				String[] entry = col.split(",");
+				map.put(entry[0], entry[1]);
+			}
+			this.adjMatrix.put(sourceId, map);
+		}
 		return this.adjMatrix;
 	}
 	
 	public Map<String,Row> buildWrapperMap() throws NumberFormatException, IOException {
 		this.wrapperMap = new HashMap<String,Row>();
-		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_wrappers"));
-		String row;
-		@SuppressWarnings("unused")
-		int i = 0;
-		while ((row = csvReader.readLine()) != null) {
-			i += 1;
-		    String[] arr = row.split(";");
-		    Row wrapper = Row.of(arr[0], arr[1], Integer.parseInt(arr[2]), arr[3], Integer.parseInt(arr[4]), Integer.parseInt(arr[5]), Long.parseLong(arr[6]),
-		    		arr[7], Integer.parseInt(arr[8]), arr[9], Integer.parseInt(arr[10]), Integer.parseInt(arr[11]), Long.parseLong(arr[12]), arr[13], arr[14]);
-		    this.wrapperMap.put(arr[13], wrapper);
+		CsvReader reader = env.readCsvFile(this.inPath + "_wrappers");
+		reader.fieldDelimiter(";");
+		DataSet<Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
+			String,String>> source = reader.types(
+					String.class, String.class, Long.class, String.class, Integer.class, Integer.class, Long.class,
+					String.class, Long.class, String.class, Integer.class, Integer.class, Long.class,
+					String.class, String.class);
+		List<Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
+			String,String>> list = null;
+		try {
+			list = source.collect();
+			env.execute();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		csvReader.close();
+		for (int i = 0; i < list.toArray().length; i++ ) {
+			Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
+				String,String> tuple = list.get(i);
+			wrapperMap.put(tuple.f13, Row.of(tuple.f0, tuple.f1, tuple.f2, tuple.f3, tuple.f4, tuple.f5, tuple.f6,
+					tuple.f7, tuple.f8, tuple.f9, tuple.f10, tuple.f11, tuple.f12, tuple.f13, tuple.f14));
+		}
 		return this.wrapperMap;
 	}
 	
 	public Map<String,Row> buildVertexMap() throws NumberFormatException, IOException {
 		this.vertexMap = new HashMap<String,Row>();
-		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_vertices"));
-		String row;
-		while ((row = csvReader.readLine()) != null) {
-		    String[] arr = row.split(";");
-		    Row vertex = Row.of(arr[0], arr[1], Integer.parseInt(arr[2]), arr[3], Integer.parseInt(arr[4]), Integer.parseInt(arr[5]), Long.parseLong(arr[6]));
-		    this.vertexMap.put(arr[1], vertex);
+		CsvReader reader = env.readCsvFile(this.inPath + "_vertices");
+		reader.fieldDelimiter(";");
+		DataSet<Tuple7<String,String,Long,String,Integer,Integer,Long>> source = reader.types(
+					String.class, String.class, Long.class, String.class, Integer.class, Integer.class, Long.class);
+		List<Tuple7<String,String,Long,String,Integer,Integer,Long>> list = null;
+		try {
+			list = source.collect();
+			env.execute();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		csvReader.close();
+		
+		for (int i = 0; i < list.toArray().length; i++ ) {
+			Tuple7<String,String,Long,String,Integer,Integer,Long> tuple = list.get(i);
+			this.vertexMap.put(tuple.f1, Row.of(tuple.f0, tuple.f1, tuple.f2, tuple.f3, tuple.f4, tuple.f5, 
+					tuple.f6));
+			System.out.println(this.vertexMap.get(tuple.f1));
+			System.out.println("tupleBuildVertexMap: " + tuple);
+		}
 		return this.vertexMap;
 	}
 	

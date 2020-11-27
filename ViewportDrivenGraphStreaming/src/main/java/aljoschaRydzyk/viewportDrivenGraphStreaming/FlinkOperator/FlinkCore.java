@@ -171,7 +171,7 @@ public class FlinkCore {
 	}
 	
 	public GraphUtilStream initializeAdjacencyGraphUtil() {
-		this.graphUtilStream =  new AdjacencyGraphUtil(this.fsEnv, this.hdfsFullPath);
+		this.graphUtilStream =  new AdjacencyGraphUtil(this.fsEnv, this.env, this.hdfsFullPath);
 		return this.graphUtilStream;
 	}
 	
