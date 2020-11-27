@@ -1,12 +1,9 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,9 +17,6 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.CsvReader;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
 import org.apache.flink.api.java.tuple.Tuple15;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple7;
-import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -57,7 +51,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	private DataStreamSource<Row> vertexStream = null;
 	private Map<String,Map<String,String>> adjMatrix;
 	private Map<String,Row> wrapperMap;
-	private Map<String,Row> vertexMap;
+//	private Map<String,Row> vertexMap;
 	private Set<String> visualizedWrappers;
 	private Set<String> visualizedVertices;
 	private FilterFunction<Row> zoomOutVertexFilter;
@@ -78,10 +72,11 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
 		try {
-			this.vertexMap = this.buildVertexMap();
+//			this.vertexMap = this.buildVertexMap();
 			this.wrapperMap = this.buildWrapperMap();
 			this.adjMatrix = this.buildAdjacencyMatrix();
-		} catch (IOException e) {
+			env.execute();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -108,25 +103,34 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	@Override
 	public DataStream<Row> zoom(Float top, Float right, Float bottom, Float left) throws IOException {
 		DataStream<Row> vertexStreamInner = this.getVertexStream().filter(new VertexFilterInner(top, right, bottom, left));
-		Map<String, Map<String, String>> adjMatrix = this.buildAdjacencyMatrix();
-		Map<String, Row> vertexMap = this.buildVertexMap();
+		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
+		Map<String, Row> wrapperMap = this.wrapperMap;
 		
 		//produce NonIdentity Wrapper Stream
 		DataStream<String> wrapperKeys = vertexStreamInner.flatMap(new FlatMapFunction<Row,String>(){
 			@Override
 			public void flatMap(Row value, Collector<String> out) throws Exception {
-				String sourceId = (String) value.getField(1);
-				Map<String,String> map = adjMatrix.get(sourceId);
-				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetId = entry.getKey();
-					Row targetVertex = vertexMap.get(targetId);
-					Integer targetX = (Integer) targetVertex.getField(4);
-					Integer targetY = (Integer) targetVertex.getField(5);
-					if ((left > targetX) ||  (targetX > right) || (top > targetY) || (targetY > bottom)) {
-						out.collect(entry.getValue());
+				String firstVertexId = (String) value.getField(1);
+				Map<String,String> map = adjMatrix.get(firstVertexId);
+				for (String wrapperId : map.values()) {
+					Row wrapper = wrapperMap.get(wrapperId);
+					String secondVertexId;
+					int secondVertexX;
+					int secondVertexY;
+					if (firstVertexId.equals(wrapper.getField(1))) {
+						secondVertexId = wrapper.getField(7).toString();
+						secondVertexX = (int) wrapper.getField(10);
+						secondVertexY = (int) wrapper.getField(11);
 					} else {
-						if (sourceId.compareTo(targetId) < 0) {
-							out.collect(entry.getValue());
+						secondVertexId = wrapper.getField(1).toString();
+						secondVertexX = (int) wrapper.getField(4);
+						secondVertexY = (int) wrapper.getField(5);
+					}
+					if ((left > secondVertexX) ||  (secondVertexX > right) || (top > secondVertexY) || (secondVertexY > bottom)) {
+						out.collect(wrapperId);
+					} else {
+						if (firstVertexId.compareTo(secondVertexId) < 0) {
+							out.collect(wrapperId);
 						}
 					}
 				}
@@ -153,26 +157,35 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		DataStream<Row> vertexStreamInnerNewNotOld = this.vertexStream
 			.filter(new VertexFilterInnerNewNotOld(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
-		Map<String, Row> vertexMap = this.vertexMap;
+		Map<String, Row> wrapperMap = this.wrapperMap;
 
 		//produce NonIdentity Wrapper Stream
 		DataStream<String> wrapperKeysDefNotVis = vertexStreamInnerNewNotOld.flatMap(new FlatMapFunction<Row,String>(){
 			@Override
 			public void flatMap(Row value, Collector<String> out) throws Exception {			
-				String sourceId = (String) value.getField(1);
-				Map<String,String> map = adjMatrix.get(sourceId);
-				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetId = entry.getKey();
-					Row targetVertex = vertexMap.get(targetId);
-					Integer targetX = (Integer) targetVertex.getField(4);
-					Integer targetY = (Integer) targetVertex.getField(5);
-					if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) && 
-							((leftNew > targetX) || (targetX > rightNew) || (topNew > targetY) || (targetY > bottomNew))) {
-						out.collect(entry.getValue());
+				String firstVertexId = (String) value.getField(1);
+				Map<String,String> map = adjMatrix.get(firstVertexId);
+				for (String entry : map.values()) {
+					Row wrapper = wrapperMap.get(entry);
+					String secondVertexId;
+					int secondVertexX;
+					int secondVertexY;
+					if (firstVertexId.equals(wrapper.getField(1))) {
+						secondVertexId = wrapper.getField(7).toString();
+						secondVertexX = (int) wrapper.getField(10);
+						secondVertexY = (int) wrapper.getField(11);
 					} else {
-						if (((leftOld > targetX) || (targetX > rightOld) || (topOld > targetY) || (targetY > bottomOld)) 
-								&& (sourceId.compareTo(targetId) < 0)) {
-							out.collect(entry.getValue());
+						secondVertexId = wrapper.getField(1).toString();
+						secondVertexX = (int) wrapper.getField(4);
+						secondVertexY = (int) wrapper.getField(5);
+					}
+					if (((leftOld > secondVertexX) || (secondVertexX > rightOld) || (topOld > secondVertexY) || (secondVertexY > bottomOld)) && 
+							((leftNew > secondVertexX) || (secondVertexX > rightNew) || (topNew > secondVertexY) || (secondVertexY > bottomNew))) {
+						out.collect(entry);
+					} else {
+						if (((leftOld > secondVertexX) || (secondVertexX > rightOld) || (topOld > secondVertexY) || (secondVertexY > bottomOld)) 
+								&& (firstVertexId.compareTo(secondVertexId) < 0)) {
+							out.collect(entry);
 						}
 					}
 				}
@@ -183,16 +196,22 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		DataStream<String> wrapperKeysMaybeVis = vertexStreamOldInnerNotNewInner.flatMap(new FlatMapFunction<Row,String>(){
 			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {			
-				String sourceId = (String) value.getField(1);
-				Map<String,String> map = adjMatrix.get(sourceId);
-				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetId = entry.getKey();
-					Row targetVertex = vertexMap.get(targetId);
-					Integer targetX = (Integer) targetVertex.getField(4);
-					Integer targetY = (Integer) targetVertex.getField(5);
-					if ((leftNew <= targetX) &&  (targetX <= rightNew) && (topNew <= targetY) && (targetY <= bottomNew)) {
-						out.collect(entry.getValue());
+			public void flatMap(Row vertexId, Collector<String> out) throws Exception {			
+				String firstVertexId = (String) vertexId.getField(1);
+				Map<String,String> map = adjMatrix.get(firstVertexId);
+				for (String wrapperId : map.values()) {
+					int secondVertexX;
+					int secondVertexY;
+					Row wrapper = wrapperMap.get(wrapperId);
+					if (firstVertexId.equals(wrapper.getField(1))) {
+						secondVertexX = (int) wrapper.getField(10);
+						secondVertexY = (int) wrapper.getField(11);
+					} else {
+						secondVertexX = (int) wrapper.getField(4);
+						secondVertexY = (int) wrapper.getField(5);
+					}
+					if ((leftNew <= secondVertexX) &&  (secondVertexX <= rightNew) && (topNew <= secondVertexY) && (secondVertexY <= bottomNew)) {
+						out.collect(wrapperId);
 					} 
 				}
 			}
@@ -208,31 +227,30 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	public DataStream<Row> getMaxDegreeSubset(Integer numberVertices) throws IOException{
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterMaxDegree(numberVertices));
 		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
-		Map<String, Row> vertexMap = this.vertexMap;
+		Map<String, Row> wrapperMap = this.wrapperMap;
 		
 		//produce NonIdentity Wrapper Stream
 		DataStream<String> wrapperKeys = vertices.flatMap(new FlatMapFunction<Row,String>(){
 			@Override
 			public void flatMap(Row value, Collector<String> out) throws Exception {
-				System.out.println("In MaxdegreeSubset flatmap");
-				String sourceIdGradoop = (String) value.getField(1);
-				Long sourceIdNumeric = (Long) value.getField(2);
-				Map<String,String> map = adjMatrix.get(sourceIdGradoop);
-				for (Map.Entry<String, String> entry : map.entrySet()) {
-					String targetIdGradoop = entry.getKey();
-					System.out.println(targetIdGradoop);
-					System.out.println(vertexMap.size());
-					Row targetVertex = vertexMap.get(targetIdGradoop);
-					System.out.println(targetVertex);
-					System.out.println(targetVertex.getField(0));
-					System.out.println(targetVertex.getField(1));
-					Long targetIdNumeric = (Long) targetVertex.getField(2);
-					if (targetIdNumeric < numberVertices && sourceIdNumeric > targetIdNumeric) {
-						out.collect(entry.getValue());
+				String firstVertexIdGradoop = (String) value.getField(1);
+				Long firstVertexIdNumeric = (Long) value.getField(2);
+				Map<String,String> map = adjMatrix.get(firstVertexIdGradoop);
+				System.out.println("sourceID: " + firstVertexIdGradoop);
+				for (String wrapperId : map.values()) {
+					Row wrapper = wrapperMap.get(wrapperId);
+					Long secondVertexIdNumeric;
+					if (wrapper.getField(1).equals(firstVertexIdGradoop)) {
+						secondVertexIdNumeric = (long) wrapper.getField(8);
+					} else {
+						secondVertexIdNumeric = (long) wrapper.getField(2);
+					}
+					if (secondVertexIdNumeric < numberVertices && firstVertexIdNumeric > secondVertexIdNumeric) {
+						out.collect(wrapperId);
 					} 
 				}
 			}
-		}).setParallelism(2);
+		});
 		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
@@ -240,24 +258,11 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		return nonIdentityWrapper.union(identityWrapper);
 	}
 	
-	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws IOException {
+	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws Exception {
 		this.adjMatrix = new HashMap<String, Map<String,String>>();
-//		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_adjacency"));
-//		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {
-//				Types.STRING, Types.STRING, Types.STRING});
-		CsvReader reader = env.readCsvFile(this.inPath + "_adjacency");
-		reader.fieldDelimiter(";");
-		DataSet<Tuple3<String,String,String>> source = reader.types(String.class, String.class, String.class);
-
-		List<Tuple3<String,String,String>> list = null;
 		DataSet<String> lineSet = env.readTextFile(this.inPath + "_adjacency");
 		List<String> lineList = null;
-		try {
-			lineList = lineSet.collect();
-			env.execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		lineList = lineSet.collect();
 		for (int i = 0; i < lineList.toArray().length; i++ ) {
 			String line = lineList.get(i);
 			String[] cols = line.split(";");
@@ -273,7 +278,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		return this.adjMatrix;
 	}
 	
-	public Map<String,Row> buildWrapperMap() throws NumberFormatException, IOException {
+	public Map<String,Row> buildWrapperMap() throws Exception {
 		this.wrapperMap = new HashMap<String,Row>();
 		CsvReader reader = env.readCsvFile(this.inPath + "_wrappers");
 		reader.fieldDelimiter(";");
@@ -283,45 +288,33 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 					String.class, Long.class, String.class, Integer.class, Integer.class, Long.class,
 					String.class, String.class);
 		List<Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
-			String,String>> list = null;
-		try {
-			list = source.collect();
-			env.execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		String,String>> list = null;
+		list = source.collect();
 		for (int i = 0; i < list.toArray().length; i++ ) {
 			Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
 				String,String> tuple = list.get(i);
 			wrapperMap.put(tuple.f13, Row.of(tuple.f0, tuple.f1, tuple.f2, tuple.f3, tuple.f4, tuple.f5, tuple.f6,
 					tuple.f7, tuple.f8, tuple.f9, tuple.f10, tuple.f11, tuple.f12, tuple.f13, tuple.f14));
 		}
+		for (Row row : this.wrapperMap.values()) System.out.println("wrapperMap: " + row);
 		return this.wrapperMap;
 	}
 	
-	public Map<String,Row> buildVertexMap() throws NumberFormatException, IOException {
-		this.vertexMap = new HashMap<String,Row>();
-		CsvReader reader = env.readCsvFile(this.inPath + "_vertices");
-		reader.fieldDelimiter(";");
-		DataSet<Tuple7<String,String,Long,String,Integer,Integer,Long>> source = reader.types(
-					String.class, String.class, Long.class, String.class, Integer.class, Integer.class, Long.class);
-		List<Tuple7<String,String,Long,String,Integer,Integer,Long>> list = null;
-		try {
-			list = source.collect();
-			env.execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		for (int i = 0; i < list.toArray().length; i++ ) {
-			Tuple7<String,String,Long,String,Integer,Integer,Long> tuple = list.get(i);
-			this.vertexMap.put(tuple.f1, Row.of(tuple.f0, tuple.f1, tuple.f2, tuple.f3, tuple.f4, tuple.f5, 
-					tuple.f6));
-			System.out.println(this.vertexMap.get(tuple.f1));
-			System.out.println("tupleBuildVertexMap: " + tuple);
-		}
-		return this.vertexMap;
-	}
+//	public Map<String,Row> buildVertexMap() throws Exception {
+//		this.vertexMap = new HashMap<String,Row>();
+//		CsvReader reader = env.readCsvFile(this.inPath + "_vertices");
+//		reader.fieldDelimiter(";");
+//		DataSet<Tuple7<String,String,Long,String,Integer,Integer,Long>> source = reader.types(
+//					String.class, String.class, Long.class, String.class, Integer.class, Integer.class, Long.class);
+//		List<Tuple7<String,String,Long,String,Integer,Integer,Long>> list = null;
+//		list = source.collect();
+//		for (int i = 0; i < list.toArray().length; i++ ) {
+//			Tuple7<String,String,Long,String,Integer,Integer,Long> tuple = list.get(i);
+//			this.vertexMap.put(tuple.f1, Row.of(tuple.f0, tuple.f1, tuple.f2, tuple.f3, tuple.f4, tuple.f5, 
+//					tuple.f6));
+//		}
+//		return this.vertexMap;
+//	}
 	
 	/*
 	 * General workflow for this GraphUtil:

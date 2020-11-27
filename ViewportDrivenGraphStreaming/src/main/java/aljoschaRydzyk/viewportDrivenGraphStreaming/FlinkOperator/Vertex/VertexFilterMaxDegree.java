@@ -11,7 +11,6 @@ public class VertexFilterMaxDegree implements FilterFunction<Row>{
 	}
 	@Override
 	public boolean filter(Row value) throws Exception {
-		if ((long) value.getField(2) < numberVertices) return true;
-		else return false;
+		return (long) value.getField(2) < numberVertices;
 	}
 }

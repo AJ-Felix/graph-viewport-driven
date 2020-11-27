@@ -192,7 +192,7 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 	- Die Knoten des LDBC_1 können über DataSet API in eine Datei geschrieben werden. Ein '.print()'-Sink funktioniert nicht. Ein '.collect()' mit anschließendem Sink ebenfalls nicht (Caused by: java.io.IOException: The rpc invocation size 666780296 exceeds the maximum akka framesize.) Das Ganze wurde auf einem lokalen CLuster getestet, aber sollte entsprechend auch in einer Slurm-Session funktionieren.
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-TODO: adjacencyMatrixBuilding: Java-FileReader kann nicht mit HDFS umgehen
+TODO: AdjaGraphUtil, wrapperKEysMapper is obsolete because wrapper can be put out in flatmap already!!!
 
 TODO: Überlegung bei Panning-Gelayoutet: Manchmal leert sich der Viewport am Rand des Graph, weil keine Wrapper nachgeladen werden mit Knoten die vor und nach der Operation beide Inner waren (bzw. einer NewInner)
 
