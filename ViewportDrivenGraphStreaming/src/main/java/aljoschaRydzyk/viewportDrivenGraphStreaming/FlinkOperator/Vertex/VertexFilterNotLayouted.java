@@ -11,10 +11,17 @@ public class VertexFilterNotLayouted implements FilterFunction<Row>{
 	
 	public VertexFilterNotLayouted (Map<String,VertexGVD> layoutedVertices) {
 		this.layoutedVertices = layoutedVertices;
+		for (String key : layoutedVertices.keySet()) 
+			System.out.println("VertexFilterNotLayouted, Constructor: " + key);
 	}
 	
 	@Override
 	public boolean filter(Row value) throws Exception {
-		return !this.layoutedVertices.containsKey(value.getField(1));
+		for (String key : layoutedVertices.keySet()) 
+			System.out.println("VertexFilterNotLayouted, Constructor: " + key);
+		System.out.println("VertexFilterNotLayouted: " + 
+			this.layoutedVertices.containsKey(value.getField(1).toString()) +
+				value.getField(1));
+		return !this.layoutedVertices.containsKey(value.getField(1).toString());
 	}
 }

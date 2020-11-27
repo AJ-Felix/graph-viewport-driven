@@ -161,6 +161,7 @@ public class WrapperHandler implements Serializable {
 	}
 	  
 	public void addWrapper(WrapperGVD wrapper) {
+		System.out.println("EdgeIdGradoop: " + wrapper.getEdgeIdGradoop());
 		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
 		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
 		System.out.println("TargetIdNumeric: " + wrapper.getTargetIdNumeric());
@@ -377,6 +378,7 @@ public class WrapperHandler implements Serializable {
 				}
 			}
 		} 
+		System.out.println("EdgeIdGradoop; " + wrapper.getEdgeIdGradoop());
 		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
 		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
 		System.out.println("TargetIdNumeric: " + wrapper.getTargetIdNumeric());

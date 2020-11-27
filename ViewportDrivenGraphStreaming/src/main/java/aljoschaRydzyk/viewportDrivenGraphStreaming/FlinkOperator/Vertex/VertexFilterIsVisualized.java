@@ -16,7 +16,7 @@ public class VertexFilterIsVisualized implements FilterFunction<Row> {
 	
 	@Override
 	public boolean filter(Row value) throws Exception {
-		return this.visualizedVertices.containsKey(value.getField(1));
+		return this.visualizedVertices.containsKey(value.getField(1).toString());
 	}
 
 }

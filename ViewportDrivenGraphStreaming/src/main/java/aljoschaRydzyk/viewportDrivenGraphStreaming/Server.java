@@ -506,7 +506,7 @@ public class Server implements Serializable{
     			wrapperHandler.getInnerVertices());
 
     	//debug
-    	wrapperGVD.writeAsText("/home/aljoscha/debug/zoomIn1", WriteMode.OVERWRITE);
+    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn1", WriteMode.OVERWRITE);
     	
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
@@ -520,8 +520,8 @@ public class Server implements Serializable{
     		zoomInLayoutStep2Set();
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     	}
-    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     }
 
 	private void zoomInLayoutStep1Stream() {
@@ -541,12 +541,13 @@ public class Server implements Serializable{
     }
     
 	private void zoomInLayoutStep2Set() {
+		System.out.println("zoomInLayoutStep2Set called in Server!");
     	setOperationStep(2);
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	
     	//debug
-    	wrapperGVD.writeAsText("/home/aljoscha/debug/zoomIn2", WriteMode.OVERWRITE);
+    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn2", WriteMode.OVERWRITE);
     	
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
@@ -560,8 +561,8 @@ public class Server implements Serializable{
     		zoomInLayoutStep3Set();
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     	}
-    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     }
 	
     private void zoomInLayoutStep2Stream() {
@@ -598,8 +599,8 @@ public class Server implements Serializable{
     		zoomInLayoutStep4Set();
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     	}
-    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     }
     
     private  void zoomInLayoutStep3Stream() {
@@ -622,7 +623,7 @@ public class Server implements Serializable{
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
 
     	//debug
-    	wrapperGVD.writeAsText("/home/aljoscha/debug/zoomIn4", WriteMode.OVERWRITE);
+    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn4", WriteMode.OVERWRITE);
     	
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
@@ -633,10 +634,11 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
+    		wrapperHandler.clearOperation();
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     	}
-    	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
     }
     
     private void zoomInLayoutStep4Stream() {

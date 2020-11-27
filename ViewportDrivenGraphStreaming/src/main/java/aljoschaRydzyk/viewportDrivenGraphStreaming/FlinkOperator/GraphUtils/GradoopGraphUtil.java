@@ -379,7 +379,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	public DataSet<WrapperGVD> panZoomInLayoutStep1(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices, 
 			Float top, Float right, Float bottom, Float left){
 		/*
-		 * First substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that were
+		 * First substep for pan/zoom-in operation on graphs without layout. Returns a DataSet of wrappers including vertices that were
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
 		DataSet<Row> vertices = verticesIndexed.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
@@ -396,7 +396,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	@Override
 	public DataSet<WrapperGVD> panZoomInLayoutStep2(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> unionMap){
 		/*
-		 * Second substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * Second substep for pan/zoom-in operation on graphs without layout. Returns a DataSet of wrappers including vertices that are 
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
 		 * other hand.
 		 */
@@ -419,10 +419,12 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	@Override
 	public DataSet<WrapperGVD> panZoomInLayoutStep3(Map<String, VertexGVD> layoutedVertices){		
 		/*
-		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a DataSet of wrappers including vertices that are 
 		 * not yet layouted starting with highest degree.
 		 */
 		System.out.println("layoutedVertices size" + layoutedVertices.size());
+		for (String key : layoutedVertices.keySet()) 
+			System.out.println("panZoomInLayoutStep3, layoutedVertex: " + key);
 		DataSet<Row> notLayoutedVertices = verticesIndexed.filter(new VertexFilterNotLayouted(layoutedVertices));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = notLayoutedVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
@@ -438,7 +440,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	public DataSet<WrapperGVD> zoomInLayoutStep4(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices, 
 			Map<String, VertexGVD> newVertices, Float top, Float right, Float bottom, Float left){
 		/*
-		 * Fourth substep for zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * Fourth substep for zoom-in operation on graphs without layout. Returns a DataSet of wrappers including vertices that are 
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
 		 * outside the current model window on the other hand.
 		 */
@@ -461,7 +463,39 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.join(visualizedVerticesSet).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector()));
 
-		//filter out already visualized edges in wrapper stream
+		//filter out already visualized edges in wrapper set
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
+				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
+				.map(new WrapperRowMapWrapperGVD());
+		return wrapperGVD;
+	}
+	
+	public DataSet<WrapperGVD> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
+			Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld,
+			Float leftOld){
+		/*
+		 * Fourth substep for pan operation on graphs without layout. Returns a DataSet of wrappers including vertices that are 
+		 * newly visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
+		 * outside the current model window on the other hand.
+		 */
+		
+		DataSet<Row> newlyAddedInsideVertices = verticesIndexed.filter(new VertexFilterIsVisualized(newVertices))
+				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
+		DataSet<Row> layoutedOutsideVertices = verticesIndexed
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
+				topNew, rightNew, bottomNew, leftNew));
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = newlyAddedInsideVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(layoutedOutsideVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector())
+			.union(layoutedOutsideVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(newlyAddedInsideVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector()));
+
+		//filter out already visualized edges in wrapper set
 		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
 				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
 				.map(new WrapperRowMapWrapperGVD());

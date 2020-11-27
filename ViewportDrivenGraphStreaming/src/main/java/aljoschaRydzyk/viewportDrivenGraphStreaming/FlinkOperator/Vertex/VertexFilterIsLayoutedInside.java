@@ -24,9 +24,9 @@ public class VertexFilterIsLayoutedInside implements FilterFunction<Row> {
 	
 	@Override
 	public boolean filter(Row value) throws Exception {
-		if (this.layoutedVertices.containsKey(value.getField(1))) {
-			Integer x = this.layoutedVertices.get(value.getField(1)).getX();
-			Integer y = this.layoutedVertices.get(value.getField(1)).getY();
+		if (this.layoutedVertices.containsKey(value.getField(1).toString())) {
+			Integer x = this.layoutedVertices.get(value.getField(1).toString()).getX();
+			Integer y = this.layoutedVertices.get(value.getField(1).toString()).getY();
 			if (x >= leftModel && x <= rightModel && y >= topModel && y <= bottomModel) {
 				return true;
 			} else {
