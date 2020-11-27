@@ -17,7 +17,7 @@ public interface GraphUtilStream extends GraphUtil{
 	DataStream<Row> zoom(Float top, Float right, Float bottom, Float left) throws IOException;
 	DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, 
 			Float bottomOld, Float leftOld);
-	DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexGVD> layoutedVertices,
+	DataStream<Row> zoomOutLayoutStep2(Map<String, VertexGVD> layoutedVertices,
 			Map<String, VertexGVD> newVertices, Float top, Float right, Float bottom,
 			Float left);
 	DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Float topNew,
@@ -32,7 +32,7 @@ public interface GraphUtilStream extends GraphUtil{
 	DataStream<Row> panZoomInLayoutStep1(Map<String, VertexGVD> layoutedVertices,
 			Map<String, VertexGVD> innerVertices, Float top, Float right, Float bottom,
 			Float left);
-	DataStream<Row> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices,
+	DataStream<Row> panLayoutStep4(Map<String, VertexGVD> layoutedVertices,
 			Map<String, VertexGVD> newVertices, Float topNew, Float rightNew, Float bottomNew,
 			Float leftNew, Float topOld, Float rightOld, Float bottomOld, Float leftOld);
 }

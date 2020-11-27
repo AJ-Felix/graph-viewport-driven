@@ -193,7 +193,7 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!GradoopGraphUtil mit Batch Processing bauen!
 		TODO: WrapperGVD schon in der Initialisierung erstellen
 		TODO: Gradoop-Variante aus dem FlinkResponseHandler rausnehmen
-		TODO: Trouble Shoot ZOomIn Layout Step3 Set
+		TODO: Wenn wrapperCollection nicht empty ist, aber wrapperHandler nichts sendet --> Fall abdecken!
 
 TODO: adjacencyMatrixBuilding: Java-FileReader kann nicht mit HDFS umgehen
 
@@ -202,6 +202,8 @@ TODO: Überlegung bei Panning-Gelayoutet: Manchmal leert sich der Viewport am Ra
 TODO:Testen ob streaming layout noch mit veränderten FilterFunctions (.toString()) funktionieren
 
 TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
+
+TODO: Muss an panLayoutStep4Stream() und andere Terminator-Funktionen nicht noch die Abfrage nach "nichts an Client gesendet" bzw. "nichts vom Cluster empfangen", um dann wrapperHandler.clearOperation durchzuführen???
 
 TODO: Building Adjacency-Matrix is going to be a problem for wrapperHandler --> probably adjMatrix not necessary in WrapperHandler
 

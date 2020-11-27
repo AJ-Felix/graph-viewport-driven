@@ -1,22 +1,16 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.operators.Order;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.api.java.utils.DataSetUtils;
@@ -29,22 +23,20 @@ import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.types.Row;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
-import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
 import org.gradoop.common.model.impl.pojo.EPGMVertex;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexDegreeComparator;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeSourceIDKeySelector;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeTargetIDKeySelector;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapIdentityWrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperRowMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperSourceIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTargetIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleMapWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeSourceIDKeySelector;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeTargetIDKeySelector;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapIdentityWrapperGVD;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperRowMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerOldNotNew;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInnerNewNotOld;
@@ -56,7 +48,6 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
 //graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
@@ -78,10 +69,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	private TypeInformation[] wrapperFormatTypeInfo;
 	private RowTypeInfo wrapperRowTypeInfo; 
 	private Table wrapperTable;
-	private Map<String,Map<String,String>> adjMatrix;
 	private FilterFunction<Row> zoomOutVertexFilter;
-	private List<EPGMVertex> vertexCollection;
-	private List<EPGMEdge> edgeCollection;
+
 	
 	//batch
 	private DataSet<Row> verticesIndexed;
@@ -174,10 +163,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		this.visualizedVertices = visualizedVertices;
 	}
 	
-	public DataStream<Row> getWrapperStream() {
-		return this.wrapperStream;
-	}
-	
 	public DataSet<WrapperGVD> getMaxDegreeSubsetGradoop(Integer numberVertices){
 		//filter for vertices with degree above cut off
 		DataSet<Row> vertices = verticesIndexed.filter(row -> (long) row.getField(2) < numberVertices);
@@ -243,6 +228,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		}
 	}
 	
+	@Override
 	public DataSet<WrapperGVD> zoom(Float top, Float right, Float bottom, Float left){
 		
 		//vertex set filter for in-view and out-view area
@@ -470,7 +456,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		return wrapperGVD;
 	}
 	
-	public DataSet<WrapperGVD> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
+	@Override
+	public DataSet<WrapperGVD> panLayoutStep4(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
 			Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld,
 			Float leftOld){
 		/*
@@ -495,6 +482,60 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.join(newlyAddedInsideVertices).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector()));
 
+		//filter out already visualized edges in wrapper set
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
+				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
+				.map(new WrapperRowMapWrapperGVD());
+		return wrapperGVD;
+	}
+	
+	@Override
+	public DataSet<WrapperGVD> zoomOutLayoutStep1(Map<String, VertexGVD> layoutedVertices, 
+			Float topNew, Float rightNew, Float bottomNew, Float leftNew, 
+			Float topOld, Float rightOld, Float bottomOld, Float leftOld){
+		/*
+		 * First substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * layouted inside the model space which was added by operation.
+		 */
+		
+		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftNew, rightNew, topNew, 
+				bottomNew, leftOld, rightOld, topOld, bottomOld);
+		DataSet<Row> vertices = verticesIndexed.filter(zoomOutVertexFilter);
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = vertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(vertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector());
+		DataSet<WrapperGVD> wrapperGVDIdentity = vertices.map(new VertexMapIdentityWrapperGVD());
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperGVD()).union(wrapperGVDIdentity);
+		return wrapperGVD;
+	}
+	
+	@Override
+	public DataSet<WrapperGVD> zoomOutLayoutStep2(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
+			Float top, Float right, Float bottom, Float left){
+		/*
+		 * Second substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 
+		 * visualized inside the model space which was added by operation on the one hand, neighbour vertices that are layouted with 
+		 * coordinates outside the current model window on the other hand.
+		 */
+		
+		DataSet<Row> newlyVisualizedVertices = verticesIndexed
+				.filter(new VertexFilterIsVisualized(newVertices))
+				.filter(zoomOutVertexFilter);
+		DataSet<Row> layoutedOutsideVertices = verticesIndexed
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left));
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = newlyVisualizedVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(layoutedOutsideVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector())
+			.union(layoutedOutsideVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(newlyVisualizedVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector()));
+		
 		//filter out already visualized edges in wrapper set
 		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
 				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))

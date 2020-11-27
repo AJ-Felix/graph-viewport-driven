@@ -1,10 +1,6 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -54,7 +50,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	private Table wrapperTable;
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] vertexFormatTypeInfo;
-	private Map<String,Map<String,String>> adjMatrix;
 	private FilterFunction<Row> zoomOutVertexFilter;
 	
 	//Area Definition
@@ -357,7 +352,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
+	public DataStream<Row> panLayoutStep4(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
 			Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld,
 			Float leftOld){
 		/*
@@ -402,7 +397,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
+	public DataStream<Row> zoomOutLayoutStep2(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
 			Float top, Float right, Float bottom, Float left){
 		/*
 		 * Second substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 

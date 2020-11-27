@@ -279,31 +279,59 @@ public class FlinkCore {
 				topNew, rightNew, bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexGVD> layoutedVertices){
+	public DataSet<WrapperGVD> zoomOutLayoutStep1Set(Map<String, VertexGVD> layoutedVertices){
+		return this.graphUtilSet.zoomOutLayoutStep1(layoutedVertices, topNew, rightNew, 
+				bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld);
+	}
+	
+	public DataStream<Row> zoomOutLayoutStep1Stream(Map<String, VertexGVD> layoutedVertices){
 		return this.graphUtilStream.zoomOutLayoutFirstStep(layoutedVertices, topNew, rightNew, 
 				bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
-	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtilStream.zoomOutLayoutSecondStep(layoutedVertices, newVertices, topNew, 
+	public DataSet<WrapperGVD> zoomOutLayoutStep2Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+		return this.graphUtilSet.zoomOutLayoutStep2(layoutedVertices, newVertices, topNew, 
 				rightNew, bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> panLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataStream<Row> zoomOutLayoutStep2Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+		return this.graphUtilStream.zoomOutLayoutStep2(layoutedVertices, newVertices, topNew, 
+				rightNew, bottomNew, leftNew);
+	}
+	
+	public DataSet<WrapperGVD> panLayoutStep1Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+		return this.graphUtilSet.panZoomInLayoutStep1(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+				leftNew);
+	}
+	
+	public DataStream<Row> panLayoutStep1Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
 		return this.graphUtilStream.panZoomInLayoutStep1(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew);
 	}
 	
-	public DataStream<Row> panLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataSet<WrapperGVD> panLayoutStep2Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+		return this.graphUtilSet.panZoomInLayoutStep2(layoutedVertices, newVertices);
+	}
+	
+	public DataStream<Row> panLayoutStep2Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
 		return this.graphUtilStream.panZoomInLayoutStep2(layoutedVertices, newVertices);
 	}
 	
-	public DataStream<Row> panLayoutThirdStep(Map<String, VertexGVD> layoutedVertices){
+	public DataSet<WrapperGVD> panLayoutStep3Set(Map<String, VertexGVD> layoutedVertices){
+		return this.graphUtilSet.panZoomInLayoutStep3(layoutedVertices);
+	}
+	
+	public DataStream<Row> panLayoutStep3Stream(Map<String, VertexGVD> layoutedVertices){
 		return this.graphUtilStream.panZoomInLayoutStep3(layoutedVertices);
 	}
 	
-	public DataStream<Row> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
-		return this.graphUtilStream.panLayoutFourthStep(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+	public DataSet<WrapperGVD> panLayoutStep4Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+		return this.graphUtilSet.panLayoutStep4(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
+				leftNew, topOld, rightOld, bottomOld, leftOld);
+	}
+	
+	public DataStream<Row> panLayoutStep4Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+		return this.graphUtilStream.panLayoutStep4(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	

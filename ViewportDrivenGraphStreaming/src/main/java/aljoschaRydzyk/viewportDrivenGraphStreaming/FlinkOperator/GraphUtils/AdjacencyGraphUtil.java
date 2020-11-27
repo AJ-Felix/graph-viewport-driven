@@ -354,7 +354,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> panLayoutFourthStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
+	public DataStream<Row> panLayoutStep4(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
 			Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld, Float leftOld){
 		/*
 		 * Fourth substep for pan operation on graphs without layout. Returns a stream of wrappers including vertices that are 
@@ -395,7 +395,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> zoomOutLayoutSecondStep(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
+	public DataStream<Row> zoomOutLayoutStep2(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices, 
 			Float top, Float right, Float bottom, Float left){
 		/*
 		 * Second substep for zoom-out operation on graphs without layout. Returns a stream of wrappers including vertices that are 

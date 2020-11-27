@@ -14,7 +14,6 @@ import java.util.Enumeration;
 import java.util.List;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -285,9 +284,8 @@ public class Server implements Serializable{
 							else zoomSet();
 						}
 						else {
-							flinkResponseHandler.setVerticesHaveCoordinates(false);
-							System.out.println("in zoom out layout function");
-							zoomOutLayoutFirstStep();
+							if (stream)	zoomOutLayoutStep1Stream();
+							else zoomOutLayoutStep1Set();
 						}
 					}
     			} else if (messageData.startsWith("pan")) {
@@ -309,8 +307,8 @@ public class Server implements Serializable{
 					setOperation("pan");
     				wrapperHandler.prepareOperation();
 					if (!layout) {
-	    				flinkResponseHandler.setVerticesHaveCoordinates(false);
-	    				panLayoutFirstStep();
+						if (stream) panLayoutStep1Stream();
+						else panLayoutStep1Set();
 					} else {
 						if (stream)	panStream();
 						else panSet();
@@ -474,7 +472,8 @@ public class Server implements Serializable{
     			}
     		} else {
     			if (operationStep == 1) {
-    				zoomOutLayoutSecondStep();
+    				if (stream) zoomOutLayoutStep2Stream();
+    				else zoomOutLayoutStep2Set();
     			} else {
     				wrapperHandler.clearOperation();
     			}
@@ -482,18 +481,23 @@ public class Server implements Serializable{
     	} else if (operation.startsWith("pan")) {
     		if (operationStep == 1) {
     			if (wrapperHandler.getCapacity() > 0) {
-    				panLayoutSecondStep();
+    				if (stream) panLayoutStep2Stream();
+    				else panLayoutStep2Set();
     			} else {
-    				panLayoutFourthStep();
+    				if (stream) panLayoutStep4Stream();
+    				else panLayoutStep4Set();
     			}
     		} else if (operationStep == 2) {
     			if (wrapperHandler.getCapacity() > 0) {
-    				panLayoutSecondStep();
+    				if (stream) panLayoutStep2Stream();
+    				else panLayoutStep2Set();
     			} else {
-    				panLayoutFourthStep();
+    				if (stream) panLayoutStep4Stream();
+    				else panLayoutStep4Set();
     			}
     		} else if (operationStep == 3) {
-    			panLayoutFourthStep();
+    			if (stream) panLayoutStep4Stream();
+				else panLayoutStep4Set();
     		} else if (operationStep == 4) {
 	            wrapperHandler.clearOperation();
 			}
@@ -504,6 +508,7 @@ public class Server implements Serializable{
     	setOperationStep(1);
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep1Set(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices());
+    	wrapperHandler.setSentToClientInSubStep(false);
 
     	//debug
     	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn1", WriteMode.OVERWRITE);
@@ -521,6 +526,7 @@ public class Server implements Serializable{
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep2Set();
     	}
     }
 
@@ -545,6 +551,7 @@ public class Server implements Serializable{
     	setOperationStep(2);
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
+    	wrapperHandler.setSentToClientInSubStep(false);
     	
     	//debug
     	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn2", WriteMode.OVERWRITE);
@@ -562,6 +569,7 @@ public class Server implements Serializable{
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep3Set();
     	}
     }
 	
@@ -583,7 +591,8 @@ public class Server implements Serializable{
     private  void zoomInLayoutStep3Set() {
     	setOperationStep(3);
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep3Set(wrapperHandler.getLayoutedVertices());
-
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	
     	//debug
     	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn3", WriteMode.OVERWRITE);
     	
@@ -600,6 +609,7 @@ public class Server implements Serializable{
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep4Set();
     	}
     }
     
@@ -621,6 +631,7 @@ public class Server implements Serializable{
     	setOperationStep(4);
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep4Set(wrapperHandler.getLayoutedVertices(),
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
+    	wrapperHandler.setSentToClientInSubStep(false);
 
     	//debug
     	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn4", WriteMode.OVERWRITE);
@@ -638,6 +649,7 @@ public class Server implements Serializable{
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
     	}
     }
     
@@ -654,9 +666,34 @@ public class Server implements Serializable{
 		}
     }
     
-    private void zoomOutLayoutFirstStep() {
+    private void zoomOutLayoutStep1Set() {
+    	flinkResponseHandler.setVerticesHaveCoordinates(false);
+		System.out.println("in zoom out layout function");
     	setOperationStep(1);
-		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutFirstStep(wrapperHandler.getLayoutedVertices());
+		DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomOutLayoutStep1Set(wrapperHandler.getLayoutedVertices());
+		wrapperCollection = new ArrayList<WrapperGVD>();
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		zoomOutLayoutStep2Set();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false)	zoomOutLayoutStep2Set();
+    	}
+    }
+    
+    private void zoomOutLayoutStep1Stream() {
+    	flinkResponseHandler.setVerticesHaveCoordinates(false);
+		System.out.println("in zoom out layout function");
+    	setOperationStep(1);
+		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutStep1Stream(wrapperHandler.getLayoutedVertices());
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
@@ -665,13 +702,33 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//		if (flinkResponseHandler.getLine() == "empty" || 
-//				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
     }
     
-    private void zoomOutLayoutSecondStep() {
+    private void zoomOutLayoutStep2Set() {
     	setOperationStep(2);
-		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutSecondStep(wrapperHandler.getLayoutedVertices(), 
+		DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomOutLayoutStep2Set(wrapperHandler.getLayoutedVertices(), 
+				wrapperHandler.getNewVertices());
+		wrapperCollection = new ArrayList<WrapperGVD>();
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		wrapperHandler.clearOperation();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+    	}
+    }
+    
+    private void zoomOutLayoutStep2Stream() {
+    	setOperationStep(2);
+		DataStream<Row> wrapperStream = flinkCore.zoomOutLayoutStep2Stream(wrapperHandler.getLayoutedVertices(), 
 				wrapperHandler.getNewVertices());
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
@@ -680,13 +737,34 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//		wrapperHandler.clearOperation();
     }
     
-    
-    private void panLayoutFirstStep() {
+    private void panLayoutStep1Set() {
     	setOperationStep(1);
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutFirstStep(wrapperHandler.getLayoutedVertices(), 
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.panLayoutStep1Set(wrapperHandler.getLayoutedVertices(), 
+    			wrapperHandler.getNewVertices());
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		panLayoutStep2Set();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep2Set();
+    	}
+    }
+    
+    private void panLayoutStep1Stream() {
+		flinkResponseHandler.setVerticesHaveCoordinates(false);
+    	setOperationStep(1);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutStep1Stream(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
@@ -696,12 +774,34 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutSecondStep();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep2Stream();
     }
     
-    private void panLayoutSecondStep() {
+    private void panLayoutStep2Set() {
     	setOperationStep(2);
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutSecondStep(wrapperHandler.getLayoutedVertices(), 
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.panLayoutStep2Set(wrapperHandler.getLayoutedVertices(), 
+    			wrapperHandler.getNewVertices());
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		panLayoutStep3Set();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep3Set();
+    	}
+    }
+    
+    private void panLayoutStep2Stream() {
+    	setOperationStep(2);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutStep2Stream(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
@@ -711,12 +811,33 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutThirdStep();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep3Stream();
     }
     
-    private void panLayoutThirdStep() {
+    private void panLayoutStep3Set() {
     	setOperationStep(3);
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutThirdStep(wrapperHandler.getLayoutedVertices());
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.panLayoutStep3Set(wrapperHandler.getLayoutedVertices());
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		panLayoutStep4Set();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep4Set();
+    	}
+    }
+    
+    private void panLayoutStep3Stream() {
+    	setOperationStep(3);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutStep3Stream(wrapperHandler.getLayoutedVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
     	wrapperHandler.setSentToClientInSubStep(false);
@@ -725,12 +846,34 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-		if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutFourthStep();
+		if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep4Stream();
     }
     
-    private void panLayoutFourthStep() {
+    private void panLayoutStep4Set() {
     	setOperationStep(4);
-    	DataStream<Row> wrapperStream = flinkCore.panLayoutFourthStep(wrapperHandler.getLayoutedVertices(), 
+    	DataSet<WrapperGVD> wrapperGVD = flinkCore.panLayoutStep4Set(wrapperHandler.getLayoutedVertices(), 
+    			wrapperHandler.getNewVertices());
+    	wrapperCollection = new ArrayList<WrapperGVD>();
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
+    		wrapperCollection = wrapperGVD.collect();
+			flinkCore.getEnv().execute();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	if (wrapperCollection.isEmpty()) {
+    		System.out.println("is empty hehe");
+    		wrapperHandler.clearOperation();
+    	} else {
+    		System.out.println("wrapperCollection size: " + wrapperCollection.size());
+        	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
+        	if (wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+    	}
+    }
+    
+    private void panLayoutStep4Stream() {
+    	setOperationStep(4);
+    	DataStream<Row> wrapperStream = flinkCore.panLayoutStep4Stream(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
@@ -739,7 +882,6 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-//		wrapperHandler.clearOperation();
     }
 
     /**
