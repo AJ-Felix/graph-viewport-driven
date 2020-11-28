@@ -148,7 +148,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		this.visualizedVertices = visualizedVertices;
 	}
 	
-	public DataSet<WrapperGVD> getMaxDegreeSubsetGradoop(Integer numberVertices){
+	public DataSet<WrapperGVD> getMaxDegreeSubsetGradoop(int numberVertices){
 		//filter for vertices with degree above cut off
 		DataSet<Row> vertices = verticesIndexed.filter(row -> (long) row.getField(2) < numberVertices);
 		

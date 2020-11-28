@@ -32,8 +32,8 @@ public class VertexFlatMapIsLayoutedOutsideBi implements FlatMapFunction<Row,Str
 		for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
 			String targetId = entry.getKey();
 			if (layoutedVertices.containsKey(targetId)) {
-				Integer x = layoutedVertices.get(targetId).getX();
-				Integer y = layoutedVertices.get(targetId).getY();
+				int x = layoutedVertices.get(targetId).getX();
+				int y = layoutedVertices.get(targetId).getY();
 				if (!(x >= leftModel && x <= rightModel && y >= topModel && y <= bottomModel)) {
 					out.collect(entry.getValue());
 				}

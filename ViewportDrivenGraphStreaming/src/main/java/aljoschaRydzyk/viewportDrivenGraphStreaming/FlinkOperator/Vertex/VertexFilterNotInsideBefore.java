@@ -24,8 +24,8 @@ public class VertexFilterNotInsideBefore implements FilterFunction<Row> {
 	
 	@Override
 	public boolean filter(Row value) throws Exception {
-		Integer x = this.layoutedVertices.get(value.getField(1).toString()).getX();
-		Integer y = this.layoutedVertices.get(value.getField(1).toString()).getY();
+		int x = this.layoutedVertices.get(value.getField(1).toString()).getX();
+		int y = this.layoutedVertices.get(value.getField(1).toString()).getY();
 		System.out.println("VertexFilterNotInsideBefore, Id: " + value.getField(1) + ", X: " + x + ",Y: " + y);
 		if (x >= leftModelOld && x <= rightModelOld && y >= topModelOld && y <= bottomModelOld) {
 			return false;

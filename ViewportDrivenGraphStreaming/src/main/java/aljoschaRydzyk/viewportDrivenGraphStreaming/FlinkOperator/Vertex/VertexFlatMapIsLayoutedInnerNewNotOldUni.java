@@ -41,8 +41,8 @@ public class VertexFlatMapIsLayoutedInnerNewNotOldUni implements FlatMapFunction
 		for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
 			String targetId = entry.getKey();
 			if (layoutedVertices.containsKey(targetId)) {
-				Integer x = layoutedVertices.get(targetId).getX();
-				Integer y = layoutedVertices.get(targetId).getY();
+				int x = layoutedVertices.get(targetId).getX();
+				int y = layoutedVertices.get(targetId).getY();
 				if ((leftNew <= x) &&  (x <= rightNew) && (topNew <= y) && (y <= bottomNew)
 						&& ((leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld))
 						&& sourceId.compareTo(targetId) > 0) {

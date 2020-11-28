@@ -38,8 +38,8 @@ public class VertexFlatMapNotVisualizedButLayoutedInsideUni implements FlatMapFu
 			String targetId = entry.getKey();
 			if (!innerVertices.contains(targetId) && layoutedVertices.containsKey(targetId)) {
 				VertexGVD layoutedVertex = layoutedVertices.get(targetId);
-				Integer x = layoutedVertex.getX();
-				Integer y = layoutedVertex.getY();
+				int x = layoutedVertex.getX();
+				int y = layoutedVertex.getY();
 				if (x >= left && x <= right && y >= top && y <= bottom && sourceId.compareTo(targetId) > 0) {
 					out.collect(entry.getValue());
 				}

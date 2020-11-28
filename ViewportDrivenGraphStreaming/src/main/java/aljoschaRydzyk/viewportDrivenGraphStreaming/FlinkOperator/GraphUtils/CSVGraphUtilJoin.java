@@ -32,6 +32,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIdentity;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
 public class CSVGraphUtilJoin implements GraphUtilStream{
@@ -183,8 +184,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
 				@Override
 				public boolean filter(Row value) throws Exception {
-					Integer x = (Integer) value.getField(4);
-					Integer y = (Integer) value.getField(5);
+					int x = (int) value.getField(4);
+					int y = (int) value.getField(5);
 					return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
 				}
 			});
@@ -208,9 +209,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.join(vertexTableInnerNew).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
 				.join(vertexTableInnerNew).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
 			//filter out redundant identity edges
-			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo)
-//					.filter(new WrapperFilterIdentity())
-					;
+			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo);
 		
 		//produce wrapperStream from A+C to D and vice versa
 		Table wrapperTableOldInNewInInOut = wrapperTable

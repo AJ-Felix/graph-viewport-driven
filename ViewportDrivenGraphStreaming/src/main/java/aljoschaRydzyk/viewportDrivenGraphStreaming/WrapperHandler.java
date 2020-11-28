@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.flink.types.Row;
-
 import com.nextbreakpoint.flinkclient.api.ApiException;
 import com.nextbreakpoint.flinkclient.api.FlinkApi;
 import com.nextbreakpoint.flinkclient.model.JobIdWithStatus;
@@ -19,8 +17,6 @@ import com.nextbreakpoint.flinkclient.model.JobIdWithStatus.StatusEnum;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilStream;
-
 import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview;
 
 public class WrapperHandler implements Serializable {
@@ -31,7 +27,7 @@ public class WrapperHandler implements Serializable {
 	private Map<String,WrapperGVD> edges;
 	private Map<String,VertexGVD> layoutedVertices;
 	private String operation;
-	private Integer capacity;
+	private int capacity;
 	private Float top;
 	private Float right;
 	private Float bottom;
@@ -39,7 +35,7 @@ public class WrapperHandler implements Serializable {
 	private VertexGVD secondMinDegreeVertex;
 	private VertexGVD minDegreeVertex;    
     private boolean layout = true;
-    private Integer maxVertices = 100;
+    private int maxVertices = 100;
     private FlinkApi api;
     private int operationStep;
     public boolean sentToClientInSubStep;
@@ -68,10 +64,10 @@ public class WrapperHandler implements Serializable {
 			if (operation != "zoomOut"){
 				for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) {
 					WrapperGVD wrapper = entry.getValue();
-					Integer sourceX;
-					Integer sourceY;
-					Integer targetX;
-					Integer targetY;
+					int sourceX;
+					int sourceY;
+					int targetX;
+					int targetY;
 					if (layout) {
 						sourceX = wrapper.getSourceX();
 						sourceY = wrapper.getSourceY();
@@ -665,10 +661,6 @@ public class WrapperHandler implements Serializable {
 				String vertexId = vertex.getIdGradoop();
 				if (sourceId.equals(vertexId) || targetId.equals(vertexId)) iter.remove();
 			}
-			
-//			Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
-//			Iterator<Map.Entry<String, WrapperGVD>> iter = edges.entrySet().iterator();
-//			while (iter.hasNext()) {if (vertexNeighborMap.values().contains(iter.next().getKey())) iter.remove();
 			System.out.println("Removing Obect in removeVertex, ID: " + vertex.getIdGradoop());
 		}
 	}
@@ -732,13 +724,6 @@ public class WrapperHandler implements Serializable {
 //		}
 	}
 	
-//	private Set<String> getNeighborhood(VertexGVD vertex){
-//		Set<String> neighborIds = new HashSet<String>();
-//		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
-//		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) neighborIds.add(entry.getKey());
-//		return neighborIds;
-//	}
-	
 	private boolean hasVisualizedNeighborsInside(VertexGVD vertex) {
 		for (WrapperGVD wrapper : edges.values()) {
 			String sourceId = wrapper.getSourceIdGradoop();
@@ -751,9 +736,6 @@ public class WrapperHandler implements Serializable {
 			}
 		}
 		return false;
-//		Map<String,Map<String,String>> adjMatrix = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix();
-//		for (Map.Entry<String, String> entry : adjMatrix.get(vertex.getIdGradoop()).entrySet()) if (innerVertices.containsKey(entry.getKey())) return true;
-//		return false;
 	}
 	
 	public void clearOperation(){
@@ -792,11 +774,6 @@ public class WrapperHandler implements Serializable {
 						if (sourceId.equals(vertexId) || targetId.equals(vertexId)) edgesIterator.remove();
 					}
 					iter.remove();
-					
-					//delete all edges from 'edges' Object that belonged to deleted vertex
-//					Map<String,String> vertexNeighborMap = Server.getInstance().getFlinkCore().getGraphUtil().getAdjMatrix().get(vertex.getIdGradoop());
-//					Iterator<Map.Entry<String, WrapperGVD>> edgesIterator = edges.entrySet().iterator();
-//					while (edgesIterator.hasNext()) if (vertexNeighborMap.values().contains(edgesIterator.next().getKey())) edgesIterator.remove();
 				} 
 			}
 			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step before (e.g. in ZoomOut)
@@ -844,7 +821,7 @@ public class WrapperHandler implements Serializable {
 		this.operation = operation;
 	}
 	
-	public void setMaxVertices(Integer maxVertices) {
+	public void setMaxVertices(int maxVertices) {
 		this.maxVertices = maxVertices;
 	}
 
@@ -885,8 +862,8 @@ public class WrapperHandler implements Serializable {
     	for (String vertexData : list) {
     		String[] arrVertexData = vertexData.split(",");
     		String vertexId = arrVertexData[0];
-    		Integer x = Math.round(Float.parseFloat(arrVertexData[1]));
-    		Integer y = Math.round(Float.parseFloat(arrVertexData[2]));
+    		int x = Math.round(Float.parseFloat(arrVertexData[1]));
+    		int y = Math.round(Float.parseFloat(arrVertexData[2]));
     		System.out.println("wrapperHandler, updateLayoutedVertices: " + vertexId + " " + x + " " + y);
 			VertexGVD vertex = new VertexGVD(vertexId, x, y);
 			if (layoutedVertices.containsKey(vertexId)) System.out.println("vertex already in layoutedVertices!!!");
@@ -898,10 +875,6 @@ public class WrapperHandler implements Serializable {
 
 	public int getCapacity() {
 		return this.capacity;
-	}
-	
-	public int getOperationStep() {
-		return this.operationStep;
 	}
 
 	public void setStreamBool(Boolean stream) {

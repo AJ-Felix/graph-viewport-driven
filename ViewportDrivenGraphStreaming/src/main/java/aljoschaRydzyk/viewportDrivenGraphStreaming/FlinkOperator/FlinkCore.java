@@ -161,7 +161,7 @@ public class FlinkCore {
 		else return this.graphUtilSet;
 	}
 	
-	public DataSet<WrapperGVD> buildTopViewGradoop(Integer maxVertices){
+	public DataSet<WrapperGVD> buildTopViewGradoop(int maxVertices){
 		GradoopGraphUtil graphUtil = (GradoopGraphUtil) this.graphUtilSet;
 		try {
 			graphUtil.initializeDataSets();
@@ -171,7 +171,7 @@ public class FlinkCore {
 		return graphUtil.getMaxDegreeSubsetGradoop(maxVertices);
 	}
 	
-	public DataStream<Tuple2<Boolean, Row>> buildTopViewHBase(Integer maxVertices){
+	public DataStream<Tuple2<Boolean, Row>> buildTopViewHBase(int maxVertices){
 		DataStream<Row> dataStreamDegree = FlinkHBaseVerticesLoader.load(fsTableEnv, maxVertices);
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = null;
 		try {
@@ -184,13 +184,13 @@ public class FlinkCore {
 		return wrapperStream;
 	}
 	
-	public DataStream<Row> buildTopViewCSV(Integer maxVertices){
+	public DataStream<Row> buildTopViewCSV(int maxVertices){
 		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtilStream);
 		graphUtil.initializeDataSets();
 		return graphUtil.getMaxDegreeSubset(maxVertices);
 	}
 	
-	public DataStream<Row> buildTopViewAdjacency(Integer maxVertices) {
+	public DataStream<Row> buildTopViewAdjacency(int maxVertices) {
 		AdjacencyGraphUtil graphUtil = (AdjacencyGraphUtil) this.graphUtilStream;
 		graphUtil.initializeDataSets();
 		DataStream<Row> stream = null;

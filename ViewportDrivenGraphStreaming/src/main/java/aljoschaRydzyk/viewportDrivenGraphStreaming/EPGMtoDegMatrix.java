@@ -68,7 +68,7 @@ public class EPGMtoDegMatrix {
 			@Override
 			public Row map(EPGMVertex vertex) throws Exception {
 				String vertex_id = vertex.getId().toString();
-				Integer vertex_degree = (int) vertex.getPropertyValue("degree").getLong();
+				int vertex_degree = (int) vertex.getPropertyValue("degree").getLong();
 				Row row = Row.of(vertex_id, Row.of(vertex_degree));
 				return row;
 			}

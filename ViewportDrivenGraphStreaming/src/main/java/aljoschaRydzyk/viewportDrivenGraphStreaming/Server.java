@@ -41,7 +41,6 @@ public class Server implements Serializable{
 	private String hdfsGraphFilesDirectory;
 	private boolean degreesCalculated = false;
 	private String gradoopGraphId = "5ebe6813a7986cc7bd77f9c2";
-
 	private boolean stream = true;
 	
 	
@@ -51,8 +50,8 @@ public class Server implements Serializable{
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
     private String webSocketListenPath = "/graphData";
     private int webSocketListenPort = 8897;    
-    private Integer maxVertices = 100;
-    private Integer vertexCountNormalizationFactor = 5000;
+    private int maxVertices = 100;
+    private int vertexCountNormalizationFactor = 5000;
     private boolean layout = true;
     private int operationStep;
     private Float viewportPixelX = (float) 1000;
@@ -63,7 +62,6 @@ public class Server implements Serializable{
     private FlinkResponseHandler flinkResponseHandler;
     private String localMachinePublicIp4 = "localhost";
     private int flinkResponsePort = 8898;
-//    private String clusterEntryPointIp4;
     private static Server server = null;
   
     public static Server getInstance() {
@@ -97,15 +95,9 @@ public class Server implements Serializable{
   		//initialize FlinkResponseHandler
         flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
         flinkResponseHandler.start();
-//		flinkResponseHandler.listen();
     }
     
-//    public void setParameters(List<String> flinkCoreParameters) {
-//    	this.flinkCoreParameters = flinkCoreParameters;
-//    }
-    
     public void setPublicIp4Adress() throws SocketException {
-//    	this.clusterEntryPointIp4 = clusterEntryPointIp4;
     	Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()){
             NetworkInterface intFace = interfaces.nextElement();
@@ -146,19 +138,14 @@ public class Server implements Serializable{
                 	wrapperHandler.initializeGraphRepresentation();
                 } else if (messageData.startsWith("clusterEntryAddress")) {
                 	clusterEntryPointAddress = messageData.split(";")[1];
-//                	flinkCore.setClusterEntryPointAdress(messageData.split(";")[1]);
                 } else if (messageData.startsWith("hDFSEntryAddress")) {
                 	hdfsEntryPointAddress = messageData.split(";")[1];
-//                	flinkCore.setHDFSEntryPointAdress(messageData.split(";")[1]);
                 } else if (messageData.startsWith("hDFSEntryPointPort")) {
                 	hdfsEntryPointPort = Integer.parseInt(messageData.split(";")[1]);
-//                	flinkCore.setHDFSEntryPointPort(Integer.parseInt(messageData.split(";")[1]));
                 } else if (messageData.startsWith("hDFSGraphFilesDirectory")) {
                 	hdfsGraphFilesDirectory = messageData.split(";")[1];
-//                	flinkCore.setHDFSGraphFilesDirectory(messageData.split(";")[1]);
                 } else if (messageData.startsWith("gradoopGraphId")) {
                 	gradoopGraphId = messageData.split(";")[1];
-//                	flinkCore.setGraphId(messageData.split(";")[1]);
                 } else if (messageData.startsWith("degrees")) {
                 	String calc = messageData.split(";")[1];
                 	if (calc.equals("true")) {
@@ -187,7 +174,7 @@ public class Server implements Serializable{
                 	Float leftModel = - xRenderPos / zoomLevel;
                 	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
                 	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
-                	Integer tempMaxVertices = maxVertices;
+                	int tempMaxVertices = maxVertices;
                 	if (bottomModel - topModel > 4000) {
                 		maxVertices = (int) (viewportPixelX * viewportPixelX /vertexCountNormalizationFactor);
                 	} else if (rightModel - leftModel > 4000) {
@@ -909,7 +896,7 @@ public class Server implements Serializable{
 		this.operation = operation;
 	}
 	
-	private void setOperationStep(Integer step) {
+	private void setOperationStep(int step) {
 		wrapperHandler.setOperationStep(step);
 		operationStep = step;
 	}

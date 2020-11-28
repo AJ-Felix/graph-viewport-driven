@@ -36,8 +36,8 @@ public class VertexFilterIsLayoutedInnerNewNotOld implements FilterFunction<Row>
 	@Override
 	public boolean filter(Row value) throws Exception {
 		if (this.layoutedVertices.containsKey(value.getField(1).toString())) {
-			Integer x = this.layoutedVertices.get(value.getField(1).toString()).getX();
-			Integer y = this.layoutedVertices.get(value.getField(1).toString()).getY();
+			int x = this.layoutedVertices.get(value.getField(1).toString()).getX();
+			int y = this.layoutedVertices.get(value.getField(1).toString()).getY();
 			if ((leftNew <= x) &&  (x <= rightNew) && (topNew <= y) && (y <= bottomNew)
 					&& ((leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld))) {
 				return true;
