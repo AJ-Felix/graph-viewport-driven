@@ -659,11 +659,14 @@ public class Server implements Serializable{
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+    	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    	if (flinkResponseHandler.getLine() == "empty" || 
+    			wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
     }
     
     private void zoomOutLayoutStep1Set() {
@@ -681,11 +684,11 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
-    		zoomOutLayoutStep2Set();
+    		wrapperHandler.clearOperation();
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false)	zoomOutLayoutStep2Set();
+        	if (wrapperHandler.getSentToClientInSubStep() == false)	wrapperHandler.clearOperation();;
     	}
     }
     
@@ -702,6 +705,8 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    	if (flinkResponseHandler.getLine() == "empty" || 
+    			wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
     }
     
     private void zoomOutLayoutStep2Set() {
@@ -732,11 +737,14 @@ public class Server implements Serializable{
 				wrapperHandler.getNewVertices());
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-		try {
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (flinkResponseHandler.getLine() == "empty" || 
+    			wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
     }
     
     private void panLayoutStep1Set() {
@@ -877,12 +885,14 @@ public class Server implements Serializable{
     			wrapperHandler.getNewVertices());
     	DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
     	wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-		try {
+    	wrapperHandler.setSentToClientInSubStep(false);
+    	try {
 			flinkCore.getFsEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-    }
+		if (flinkResponseHandler.getLine() == "empty" || 
+				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();    }
 
     /**
      * sends a message to the all connected web socket clients

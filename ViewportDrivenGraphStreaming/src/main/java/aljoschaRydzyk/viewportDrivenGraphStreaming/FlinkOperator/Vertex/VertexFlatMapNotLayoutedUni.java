@@ -1,6 +1,7 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.types.Row;
@@ -10,9 +11,13 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Ver
 
 public class VertexFlatMapNotLayoutedUni implements FlatMapFunction<Row,String> {
 	Map<String,Map<String,String>> adjMatrix;
-	Map<String,VertexGVD> layoutedVertices;
+//	Map<String,VertexGVD> layoutedVertices;
+	Set<String> layoutedVertices;
 
-	public VertexFlatMapNotLayoutedUni(Map<String,Map<String,String>> adjMatrix, Map<String,VertexGVD> layoutedVertices) {
+	public VertexFlatMapNotLayoutedUni(Map<String,Map<String,String>> adjMatrix, 
+//			Map<String,VertexGVD> layoutedVertices
+			Set<String> layoutedVertices
+			) {
 		this.adjMatrix = adjMatrix;
 		this.layoutedVertices = layoutedVertices;
 	}
@@ -23,7 +28,8 @@ public class VertexFlatMapNotLayoutedUni implements FlatMapFunction<Row,String> 
 		System.out.println("In VertexFlatMapNotLayouted, sourceId: " + sourceId);
 		for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
 			String targetId = entry.getKey();
-			if (!layoutedVertices.containsKey(targetId) && sourceId.compareTo(targetId) > 0) out.collect(entry.getValue());
+//			if (!layoutedVertices.containsKey(targetId) && sourceId.compareTo(targetId) > 0) out.collect(entry.getValue());
+			if (!layoutedVertices.contains(targetId) && sourceId.compareTo(targetId) > 0) out.collect(entry.getValue());
 		}
 	}
 }

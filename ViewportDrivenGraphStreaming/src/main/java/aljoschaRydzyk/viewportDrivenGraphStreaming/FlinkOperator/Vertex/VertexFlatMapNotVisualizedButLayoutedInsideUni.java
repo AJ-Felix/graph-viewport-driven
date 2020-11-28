@@ -1,6 +1,7 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.types.Row;
@@ -11,14 +12,14 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Ver
 public class VertexFlatMapNotVisualizedButLayoutedInsideUni implements FlatMapFunction<Row,String>{
 	Map<String,Map<String,String>> adjMatrix;
 	Map<String,VertexGVD> layoutedVertices;
-	Map<String,VertexGVD> innerVertices;
+	Set<String> innerVertices;
 	Float top;
 	Float right;
 	Float bottom;
 	Float left;
 	
 	public VertexFlatMapNotVisualizedButLayoutedInsideUni(Map<String,Map<String,String>> adjMatrix, 
-			Map<String,VertexGVD> layoutedVertices, Map<String,VertexGVD> innerVertices,
+			Map<String,VertexGVD> layoutedVertices, Set<String> innerVertices,
 			Float top, Float right, Float bottom, Float left) {
 		this.adjMatrix = adjMatrix;
 		this.layoutedVertices = layoutedVertices;
@@ -35,7 +36,7 @@ public class VertexFlatMapNotVisualizedButLayoutedInsideUni implements FlatMapFu
 		System.out.println("in VertexFlatMapNotVisualizedButLayoutedInside, sourceId: " + sourceId);
 		for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
 			String targetId = entry.getKey();
-			if (!innerVertices.containsKey(targetId) && layoutedVertices.containsKey(targetId)) {
+			if (!innerVertices.contains(targetId) && layoutedVertices.containsKey(targetId)) {
 				VertexGVD layoutedVertex = layoutedVertices.get(targetId);
 				Integer x = layoutedVertex.getX();
 				Integer y = layoutedVertex.getY();

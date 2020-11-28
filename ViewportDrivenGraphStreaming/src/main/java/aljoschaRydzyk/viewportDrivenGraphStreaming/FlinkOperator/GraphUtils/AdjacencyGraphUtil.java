@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,9 +108,9 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		Map<String, Row> wrapperMap = this.wrapperMap;
 		
 		//produce NonIdentity Wrapper Stream
-		DataStream<String> wrapperKeys = vertexStreamInner.flatMap(new FlatMapFunction<Row,String>(){
+		DataStream<Row> nonIdentityWrapper = vertexStreamInner.flatMap(new FlatMapFunction<Row,Row>(){
 			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {
+			public void flatMap(Row value, Collector<Row> out) throws Exception {
 				String firstVertexId = (String) value.getField(1);
 				Map<String,String> map = adjMatrix.get(firstVertexId);
 				for (String wrapperId : map.values()) {
@@ -127,16 +128,16 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 						secondVertexY = (int) wrapper.getField(5);
 					}
 					if ((left > secondVertexX) ||  (secondVertexX > right) || (top > secondVertexY) || (secondVertexY > bottom)) {
-						out.collect(wrapperId);
+						out.collect(wrapper);
 					} else {
 						if (firstVertexId.compareTo(secondVertexId) < 0) {
-							out.collect(wrapperId);
+							out.collect(wrapper);
 						}
 					}
 				}
 			}
 		});
-		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
+//		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
 		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//produce Identity Wrapper Stream
@@ -160,13 +161,13 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		Map<String, Row> wrapperMap = this.wrapperMap;
 
 		//produce NonIdentity Wrapper Stream
-		DataStream<String> wrapperKeysDefNotVis = vertexStreamInnerNewNotOld.flatMap(new FlatMapFunction<Row,String>(){
+		DataStream<Row> wrapperDefNotVis = vertexStreamInnerNewNotOld.flatMap(new FlatMapFunction<Row,Row>(){
 			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {			
+			public void flatMap(Row value, Collector<Row> out) throws Exception {			
 				String firstVertexId = (String) value.getField(1);
 				Map<String,String> map = adjMatrix.get(firstVertexId);
-				for (String entry : map.values()) {
-					Row wrapper = wrapperMap.get(entry);
+				for (String wrapperId : map.values()) {
+					Row wrapper = wrapperMap.get(wrapperId);
 					String secondVertexId;
 					int secondVertexX;
 					int secondVertexY;
@@ -181,22 +182,22 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 					}
 					if (((leftOld > secondVertexX) || (secondVertexX > rightOld) || (topOld > secondVertexY) || (secondVertexY > bottomOld)) && 
 							((leftNew > secondVertexX) || (secondVertexX > rightNew) || (topNew > secondVertexY) || (secondVertexY > bottomNew))) {
-						out.collect(entry);
+						out.collect(wrapper);
 					} else {
 						if (((leftOld > secondVertexX) || (secondVertexX > rightOld) || (topOld > secondVertexY) || (secondVertexY > bottomOld)) 
 								&& (firstVertexId.compareTo(secondVertexId) < 0)) {
-							out.collect(entry);
+							out.collect(wrapper);
 						}
 					}
 				}
 			}
 		});
-		DataStream<Row> wrapperDefNotVis = wrapperKeysDefNotVis.map(new WrapperIDMapWrapper(this.wrapperMap));
+//		DataStream<Row> wrapperDefNotVis = wrapperKeysDefNotVis.map(new WrapperIDMapWrapper(this.wrapperMap));
 		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream
 				.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
-		DataStream<String> wrapperKeysMaybeVis = vertexStreamOldInnerNotNewInner.flatMap(new FlatMapFunction<Row,String>(){
+		DataStream<Row> wrapperMaybeVis = vertexStreamOldInnerNotNewInner.flatMap(new FlatMapFunction<Row,Row>(){
 			@Override
-			public void flatMap(Row vertexId, Collector<String> out) throws Exception {			
+			public void flatMap(Row vertexId, Collector<Row> out) throws Exception {			
 				String firstVertexId = (String) vertexId.getField(1);
 				Map<String,String> map = adjMatrix.get(firstVertexId);
 				for (String wrapperId : map.values()) {
@@ -211,12 +212,12 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 						secondVertexY = (int) wrapper.getField(5);
 					}
 					if ((leftNew <= secondVertexX) &&  (secondVertexX <= rightNew) && (topNew <= secondVertexY) && (secondVertexY <= bottomNew)) {
-						out.collect(wrapperId);
+						out.collect(wrapper);
 					} 
 				}
 			}
 		});
-		DataStream<Row> wrapperMaybeVis = wrapperKeysMaybeVis.map(new WrapperIDMapWrapper(this.wrapperMap));
+//		DataStream<Row> wrapperMaybeVis = wrapperKeysMaybeVis.map(new WrapperIDMapWrapper(this.wrapperMap));
 		wrapperMaybeVis = wrapperMaybeVis.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		
 		//produce Identity Wrapper Stream
@@ -230,9 +231,9 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		Map<String, Row> wrapperMap = this.wrapperMap;
 		
 		//produce NonIdentity Wrapper Stream
-		DataStream<String> wrapperKeys = vertices.flatMap(new FlatMapFunction<Row,String>(){
+		DataStream<Row> nonIdentityWrapper = vertices.flatMap(new FlatMapFunction<Row,Row>(){
 			@Override
-			public void flatMap(Row value, Collector<String> out) throws Exception {
+			public void flatMap(Row value, Collector<Row> out) throws Exception {
 				String firstVertexIdGradoop = (String) value.getField(1);
 				Long firstVertexIdNumeric = (Long) value.getField(2);
 				Map<String,String> map = adjMatrix.get(firstVertexIdGradoop);
@@ -246,12 +247,12 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 						secondVertexIdNumeric = (long) wrapper.getField(2);
 					}
 					if (secondVertexIdNumeric < numberVertices && firstVertexIdNumeric > secondVertexIdNumeric) {
-						out.collect(wrapperId);
+						out.collect(wrapper);
 					} 
 				}
 			}
 		});
-		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
+//		DataStream<Row> nonIdentityWrapper = wrapperKeys.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
@@ -331,11 +332,13 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		 * First substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that were
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
+		Set<String> innerVerticeskeySet = new HashSet<String>(innerVertices.keySet());
 		DataStream<Row> vertices = this.vertexStream
 				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
 				.filter(new VertexFilterNotVisualized(innerVertices));
+		//TODO: FlatMapFunction could use only set of innerVerices
 		DataStream<String> wrapperIds = vertices
-				.flatMap(new VertexFlatMapNotVisualizedButLayoutedInsideUni(adjMatrix, layoutedVertices, innerVertices, top, right, 
+				.flatMap(new VertexFlatMapNotVisualizedButLayoutedInsideUni(adjMatrix, layoutedVertices, innerVerticeskeySet, top, right, 
 						bottom, left));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
@@ -352,9 +355,10 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		 * other hand.
 		 */
 		System.out.println("in panZoomInLayoutSecondStep");
-
+		
+		Set<String> layoutedVerticeskeySet = new HashSet<String>(layoutedVertices.keySet());
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
-		DataStream<String> wrapperIds = visualizedVertices.flatMap(new VertexFlatMapNotLayoutedBi(adjMatrix, layoutedVertices));
+		DataStream<String> wrapperIds = visualizedVertices.flatMap(new VertexFlatMapNotLayoutedBi(adjMatrix, layoutedVerticeskeySet));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		return nonIdentityWrapper;
 	}
@@ -366,9 +370,10 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		 * not yet layouted starting with highest degree.
 		 */
 		System.out.println("in panZoomInLayoutThirdStep");
-
+		
+		Set<String> layoutedVerticeskeySet = new HashSet<String>(layoutedVertices.keySet());
 		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new VertexFilterNotLayouted(layoutedVertices));
-		DataStream<String> wrapperIds = notLayoutedVertices.flatMap(new VertexFlatMapNotLayoutedUni(adjMatrix, layoutedVertices));
+		DataStream<String> wrapperIds = notLayoutedVertices.flatMap(new VertexFlatMapNotLayoutedUni(adjMatrix, layoutedVerticeskeySet));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
