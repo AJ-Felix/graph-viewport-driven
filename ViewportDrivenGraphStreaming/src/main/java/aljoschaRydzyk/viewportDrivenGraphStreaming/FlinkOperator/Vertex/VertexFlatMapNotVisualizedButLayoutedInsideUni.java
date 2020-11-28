@@ -10,13 +10,13 @@ import org.apache.flink.util.Collector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 
 public class VertexFlatMapNotVisualizedButLayoutedInsideUni implements FlatMapFunction<Row,String>{
-	Map<String,Map<String,String>> adjMatrix;
-	Map<String,VertexGVD> layoutedVertices;
-	Set<String> innerVertices;
-	Float top;
-	Float right;
-	Float bottom;
-	Float left;
+	private Map<String,Map<String,String>> adjMatrix;
+	private Map<String,VertexGVD> layoutedVertices;
+	private Set<String> innerVertices;
+	private Float top;
+	private Float right;
+	private Float bottom;
+	private Float left;
 	
 	public VertexFlatMapNotVisualizedButLayoutedInsideUni(Map<String,Map<String,String>> adjMatrix, 
 			Map<String,VertexGVD> layoutedVertices, Set<String> innerVertices,

@@ -17,7 +17,6 @@ import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.AggregateFunction;
@@ -50,25 +49,16 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
-//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
-//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
-
 public class GradoopGraphUtil implements GraphUtilSet{
 	
-	private DataStreamSource<Row> vertexStream;
 	private DataStreamSource<Row> wrapperStream = null;
-	private Map<String, Integer> vertexIdMap = null;
 	private LogicalGraph graph;
-	private StreamExecutionEnvironment fsEnv;
 	private StreamTableEnvironment fsTableEnv;
 	private Set<String> visualizedWrappers;
 	private Set<String> visualizedVertices;
-	private String vertexFields;
 	private String wrapperFields;
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] wrapperFormatTypeInfo;
-	private RowTypeInfo wrapperRowTypeInfo; 
-	private Table wrapperTable;
 	private FilterFunction<Row> zoomOutVertexFilter;
 
 	
@@ -84,19 +74,15 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			//C : Inside viewport before and after operation
 			//D : Outside viewport after operation
 	
-	public GradoopGraphUtil (LogicalGraph graph, StreamExecutionEnvironment fsEnv, StreamTableEnvironment fsTableEnv, String vertexFields, 
-			String wrapperFields) {
+	public GradoopGraphUtil (LogicalGraph graph, StreamTableEnvironment fsTableEnv, String wrapperFields) {
 		this.graph = graph;
-		this.fsEnv = fsEnv;
 		this.fsTableEnv = fsTableEnv;
-		this.vertexFields = vertexFields;
 		this.wrapperFields = wrapperFields;
 		this.visualizedWrappers = new HashSet<String>();
 		this.visualizedVertices = new HashSet<String>();
 		this.wrapperFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, 
 				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
 				Types.STRING, Types.STRING};
-		this.wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 	}
 	
 	
@@ -121,7 +107,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 								vertex.getPropertyValue("degree").getLong());
 					}
 				});
-//				.returns(new TypeHint<Row>(){});
 		edges = this.graph.getEdges();
 		DataSet<Tuple2<Tuple2<Row, EPGMEdge>, Row>> wrapperTuple = 
 				verticesIndexed.join(edges).where(new VertexIDRowKeySelector())
@@ -308,12 +293,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		DataSet<Row> verticesOldInnerNotNewInner = 
 				verticesIndexed.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, 
 						rightOld, topOld, bottomOld));
-		try {
-			verticesInnerNewNotOld.print();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		//produce wrapper set from A to B and vice versa
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperBToA = verticesInnerNewNotOld
@@ -368,8 +347,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * First substep for pan/zoom-in operation on graphs without layout. Returns a DataSet of wrappers including vertices that were
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
+		Set<String> innerVerticeskeySet = new HashSet<String>(innerVertices.keySet());
 		DataSet<Row> vertices = verticesIndexed.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
-			.filter(new VertexFilterNotVisualized(innerVertices));
+			.filter(new VertexFilterNotVisualized(innerVerticeskeySet));
 		DataSet<WrapperGVD> wrapperGVDIdentity = vertices.map(new VertexMapIdentityWrapperGVD());
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTupleNonIdentity = vertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
@@ -386,8 +366,10 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
 		 * other hand.
 		 */
-		DataSet<Row> visualizedVertices = verticesIndexed.filter(new VertexFilterIsVisualized(unionMap));
-		DataSet<Row> neighbours = verticesIndexed.filter(new VertexFilterNotLayouted(layoutedVertices));
+		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
+		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
+		DataSet<Row> visualizedVertices = verticesIndexed.filter(new VertexFilterIsVisualized(unionKeySet));
+		DataSet<Row> neighbours = verticesIndexed.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = visualizedVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -409,9 +391,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * not yet layouted starting with highest degree.
 		 */
 		System.out.println("layoutedVertices size" + layoutedVertices.size());
-		for (String key : layoutedVertices.keySet()) 
-			System.out.println("panZoomInLayoutStep3, layoutedVertex: " + key);
-		DataSet<Row> notLayoutedVertices = verticesIndexed.filter(new VertexFilterNotLayouted(layoutedVertices));
+		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
+		DataSet<Row> notLayoutedVertices = verticesIndexed.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = notLayoutedVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -435,7 +416,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
 		unionMap.putAll(newVertices);
 		
-		DataSet<Row> visualizedVerticesSet = verticesIndexed.filter(new VertexFilterIsVisualized(unionMap));
+		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
+		DataSet<Row> visualizedVerticesSet = verticesIndexed.filter(new VertexFilterIsVisualized(unionKeySet));
 		DataSet<Row> layoutedVerticesSet = verticesIndexed.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, 
 			top, right, bottom, left));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = visualizedVerticesSet
@@ -466,7 +448,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * outside the current model window on the other hand.
 		 */
 		
-		DataSet<Row> newlyAddedInsideVertices = verticesIndexed.filter(new VertexFilterIsVisualized(newVertices))
+		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
+		DataSet<Row> newlyAddedInsideVertices = verticesIndexed.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
 		DataSet<Row> layoutedOutsideVertices = verticesIndexed
 				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
@@ -520,8 +503,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * coordinates outside the current model window on the other hand.
 		 */
 		
+		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
 		DataSet<Row> newlyVisualizedVertices = verticesIndexed
-				.filter(new VertexFilterIsVisualized(newVertices))
+				.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(zoomOutVertexFilter);
 		DataSet<Row> layoutedOutsideVertices = verticesIndexed
 				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left));

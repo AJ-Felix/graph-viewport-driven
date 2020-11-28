@@ -3,16 +3,12 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject;
 import java.io.Serializable;
 
 public class VertexGVD implements Serializable{
-	public String idGradoop;
-	public String label;
-	public int x;
-	public int y;
-	public long idNumeric;
-	public long degree;
-	
-	public VertexGVD() {
-		
-	}
+	private String idGradoop;
+	private String label;
+	private int x;
+	private int y;
+	private long idNumeric;
+	private long degree;
 	
 	public VertexGVD(String idGradoop, String label, long idNumeric, int x, int y, long degree) {
 		this.idGradoop = idGradoop;
@@ -56,6 +52,10 @@ public class VertexGVD implements Serializable{
 		return this.idNumeric;
 	}
 	
+	public Long getDegree() {
+		return this.degree;
+	}
+	
 	public void setIdGradoop(String idGradoop) {
 		this.idGradoop = idGradoop;
 	}
@@ -78,9 +78,5 @@ public class VertexGVD implements Serializable{
 	
 	public void setDegree(Long degree) {
 		this.degree = degree;
-	}
-	
-	public Long getDegree() {
-		return this.degree;
 	}
 }

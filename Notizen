@@ -192,29 +192,19 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 	- Die Knoten des LDBC_1 können über DataSet API in eine Datei geschrieben werden. Ein '.print()'-Sink funktioniert nicht. Ein '.collect()' mit anschließendem Sink ebenfalls nicht (Caused by: java.io.IOException: The rpc invocation size 666780296 exceeds the maximum akka framesize.) Das Ganze wurde auf einem lokalen CLuster getestet, aber sollte entsprechend auch in einer Slurm-Session funktionieren.
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-TODO: AdjaGraphUtil, wrapperKEysMapper is obsolete because wrapper can be put out in flatmap already!!!
-
 TODO: Überlegung bei Panning-Gelayoutet: Manchmal leert sich der Viewport am Rand des Graph, weil keine Wrapper nachgeladen werden mit Knoten die vor und nach der Operation beide Inner waren (bzw. einer NewInner)
 
-TODO:Testen ob streaming layout noch mit veränderten FilterFunctions (.toString()) funktionieren
+TODO: introduce better layout algorithms
 
 TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
 
-TODO: Muss an panLayoutStep4Stream() und andere Terminator-Funktionen nicht noch die Abfrage nach "nichts an Client gesendet" bzw. "nichts vom Cluster empfangen", um dann wrapperHandler.clearOperation durchzuführen???
-
-TODO: Building Adjacency-Matrix is going to be a problem for wrapperHandler --> probably adjMatrix not necessary in WrapperHandler
-
-TODO: WrapperHandler: getNeighboorHood ohne Adjmatrix implementieren
-
 TODO: GRadoopgraphUtil pan: Wahrscheinlich ist es in A to A nicht notwendig identity edges herauszufiltern wie bisher
+
+TODO: WWrapperFilterIdentity in CSVGraphUtil pan() testen
 
 TODO: Front-End aufhübschen
 
-TODO: Felder von Knoten und Kante private machen
-
 late-TODO: in den ganzen FlinkFunctionsKlassen die unbötigen Klammern entfernen und WrapperklassenCasts zu prim. Typ casts machen
-
-late-TODO: VisualizedVertices kann wahrscheinlich öfter angewandt werden als bereits getan (als Filter)
 
 TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 

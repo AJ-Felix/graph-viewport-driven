@@ -9,16 +9,16 @@ import org.apache.flink.util.Collector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 
 public class VertexFlatMapIsLayoutedInnerNewNotOldUni implements FlatMapFunction<Row,String>{
-	Map<String,Map<String,String>> adjMatrix;
-	Map<String,VertexGVD> layoutedVertices;
-	Float topNew;
-	Float rightNew;
-	Float bottomNew;
-	Float leftNew;
-	Float topOld;
-	Float rightOld;
-	Float bottomOld;
-	Float leftOld;
+	private Map<String,Map<String,String>> adjMatrix;
+	private Map<String,VertexGVD> layoutedVertices;
+	private Float topNew;
+	private Float rightNew;
+	private Float bottomNew;
+	private Float leftNew;
+	private Float topOld;
+	private Float rightOld;
+	private Float bottomOld;
+	private Float leftOld;
 	
 	public VertexFlatMapIsLayoutedInnerNewNotOldUni(Map<String,Map<String,String>> adjMatrix, 
 			Map<String,VertexGVD> layoutedVertices, Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, 

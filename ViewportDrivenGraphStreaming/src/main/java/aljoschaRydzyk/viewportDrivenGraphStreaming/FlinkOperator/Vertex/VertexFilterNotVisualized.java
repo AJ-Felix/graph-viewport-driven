@@ -1,21 +1,19 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex;
 
-import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
-
 public class VertexFilterNotVisualized implements FilterFunction<Row> {
-	Map<String,VertexGVD> visualizedVertices;
+	private Set<String> visualizedVertices;
 	
-	public VertexFilterNotVisualized(Map<String,VertexGVD>  visualizedVertices) {
+	public VertexFilterNotVisualized(Set<String>  visualizedVertices) {
 		this.visualizedVertices = visualizedVertices;
 	}
 	
 	@Override
 	public boolean filter(Row value) throws Exception {
-		return !this.visualizedVertices.containsKey(value.getField(1).toString());
+		return !this.visualizedVertices.contains(value.getField(1).toString());
 	}
 }

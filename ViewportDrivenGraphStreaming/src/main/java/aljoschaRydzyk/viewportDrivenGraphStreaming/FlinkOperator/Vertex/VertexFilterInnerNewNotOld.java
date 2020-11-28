@@ -4,14 +4,14 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
 public class VertexFilterInnerNewNotOld implements FilterFunction<Row>{
-	Float leftNew;
-	Float rightNew;
-	Float topNew;
-	Float bottomNew;
-	Float leftOld;
-	Float rightOld;
-	Float topOld;
-	Float bottomOld;
+	private Float leftNew;
+	private Float rightNew;
+	private Float topNew;
+	private Float bottomNew;
+	private Float leftOld;
+	private Float rightOld;
+	private Float topOld;
+	private Float bottomOld;
 	
 	public VertexFilterInnerNewNotOld(Float leftNew, Float rightNew, Float topNew, Float bottomNew, Float leftOld, Float rightOld, Float topOld,
 			Float bottomOld) {

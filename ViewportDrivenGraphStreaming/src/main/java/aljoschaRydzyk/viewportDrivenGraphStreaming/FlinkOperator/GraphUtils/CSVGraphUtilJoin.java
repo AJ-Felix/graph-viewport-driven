@@ -90,11 +90,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	}
 	
 	@Override
-	public DataStream<Row> getVertexStream() {
-		return this.vertexStream;
-	}
-	
-	@Override
 	public void initializeDataSets(){
 		
 		//NOTE: Flink needs seperate instances of RowCsvInputFormat for each data import, although they might be identical		
@@ -115,7 +110,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
 	}
 	
-	public DataStream<Row> getMaxDegreeSubset(Integer numberVertices){
+	@Override
+	public DataStream<Row> getMaxDegreeSubset(int numberVertices){
 		
 		//filter for X vertices with highest degree where X is 'numberVertices' to retain a subset
 		DataStream<Row> verticesMaxDegree = this.vertexStream.filter(new VertexFilterMaxDegree(numberVertices));
@@ -236,31 +232,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		return wrapperStream;
 	}
 	
-//	@Override
-//	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws IOException {
-//		this.adjMatrix = new HashMap<String, Map<String,String>>();
-//		BufferedReader csvReader = new BufferedReader(new FileReader(this.inPath + "_adjacency"));
-//		String row;
-//		while ((row = csvReader.readLine()) != null) {
-//		    String[] arr = row.split(";");
-//		    String vertexIdRow = arr[0];
-//		    String[] vertexRows = Arrays.copyOfRange(arr, 1, arr.length);
-//		    Map<String,String> map = new HashMap<String,String>();
-//		    for (String column: vertexRows) {
-//		    	String[] entry = column.split(","); 
-//		    	map.put(entry[0], entry[1]);
-//		    }
-//		    this.adjMatrix.put(vertexIdRow, map);
-//		}
-//		csvReader.close();
-//		return this.adjMatrix;
-//	}
-	
-//	@Override
-//	public Map<String, Map<String, String>> getAdjMatrix() {
-//		return this.adjMatrix;
-//	}
-	
 	@Override
 	public DataStream<Row> panZoomInLayoutStep1(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices, 
 			Float top, Float right, Float bottom, Float left){
@@ -269,8 +240,9 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
 		
+		Set<String> innerVerticeskeySet = new HashSet<String>(innerVertices.keySet());
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
-			.filter(new VertexFilterNotVisualized(innerVertices));
+			.filter(new VertexFilterNotVisualized(innerVerticeskeySet));
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
 				.join(verticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
@@ -287,9 +259,11 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * other hand.
 		 */
 		
-		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
+		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
+		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
+		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionKeySet));
 		DataStream<Row> neighbours = this.vertexStream
-				.filter(new VertexFilterNotLayouted(layoutedVertices));
+				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
 		Table visualizedVerticesTable = fsTableEnv.fromDataStream(visualizedVertices).as(this.vertexFields);
 		Table neighboursTable = fsTableEnv.fromDataStream(neighbours).as(this.vertexFields);
 		DataStream<Row> wrapperStream = 
@@ -310,7 +284,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that are 
 		 * not yet layouted starting with highest degree.
 		 */
-		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new VertexFilterNotLayouted(layoutedVertices));
+		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
+		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
 		Table notLayoutedVerticesTable = fsTableEnv.fromDataStream(notLayoutedVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
 				.join(notLayoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
@@ -332,7 +307,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
 		unionMap.putAll(newVertices);
 		
-		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(unionMap));
+		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
+		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(unionKeySet));
 		DataStream<Row> layoutedVerticesStream = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, 
 			top, right, bottom, left));
 		Table visualizedVerticesTable = this.fsTableEnv.fromDataStream(visualizedVerticesStream).as(this.vertexFields);
@@ -361,7 +337,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * outside the current model window on the other hand.
 		 */
 		
-		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVertices))
+		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
+		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
 				topNew, rightNew, bottomNew, leftNew));
@@ -405,8 +382,9 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * coordinates outside the current model window on the other hand.
 		 */
 		
+		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
 		DataStream<Row> newlyVisualizedVertices = this.vertexStream
-				.filter(new VertexFilterIsVisualized(newVertices))
+				.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(zoomOutVertexFilter);
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream
 				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left));

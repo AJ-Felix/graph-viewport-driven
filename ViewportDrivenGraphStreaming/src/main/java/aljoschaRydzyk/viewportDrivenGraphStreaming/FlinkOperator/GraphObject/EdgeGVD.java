@@ -1,14 +1,10 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject;
 
 public class EdgeGVD {
-	public String idGradoop;
-	public String label;
-	public String sourceIdGradoop;
-	public String targetIdGradoop;
-	
-	public EdgeGVD() {
-		
-	}
+	private String idGradoop;
+	private String label;
+	private String sourceIdGradoop;
+	private String targetIdGradoop;
 	
 	public EdgeGVD(String idGradoop, String label, String sourceIdGradoop, String targetIdGradoop) {
 		this.idGradoop = idGradoop;

@@ -9,14 +9,14 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Ver
 
 public class VertexFilterIsLayoutedInnerNewNotOld implements FilterFunction<Row> {
 	private Map<String,VertexGVD> layoutedVertices;
-	Float leftNew;
-	Float rightNew;
-	Float topNew;
-	Float bottomNew;
-	Float leftOld;
-	Float rightOld;
-	Float topOld;
-	Float bottomOld;
+	private Float leftNew;
+	private Float rightNew;
+	private Float topNew;
+	private Float bottomNew;
+	private Float leftOld;
+	private Float rightOld;
+	private Float topOld;
+	private Float bottomOld;
 	
 	public VertexFilterIsLayoutedInnerNewNotOld(Map<String,VertexGVD> layoutedVertices,
 			Float leftNew, Float rightNew, Float topNew, Float bottomNew, Float leftOld, Float rightOld, Float topOld, 

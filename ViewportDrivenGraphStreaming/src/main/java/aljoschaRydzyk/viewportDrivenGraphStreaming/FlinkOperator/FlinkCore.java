@@ -41,19 +41,11 @@ public class FlinkCore {
 	  private StreamExecutionEnvironment fsEnv;
 	  private StreamTableEnvironment fsTableEnv;
 	  private String flinkJobJarPath = "/home/aljoscha/remoteEnvJars/combined.jar";
-	  
-//	  private String clusterEntryPointAddress = "localhost";
 	  private int clusterEntryPointPort = 8081;
-//	  private String hdfsEntryPointAddress = "localhost";
-//	  private int hdfsEntryPointPort = 9000;
-//	  private String hdfsGraphFilesDirectory;
 	  private String hdfsFullPath;
 	  private Boolean degreesCalculated = false;
-	  
-	  
 	  private Boolean gradoopWithHBase;
 	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
-	  
 	  private Boolean stream = true;;
 	  private GraphUtilStream graphUtilStream;
 	  private GraphUtilSet graphUtilSet;
@@ -73,11 +65,6 @@ public class FlinkCore {
 	  
 	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId,
 			Boolean degreesCalculated) {
-//		String clusterEntryPointIp4 = flinkCoreParameters.get(0);
-//		this.gradoopCSVPath = flinkCoreParameters.get(1);
-//		this.gradoopGraphID = flinkCoreParameters.get(2);
-//		this.viDGraSCSVPath = flinkCoreParameters.get(
-//		this.env = ExecutionEnvironment.getExecutionEnvironment();
 		this.degreesCalculated = degreesCalculated;
 		this.hdfsFullPath = hdfsFullPath;
 		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, 
@@ -152,8 +139,7 @@ public class FlinkCore {
 		LogicalGraph graph;
 		try {
 			graph = this.getLogicalGraph();	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			this.graphUtilSet = new GradoopGraphUtil(graph, this.fsEnv, this.fsTableEnv, this.vertexFields, this.wrapperFields);
-//			this.graphUtilSet.buildAdjacencyMatrix();
+			this.graphUtilSet = new GradoopGraphUtil(graph, this.fsTableEnv, this.wrapperFields);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}	
@@ -162,11 +148,6 @@ public class FlinkCore {
 	
 	public GraphUtilStream initializeCSVGraphUtilJoin() {
 		this.graphUtilStream = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.hdfsFullPath, this.vertexFields, this.wrapperFields);
-//			try {
-//				this.graphUtilStream.buildAdjacencyMatrix();
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
 		return this.graphUtilStream;
 	}
 	
@@ -347,11 +328,5 @@ public class FlinkCore {
 		System.out.println("FlinkCore, panSet... " + topNew + " " + rightNew + " " + bottomNew + " " + 
 				leftNew + " " +  topOld + " " + rightOld +" " + bottomOld + " " + leftOld);
 		return set;
-	}
-		
-	public DataStream<Row> displayAll() {
-		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtilStream);
-		graphUtil.initializeDataSets();
-		return graphUtil.getWrapperStream();
 	}
 }
