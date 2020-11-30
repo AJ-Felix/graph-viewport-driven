@@ -23,7 +23,8 @@ public class Main {
 		System.setOut(fileOut);
 		
 		//initialize Server
-		server = Server.getInstance();
+//		server = Server.getInstance();
+		server = new Server();
 		try {
 			server.setPublicIp4Adress();
 		} catch (SocketException e) {

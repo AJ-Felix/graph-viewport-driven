@@ -28,6 +28,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.Wrapper
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinatesRetract;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineRetract;
 import io.undertow.Undertow;
+import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.WebSocketChannel;
@@ -62,14 +63,14 @@ public class Server implements Serializable{
     private FlinkResponseHandler flinkResponseHandler;
     private String localMachinePublicIp4 = "localhost";
     private int flinkResponsePort = 8898;
-    private static Server server = null;
+//    private static Server server = null;
   
-    public static Server getInstance() {
-    	if (server == null) server = new Server();
-		return server;
-    }
+//    public static Server getInstance() {
+//    	if (server == null) server = new Server();
+//		return server;
+//    }
 
-    private Server () {
+    public Server () {
     	System.out.println("executing server constructor");
 	}
     
@@ -82,18 +83,20 @@ public class Server implements Serializable{
 	                    channel.getReceiveSetter().set(getListener());
 	                    channel.resumeReceives();
 	                }))
+//                	.addPrefixPath("/", resource(new ClassPathResourceManager(Server.class.getClassLoader(),
+//                            Server.class.getPackage())).addWelcomeFiles("index.html")/*.setDirectoryListingEnabled(true)*/))
             	).build();
     	server.start();
         System.out.println("Server started!");  
     }
     
     public void initializeHandlers() {
-    	wrapperHandler = new WrapperHandler();
+    	wrapperHandler = new WrapperHandler(this);
   		wrapperHandler.initializeGraphRepresentation();
   		wrapperHandler.initializeAPI(localMachinePublicIp4);
   		
   		//initialize FlinkResponseHandler
-        flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
+        flinkResponseHandler = new FlinkResponseHandler(this, wrapperHandler);
         flinkResponseHandler.start();
     }
     
@@ -237,7 +240,8 @@ public class Server implements Serializable{
                 		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
                 		if (layout) {
                 			wrapperHandler.clearOperation();
-    		            	Server.getInstance().sendToAll("fit");
+//    		            	Server.getInstance().sendToAll("fit");
+                			sendToAll("fit");
                 		}
                 	}
                 } else if (messageData.startsWith("zoom")) {
@@ -430,7 +434,8 @@ public class Server implements Serializable{
     	System.out.println("operationStep: " + operationStep);
     	if (operation.equals("initial")) {
             wrapperHandler.clearOperation();
-        	Server.getInstance().sendToAll("fit");
+//        	Server.getInstance().sendToAll("fit");
+            sendToAll("fit");
     	} else if (operation.startsWith("zoom")) {
     		if (operation.contains("In")) {
     			if (operationStep == 1) {

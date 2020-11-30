@@ -40,8 +40,10 @@ public class WrapperHandler implements Serializable {
     private int operationStep;
     public boolean sentToClientInSubStep;
 	private boolean stream;
+	private Server server;
 
-    public WrapperHandler () {
+    public WrapperHandler (Server server) {
+    	this.server = server;
     	System.out.println("wrapper handler constructor is executed");
     }
 	 
@@ -83,7 +85,7 @@ public class WrapperHandler implements Serializable {
 					}
 					if (((sourceX < left) || (right < sourceX) || (sourceY < top) || (bottom < sourceY)) &&
 							((targetX  < left) || (right < targetX ) || (targetY  < top) || (bottom < targetY))){
-						Server.getInstance().sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
+						server.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 						System.out.println("Removing Object in prepareOperation, ID: " + wrapper.getEdgeIdGradoop());
 					}
 				}			
@@ -368,7 +370,7 @@ public class WrapperHandler implements Serializable {
 							break;
 						}
 					}
-					if (stream) Server.getInstance().getFlinkResponseHandler().closeAndReopen();
+					if (stream) server.getFlinkResponseHandler().closeAndReopen();
 				} catch (ApiException e) {
 					e.printStackTrace();
 				}
@@ -590,7 +592,7 @@ public class WrapperHandler implements Serializable {
 				if (innerVertices.containsKey(targetId)) innerVertices.remove(targetId);
 				if (newVertices.containsKey(targetId)) newVertices.remove(targetId);
 				System.out.println("removing object in removeWrapper (target), ID: " + wrapper.getTargetIdGradoop());
-				Server.getInstance().sendToAll("removeObjectServer;" + wrapper.getTargetIdGradoop());
+				server.sendToAll("removeObjectServer;" + wrapper.getTargetIdGradoop());
 			} else {
 				globalVertices.get(targetId).put("incidence", targetIncidence - 1);
 			}
@@ -604,7 +606,7 @@ public class WrapperHandler implements Serializable {
 			globalVertices.remove(sourceId);
 			if (innerVertices.containsKey(sourceId)) innerVertices.remove(sourceId);
 			if (newVertices.containsKey(sourceId)) newVertices.remove(sourceId);
-			Server.getInstance().sendToAll("removeObjectServer;" + wrapper.getSourceIdGradoop());
+			server.sendToAll("removeObjectServer;" + wrapper.getSourceIdGradoop());
 			System.out.println("removing object in removeWrapper (source), ID: " + wrapper.getSourceIdGradoop());
 		} else {
 			globalVertices.get(sourceId).put("incidence", sourceIncidence - 1);
@@ -623,17 +625,17 @@ public class WrapperHandler implements Serializable {
 			System.out.println("addVertex, globalVertices, incidence: " + 
 					globalVertices.get(sourceId).get("incidence"));
 			if (layout) {
-				System.out.println("channel size of Server: " + Server.getInstance().channels.size());
-				Server.getInstance().sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
+				System.out.println("channel size of Server: " + server.channels.size());
+				server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
 				sentToClientInSubStep = true;
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
 					VertexGVD layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
-					Server.getInstance().sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
+					server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
 							+ vertex.getIdNumeric());
 					sentToClientInSubStep = true;
 				} else {
-					Server.getInstance().sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
+					server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
 					sentToClientInSubStep = true;
 				}
 			}
@@ -652,7 +654,7 @@ public class WrapperHandler implements Serializable {
 		} else {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
-			Server.getInstance().sendToAll("removeObjectServer;" + vertex.getIdGradoop());
+			server.sendToAll("removeObjectServer;" + vertex.getIdGradoop());
 			Iterator<WrapperGVD> iter = edges.values().iterator();
 			while (iter.hasNext()) {
 				WrapperGVD wrapper = iter.next();
@@ -667,7 +669,7 @@ public class WrapperHandler implements Serializable {
 	  
 	private void addEdge(WrapperGVD wrapper) {
 		edges.put(wrapper.getEdgeIdGradoop(), wrapper);
-		Server.getInstance().sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + wrapper.getTargetIdGradoop());
+		server.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + wrapper.getTargetIdGradoop());
 		sentToClientInSubStep = true;
 	}
 	
@@ -765,7 +767,7 @@ public class WrapperHandler implements Serializable {
 							((vertex.getX() >= left) && (right >= vertex.getX()) && (vertex.getY() >= top) && (bottom >= vertex.getY()) 
 									&& !innerVertices.containsKey(vertexId))) {
 					System.out.println("removing in clear operation " + vertexId);
-					Server.getInstance().sendToAll("removeObjectServer;" + vertexId);
+					server.sendToAll("removeObjectServer;" + vertexId);
 					Iterator<WrapperGVD> edgesIterator = edges.values().iterator();
 					while (edgesIterator.hasNext()) {
 						WrapperGVD wrapper = edgesIterator.next();
@@ -802,7 +804,7 @@ public class WrapperHandler implements Serializable {
 		for (Map.Entry<String, VertexGVD> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();
 		for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) visualizedWrappers.add(entry.getKey());
-		GraphUtil graphUtil =  Server.getInstance().getFlinkCore().getGraphUtil();
+		GraphUtil graphUtil =  server.getFlinkCore().getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
 		for (String key : visualizedVertices) System.out.println("clearoperation, visualizedVertices: " + key);

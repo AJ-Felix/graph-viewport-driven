@@ -91,7 +91,6 @@ let xRenderDiff = 0;
 let yRenderDiff = 0;
 
 function finalOperations(){
-	console.log(cy.elements.style);
 	console.log("in finalOperations funtion");
 	if (!layout){
 		let layoutBaseString = "";
@@ -100,7 +99,8 @@ function finalOperations(){
 			console.log("performing layout!");
 			console.log(boundingBoxVar);
 			let layoutOptions = {};
-			layoutOptions.name = "random";
+			layoutOptions.name = "cose";
+			layoutOptions.randomize = true;
 			layoutOptions.fit = false;
 			layoutOptions.boundingBox = boundingBoxVar;
 			layoutBaseCy = cy.collection();
@@ -110,6 +110,10 @@ function finalOperations(){
 			});
 			let layout = layoutBaseCy.layout(layoutOptions);
 			layout.run();
+			setTimeout(function(){
+				console.log("stopped layout");
+				layout.stop();
+			}, 100);
 			console.log("layout performed");
 			layoutBaseCy.forEach(function(node){
 				// console.log(node.style({"width":"50" ,"height":"50", "font-size":"32px"}));
@@ -124,6 +128,11 @@ function finalOperations(){
 }
 
 function addVertexToLayoutBase(dataArray){
+	console.log(boundingBoxVar);
+	console.log(boundingBoxVar.x2);
+	console.log(Math.random());
+	console.log(boundingBoxVar.x2 * Math.random());
+	console.log(boundingBoxVar.x1 + Math.random() * (boundingBoxVar.x2 - boundingBoxVar.x1));
 	let xVertex = boundingBoxVar.x1 + Math.random() * (boundingBoxVar.x2 - boundingBoxVar.x1);
 	let yVertex = boundingBoxVar.y1 + Math.random() * (boundingBoxVar.y2 - boundingBoxVar.y1);
 	console.log("xVertex: " + xVertex);

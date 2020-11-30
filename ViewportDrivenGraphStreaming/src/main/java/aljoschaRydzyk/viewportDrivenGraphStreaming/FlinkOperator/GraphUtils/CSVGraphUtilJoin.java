@@ -32,7 +32,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIdentity;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedVerticesIdentity;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
 public class CSVGraphUtilJoin implements GraphUtilStream{
@@ -145,7 +145,10 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		Table wrapperTableInIn = wrapperTable
 				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
 				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
-		
+			//filter out already visualized vertices in wrapper stream (identity wrappers)
+			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo)
+					.filter(new WrapperFilterVisualizedVerticesIdentity(visualizedVertices));
+			
 		//produce wrapper stream from in-view area to out-view area and vice versa
 		Table wrapperTableInOut = wrapperTable
 				.join(vertexTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
@@ -155,20 +158,12 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.join(vertexTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
 		
 		//stream union
-		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo).union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo))
+		DataStream<Row> wrapperStream = wrapperStreamInIn.union(fsTableEnv.toAppendStream(wrapperTableInOut, wrapperRowTypeInfo))
 				.union(fsTableEnv.toAppendStream(wrapperTableOutIn, wrapperRowTypeInfo));
 		
 		//filter out already visualized edges in wrapper stream
 		 wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-		
-		//filter out already visualized vertices in wrapper stream (identity wrappers)
-		Set<String> visualizedVertices = this.visualizedVertices;
-		wrapperStream = wrapperStream.filter(new FilterFunction<Row>() {
-			@Override
-			public boolean filter(Row value) throws Exception {
-				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
-			}
-		});		
+
 		return wrapperStream;
 	}
 	
@@ -181,14 +176,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		
 		//vertex stream filter and conversion to Flink Tables for areas A, B and C
 		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
-		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner.filter(new FilterFunction<Row>() {
-				@Override
-				public boolean filter(Row value) throws Exception {
-					int x = (int) value.getField(4);
-					int y = (int) value.getField(5);
-					return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
-				}
-			});
+		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner
+				.filter(new VertexFilterOuter(topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNewNotOld).as(this.vertexFields);
@@ -210,6 +199,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.join(vertexTableInnerNew).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
 			//filter out redundant identity edges
 			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo);
+		wrapperStreamInIn.print();	
 		
 		//produce wrapperStream from A+C to D and vice versa
 		Table wrapperTableOldInNewInInOut = wrapperTable

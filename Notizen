@@ -194,15 +194,11 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 
 TODO: Überlegung bei Panning-Gelayoutet: Manchmal leert sich der Viewport am Rand des Graph, weil keine Wrapper nachgeladen werden mit Knoten die vor und nach der Operation beide Inner waren (bzw. einer NewInner)
 
-TODO: introduce better layout algorithms
+TODO: Überlegung bei GRadoopGraphUtil: identityWRapper-Initialisierung wieder rausschmeißen, weil sie sowieso nicht funktioniert
+
+TODO: introduce better layout algorithms --> fcose und cose verändern die Knotenposition nicht und andere force-directed algorithms lassen sich nicht per src-tag in plain html einbinden
 
 TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
-
-TODO: WWrapperFilterIdentity in CSVGraphUtil pan() testen
-
-TODO: Restliche Filter in Klassen wrappeN
-
-TODO: GradoopGraphUtil pan UND zoom: produziert AToA bzw. inIn einen Identitystream? der wrd eigentlich benötigt
 
 TODO: Front-End aufhübschen
 
@@ -246,7 +242,7 @@ REST API: Aus irgendeinem Grund werden Patch requests über ajax, welche über j
 um Jobs zu terminieren. Ein Workaround wäre, Flink serverseitig in einem separaten Thread laufen zu lassen und den patch request über die java library der rest api vom server aus durch zuführen.
 
 NEUES GRADOOP:
-	- .join() funktioniert nicht mir identityWrappern --> Workaround, indem aus der Knotenmenge gemappt wird
+	- .join() funktioniert nicht mit identityWrappern --> Workaround, indem aus der Knotenmenge gemappt wird
 	- Es werden downstream von flink die gleichen Funktionaliäten benutzt wie bei Streaming
 	- Seltsamerweise muss für die DataSet API in jedem Filter für die Funktion .containsKey() von Map-Objekten die .toString() Methode aufgerufen werden, damit eine Gleichheit erkannt wird...!!!
 	- pan: Wahrscheinlich ist es in A to A nicht notwendig identity edges herauszufiltern wie bisher

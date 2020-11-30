@@ -24,6 +24,8 @@ public class FlinkResponseHandler extends Thread{
     private Socket echoSocket;
     private PrintWriter out;
 	private BufferedReader in;
+	private Server server;
+	
 	
 	@Override
 	public void start() {
@@ -39,7 +41,8 @@ public class FlinkResponseHandler extends Thread{
 		this.listen();
 	}
     
-	public FlinkResponseHandler(WrapperHandler wrapperHandler) {
+	public FlinkResponseHandler(Server server, WrapperHandler wrapperHandler) {
+		this.server = server;
 		this.wrapperHandler = wrapperHandler;
 		this.threadName = "flinkClusterListener";
         try {
@@ -87,7 +90,8 @@ public class FlinkResponseHandler extends Thread{
 	    	            	}
 	    	            }
 	            	}
-	            	Server.getInstance().sendToAll("fit");
+//	            	Server.getInstance().sendToAll("fit");
+	            	server.sendToAll("fit");
 	                wrapperHandler.clearOperation();
             	} else  {
             		if (operation.contains("Append")) {

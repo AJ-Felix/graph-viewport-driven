@@ -1,4 +1,5 @@
 // let ws = new WebSocket("ws://139.18.13.19:8897/graphData");
+
 let ws;
 let handler;
 
@@ -131,7 +132,7 @@ function sendSignalAdjacency(){
 
 function buildTopViewOperations(){
 	if (!layout) layoutBase = new Set();
-	boundingBoxVar = {x1: 0, y1: 0, w: 4000, h: 4000};
+	boundingBoxVar = {x1: 0, y1: 0, x2: 4000, y2: 4000};
 	cy.zoom(1 / (4000 / Math.min(cyWidth, cyHeight)));
 }
 
@@ -160,16 +161,6 @@ function resetVisualization(){
 		}).update();
 	ws.send("resetWrapperHandler");
 }
-
-// function preLayout(){
-	// layout = false;
-	// ws.send("preLayout");
-// }
-
-// function postLayout(){
-	// layout = true;
-	// ws.send("postLayout");
-// }
 
 let header1 = document.getElementById('header1');
 header1.addEventListener("mousedown", 

@@ -14,7 +14,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.api.java.utils.DataSetUtils;
-import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.table.api.Table;
@@ -29,6 +28,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeSourc
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeTargetIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapIdentityWrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperFilterVisualizedVertices;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperRowMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperSourceIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTargetIDKeySelector;
@@ -47,6 +47,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
 public class GradoopGraphUtil implements GraphUtilSet{
@@ -221,7 +222,11 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				verticesIndexed.filter(new VertexFilterInner(top, right, bottom, left));
 		DataSet<Row> verticesOuter =
 				verticesIndexed.filter(new VertexFilterOuter(top, right, bottom, left));
-
+		
+		//produce identity wrapper set for in-view area
+		for (String key : visualizedVertices) System.out.println("visualizedVertices, zoom, gradoop: "+ key);
+		DataSet<Row> identityWrapper = verticesInner.map(new VertexMapIdentityWrapperRow())
+				.filter(new WrapperFilterVisualizedVertices(visualizedVertices));
 		
 		//produce wrapper set from in-view area to in-view area
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> inIn = verticesInner
@@ -229,6 +234,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.equalTo(new WrapperSourceIDKeySelector())
 				.join(verticesInner).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
+		
 		
 		//wrapper set from in-view area to out-view area and vice versa
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> inOut = verticesInner
@@ -246,28 +252,14 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		inIn = inIn.union(inOut).union(outIn);
 		
 		//map to wrapper row 
-		DataSet<Row> wrapperRow = inIn.map(new WrapperTupleMapWrapperRow());
+		DataSet<Row> wrapperRow = inIn.map(new WrapperTupleMapWrapperRow()).union(identityWrapper);
 		
 		//filter out already visualized edges in wrapper set
 		wrapperRow = wrapperRow.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-		
-		//filter out already visualized vertices in wrapper set (identity wrappers)
-		Set<String> visualizedVertices = this.visualizedVertices;
-		wrapperRow = wrapperRow.filter(new FilterFunction<Row>() {
-			@Override
-			public boolean filter(Row value) throws Exception {
-				return !(visualizedVertices.contains(value.getField(2).toString()) && value.getField(14).equals("identityEdge"));
-			}
-		});		
-		
+
 		//map to wrapper GVD
 		DataSet<WrapperGVD> wrapperGVD = wrapperRow.map(new WrapperRowMapWrapperGVD());
-		
-		try {
-			inIn.print();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+
 		return wrapperGVD;
 	}
 	
@@ -279,20 +271,18 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		//vertex set filter for areas A, B and C
 		DataSet<Row> verticesInner = verticesIndexed.filter(new VertexFilterInner(topNew, rightNew, bottomNew, 
 				leftNew));
-		DataSet<Row> verticesInnerNewNotOld = verticesInner.filter(new FilterFunction<Row>() {
-			@Override
-			public boolean filter(Row row) throws Exception {
-				int x = (int) row.getField(4);
-				int y = (int) row.getField(5);
-				return (leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld);
-			}
-		});
+		DataSet<Row> verticesInnerNewNotOld = verticesInner
+				.filter(new VertexFilterOuter(topOld, rightOld, bottomOld, leftOld));
 		DataSet<Row> verticesOuterBoth = 
 				verticesIndexed.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, 
 						rightOld, topOld, bottomOld));
 		DataSet<Row> verticesOldInnerNotNewInner = 
 				verticesIndexed.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, 
 						rightOld, topOld, bottomOld));
+		
+		//produce identity wrapper for A to A
+		DataSet<Row> identityWrapper = verticesInnerNewNotOld.map(new VertexMapIdentityWrapperRow())
+				.filter(new WrapperFilterVisualizedVertices(visualizedVertices));
 		
 		//produce wrapper set from A to B and vice versa
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperBToA = verticesInnerNewNotOld
@@ -328,15 +318,13 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAPlusCD = wrapperAPlusCToD.union(wrapperDToAPlusC);
 			DataSet<Row> wrapperRow = wrapperAPlusCD.map(new WrapperTupleMapWrapperRow());
 			wrapperRow = wrapperRow.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-			DataSet<WrapperGVD> wrapperGVD = wrapperRow.map(new WrapperRowMapWrapperGVD());
-		wrapperBToA.writeAsText("/home/aljoscha/debug/BToA", WriteMode.OVERWRITE);
-		wrapperAToB.writeAsText("/home/aljoscha/debug/AToB", WriteMode.OVERWRITE);
-		wrapperAToA.writeAsText("/home/aljoscha/debug/AToA", WriteMode.OVERWRITE);
-		wrapperGVD.writeAsText("/home/aljoscha/debug/APlusCToDViceVersa", WriteMode.OVERWRITE);
+			DataSet<WrapperGVD> wrapperGVD = wrapperRow.union(identityWrapper)
+					.map(new WrapperRowMapWrapperGVD());
 		
 		//dataset union
 		wrapperGVD = wrapperAToA.union(wrapperAToB).union(wrapperBToA).map(new WrapperTupleMapWrapperGVD())
 				.union(wrapperGVD);
+		
 		return wrapperGVD;	
 	}
 	
