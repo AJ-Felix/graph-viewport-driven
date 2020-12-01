@@ -47,7 +47,7 @@ public class GradoopToCSV {
 		File verticesFile = new File(outPath + "_vertices");
 		verticesFile.createNewFile();
 		PrintWriter verticesWriter = new PrintWriter(verticesFile);
-		lVertices.sort(new VertexDegreeComparator());
+		lVertices.sort(new VertexEPGMDegreeComparator());
 		for (int i = 0; i < lVertices.size(); i++) 	{
 			vertexIdMap.put(lVertices.get(i).getId().toString(), i);
 			StringBuilder stringBuilder = new StringBuilder();

@@ -173,11 +173,6 @@ Serverseitige Graph-Semantik:
 
 
 
-late TODO: Die GraphVis-Instanz hat seltsames Verhalten. Möglicherweise greifen verschiedene Prozesse parallel darauf zu, weil sie serialisierbar deklariert ist. Strukturen auszulagern macht keinen Sinn, weil Java alle Referenzen ebenfalls serialisieren will. --> Alle Funktionen sind static in der Main-Klasse, weil auf die Instanz der Adjazenzmatrix zugegriffen werden muss. Wenn die Funktionen in eine eigene Objektinstanz gewrappt werden, dann gehen die Felder verloren. Möglicherweise ein Parallelitätsproblem --> Nochmal checken ob man das nicht ändern kann, dass alles in der Main liegt.
-
-
-late-TODO: Überlegung Client-seitige graph-semantik ganz zu löschen. Aber nur falls sich serverseitig nicht im Flink Cluster umsetzen lässt!!!
-
 Late-TODO: FrontEnd Sperre einbauen, bis Operation vollzogen
 Late-TODO: Visualisierung farbig etc.
 
@@ -207,6 +202,10 @@ TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 TODO: Auf Galaxy Cluster testen
 
 TODO: Die Menge der zu visualisierenden Knoten (maxVertices) an den Ausschnitt der Modellierungskoordinaten die zu sehen sind, anpassen!!!
+
+TODO: Bei nicht-quardratischen Viewports ändert sich maxVertices möglicherweise im ZoomIn, sofern der Graph quadratisch gelayoutet wurde/werden soll. Bei pan ändert sich maxVertices entsprechend an den Modellkanten.
+
+TODO: Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. Anschließend werden Knoten außerhalb der neuen Modellkoordinaten, welche vorher drin waren (also in innerVertices/newVertices) gelöscht, falls sie keine Nachbarn innerhalb der Modellkoordinaten mehr haben.
 
 late-TODO: Server ausführung über java -jar command line funktioniert nicht, BlinkExecutorFactory-class fehlt, obwohl in der Jar vorhanden
 late-TODO: sometimes frontend error when zooming in from initial view, but only rarely --> extensive debugging!

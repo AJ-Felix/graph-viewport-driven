@@ -1,6 +1,7 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,60 +65,85 @@ public class WrapperHandler implements Serializable {
 	public void prepareOperation(){
 		System.out.println("top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
 			if (operation != "zoomOut"){
-				for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) {
-					WrapperGVD wrapper = entry.getValue();
-					int sourceX;
-					int sourceY;
-					int targetX;
-					int targetY;
-					if (layout) {
-						sourceX = wrapper.getSourceX();
-						sourceY = wrapper.getSourceY();
-						targetX = wrapper.getTargetX();
-						targetY = wrapper.getTargetY();
-					} else {
-						VertexGVD sourceVertex = (VertexGVD) layoutedVertices.get(wrapper.getSourceVertex().getIdGradoop());
-						sourceX = sourceVertex.getX();
-						sourceY = sourceVertex.getY();
-						VertexGVD targetVertex = (VertexGVD) layoutedVertices.get(wrapper.getTargetVertex().getIdGradoop());
-						targetX = targetVertex.getX();
-						targetY = targetVertex.getY();
-					}
-					if (((sourceX < left) || (right < sourceX) || (sourceY < top) || (bottom < sourceY)) &&
-							((targetX  < left) || (right < targetX ) || (targetY  < top) || (bottom < targetY))){
-						server.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
-						System.out.println("Removing Object in prepareOperation, ID: " + wrapper.getEdgeIdGradoop());
-					}
-				}			
-				System.out.println("innerVertices size before removing in prepareOperation: " + innerVertices.size());
-				Iterator<Map.Entry<String,VertexGVD>> iter = innerVertices.entrySet().iterator();
-				while (iter.hasNext()) {
-					Map.Entry<String,VertexGVD> entry = iter.next();
-					VertexGVD vertex = entry.getValue();
-					System.out.println("VertexID: " + vertex.getIdGradoop() + ", VertexX: " + vertex.getX() + ", VertexY: "+ vertex.getY());
-					if ((vertex.getX() < left) || (right < vertex.getX()) || (vertex.getY() < top) || (bottom < vertex.getY())) {
-						iter.remove();
-						System.out.println("Removing Object in prepareOperation in innerVertices only, ID: " + vertex.getIdGradoop());
-					}
+			for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) {
+				WrapperGVD wrapper = entry.getValue();
+				int sourceX;
+				int sourceY;
+				int targetX;
+				int targetY;
+				if (layout) {
+					sourceX = wrapper.getSourceX();
+					sourceY = wrapper.getSourceY();
+					targetX = wrapper.getTargetX();
+					targetY = wrapper.getTargetY();
+				} else {
+					VertexGVD sourceVertex = (VertexGVD) layoutedVertices.get(wrapper.getSourceVertex().getIdGradoop());
+					sourceX = sourceVertex.getX();
+					sourceY = sourceVertex.getY();
+					VertexGVD targetVertex = (VertexGVD) layoutedVertices.get(wrapper.getTargetVertex().getIdGradoop());
+					targetX = targetVertex.getX();
+					targetY = targetVertex.getY();
 				}
-				System.out.println("innerVertices size after removing in prepareOPeration: " + innerVertices.size());
-				//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
-				if (innerVertices.size() > 1) {
-					updateMinDegreeVertices(innerVertices);
-				} else if (innerVertices.size() == 1) {
-					minDegreeVertex = innerVertices.values().iterator().next();
+				if (((sourceX < left) || (right < sourceX) || (sourceY < top) || (bottom < sourceY)) &&
+						((targetX  < left) || (right < targetX ) || (targetY  < top) || (bottom < targetY))){
+					server.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
+					System.out.println("Removing Object in prepareOperation, ID: " + wrapper.getEdgeIdGradoop());
+				}
+			}			
+			System.out.println("innerVertices size before removing in prepareOperation: " + innerVertices.size());
+			Iterator<Map.Entry<String,VertexGVD>> iter = innerVertices.entrySet().iterator();
+			while (iter.hasNext()) {
+				Map.Entry<String,VertexGVD> entry = iter.next();
+				VertexGVD vertex = entry.getValue();
+				System.out.println("VertexID: " + vertex.getIdGradoop() + ", VertexX: " + vertex.getX() + ", VertexY: "+ vertex.getY());
+				if ((vertex.getX() < left) || (right < vertex.getX()) || (vertex.getY() < top) || (bottom < vertex.getY())) {
+					iter.remove();
+					System.out.println("Removing Object in prepareOperation in innerVertices only, ID: " + vertex.getIdGradoop());
 				}
 			}
-			capacity = maxVertices - innerVertices.size();
-			if (operation.equals("pan") || operation.equals("zoomOut")) {
-				newVertices = innerVertices;
-				for (String vId : newVertices.keySet()) System.out.println("prepareOperation, newVertices key: " + vId);
-				innerVertices = new HashMap<String,VertexGVD>();
-				System.out.println(newVertices.size());
-			} else {
+			System.out.println("innerVertices size after removing in prepareOPeration: " + innerVertices.size());
+			
+		}
+		capacity = maxVertices - innerVertices.size();
+		if (operation.equals("pan") || operation.equals("zoomOut")) {
+			newVertices = innerVertices;
+			if (capacity < 0) {
+				List<VertexGVD> list = new ArrayList<VertexGVD>(newVertices.values());
+				list.sort(new VertexGVDNumericIdComparator().reversed());
+				System.out.println("wrapperHandler, list sorted, idNumeric: " + list.get(0).getIdNumeric());
+//				for (VertexGVD vertex : list) System.out.println(vertex.getIdNumeric());
+				System.out.println("wrapperHandler, list size: " + list.size());	
+				while (capacity < 0) {
+					list.remove(list.size() - 1);
+					capacity += 1;
+				}
+				System.out.println("wrapperHandler, list size after rremove: " + list.size());
 				newVertices = new HashMap<String,VertexGVD>();
+				for (VertexGVD vertex : list) {
+					newVertices.put(vertex.getIdGradoop(), vertex);
+				}
 			}
-		System.out.println("Capacity after prepareOperation: " + capacity);
+			for (String vId : newVertices.keySet()) System.out.println("prepareOperation, newVertices key: " + vId);
+			innerVertices = new HashMap<String,VertexGVD>();
+			System.out.println(newVertices.size());
+			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
+			if (newVertices.size() > 1) {
+				updateMinDegreeVertices(newVertices);
+			} else if (newVertices.size() == 1) {
+				minDegreeVertex = newVertices.values().iterator().next();
+			}
+			System.out.println("Capacity after prepareOperation: " + capacity);
+		} else {
+			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
+			if (innerVertices.size() > 1) {
+				updateMinDegreeVertices(innerVertices);
+			} else if (innerVertices.size() == 1) {
+				minDegreeVertex = innerVertices.values().iterator().next();
+			}
+			System.out.println("Capacity after prepareOperation: " + capacity);
+			newVertices = new HashMap<String,VertexGVD>();
+		}
+		
 	}
 	
 	public void addWrapperCollectionInitial(List<WrapperGVD> wrapperCollection) {
@@ -823,8 +849,8 @@ public class WrapperHandler implements Serializable {
 		this.operation = operation;
 	}
 	
-	public void setMaxVertices(int maxVertices) {
-		this.maxVertices = maxVertices;
+	public void setMaxVertices() {
+		this.maxVertices = server.getMaxVertices();
 	}
 
 	public void setLayoutMode(boolean layoutMode) {

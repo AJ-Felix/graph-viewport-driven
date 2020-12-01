@@ -212,8 +212,13 @@ let cyWidthHalf = cyWidth / 2;
 
 function resized(){
 	const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
+	cyHeightOld = cyHeight;
+	cyWidthOld = cyWidth;
 	cyHeight = boundingClientRect.height;
 	cyWidth = boundingClientRect.width;
+	if (someCondition){
+		resizeGraph(cyHeightOld, cyWidthOld, cyHeight, cyWidth);
+	}
 	cyHeightHalf = cyHeight / 2;
 	cyWidthHalf = cyWidth / 2;
 	console.log("resizing after timeout");
@@ -223,6 +228,9 @@ function resized(){
 	ws.send("viewportSize;" + pan.x + ";" + pan.y + ";" + cy.zoom() + ";" +  cyWidth + ";" + cyHeight);
 }
 
+function resizeGraph(cyHeightOld, cyWidthOld, cyHeight, cyWidth){
+	
+}
 
 var resizedTimeOut;
 window.onresize = function(){

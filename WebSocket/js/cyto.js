@@ -203,7 +203,7 @@ cyto.addEventListener("mouseup", function(e){
 		handler.operation = "pan";
 		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
 	}
-	ws.send("pan;" + xModelDiff + ";" + yModelDiff);
+	ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + zoomLevel);
 });
 
 document.addEventListener("click",
