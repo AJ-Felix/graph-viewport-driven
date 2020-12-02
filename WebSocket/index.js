@@ -23,12 +23,6 @@ async function processMessage(){
 		let dataArray = messageQueue.shift();
 		let promise = new Promise((resolve, reject) => {
 			switch (dataArray[0]){
-				case 'addWrapper':
-					handler.addWrapper(dataArray);
-					break;
-				case 'removeWrapper':
-					handler.removeWrapper(dataArray);
-					break;
 				case 'addVertexServer':
 					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 					if (!layout){
@@ -216,9 +210,7 @@ function resized(){
 	cyWidthOld = cyWidth;
 	cyHeight = boundingClientRect.height;
 	cyWidth = boundingClientRect.width;
-	if (someCondition){
-		resizeGraph(cyHeightOld, cyWidthOld, cyHeight, cyWidth);
-	}
+	if (cy.nodes().length != 0)	resizeGraph(cyHeightOld, cyWidthOld, cyHeight, cyWidth);
 	cyHeightHalf = cyHeight / 2;
 	cyWidthHalf = cyWidth / 2;
 	console.log("resizing after timeout");
@@ -229,7 +221,10 @@ function resized(){
 }
 
 function resizeGraph(cyHeightOld, cyWidthOld, cyHeight, cyWidth){
-	
+	const yVar = (cyHeightOld - cyHeight) / 2;
+	const xVar = (cyWidthOld - cyWidth) / 2;
+	const pan = cy.pan();
+	cy.pan({x: - xVar + pan.x, y: - yVar + pan.y});
 }
 
 var resizedTimeOut;

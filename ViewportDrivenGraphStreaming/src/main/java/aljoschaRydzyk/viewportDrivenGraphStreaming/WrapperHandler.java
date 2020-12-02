@@ -64,7 +64,7 @@ public class WrapperHandler implements Serializable {
 	  
 	public void prepareOperation(){
 		System.out.println("top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
-			if (operation != "zoomOut"){
+		if (operation != "zoomOut"){
 			for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) {
 				WrapperGVD wrapper = entry.getValue();
 				int sourceX;
@@ -134,6 +134,22 @@ public class WrapperHandler implements Serializable {
 			}
 			System.out.println("Capacity after prepareOperation: " + capacity);
 		} else {
+			if (capacity < 0) {
+				List<VertexGVD> list = new ArrayList<VertexGVD>(innerVertices.values());
+				list.sort(new VertexGVDNumericIdComparator().reversed());
+				System.out.println("wrapperHandler, list sorted, idNumeric: " + list.get(0).getIdNumeric());
+//				for (VertexGVD vertex : list) System.out.println(vertex.getIdNumeric());
+				System.out.println("wrapperHandler, list size: " + list.size());	
+				while (capacity < 0) {
+					list.remove(list.size() - 1);
+					capacity += 1;
+				}
+				System.out.println("wrapperHandler, list size after rremove: " + list.size());
+				innerVertices = new HashMap<String,VertexGVD>();
+				for (VertexGVD vertex : list) {
+					innerVertices.put(vertex.getIdGradoop(), vertex);
+				}
+			}
 			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
 			if (innerVertices.size() > 1) {
 				updateMinDegreeVertices(innerVertices);
@@ -907,5 +923,9 @@ public class WrapperHandler implements Serializable {
 
 	public void setStreamBool(Boolean stream) {
 		this.stream = stream;
+	}
+	
+	public Map<String,Map<String,Object>> getGlobalVertices(){
+		return this.globalVertices;
 	}
 }

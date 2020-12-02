@@ -99,7 +99,7 @@ function finalOperations(){
 			console.log("performing layout!");
 			console.log(boundingBoxVar);
 			let layoutOptions = {};
-			layoutOptions.name = "cose";
+			layoutOptions.name = "random";
 			layoutOptions.randomize = true;
 			layoutOptions.fit = false;
 			layoutOptions.boundingBox = boundingBoxVar;
@@ -108,7 +108,7 @@ function finalOperations(){
 			layoutBase.forEach(function (vertexId){
 				layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
 			});
-			let layout = layoutBaseCy.layout(layoutOptions);
+			let layout = cy.layout(layoutOptions);
 			layout.run();
 			setTimeout(function(){
 				console.log("stopped layout");

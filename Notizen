@@ -201,12 +201,18 @@ TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 
 TODO: Auf Galaxy Cluster testen
 
-TODO: Die Menge der zu visualisierenden Knoten (maxVertices) an den Ausschnitt der Modellierungskoordinaten die zu sehen sind, anpassen!!!
 
-TODO: Bei nicht-quardratischen Viewports ändert sich maxVertices möglicherweise im ZoomIn, sofern der Graph quadratisch gelayoutet wurde/werden soll. Bei pan ändert sich maxVertices entsprechend an den Modellkanten.
-
-TODO: Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. Anschließend werden Knoten außerhalb der neuen Modellkoordinaten, welche vorher drin waren (also in innerVertices/newVertices) gelöscht, falls sie keine Nachbarn innerhalb der Modellkoordinaten mehr haben.
-
+Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
+	Bei Verkleinerung: 
+		Anschließend werden Knoten außerhalb der neuen Modellkoordinaten, welche vorher drin waren (also in innerVertices/newVertices), gelöscht, falls sie keine Nachbarn innerhalb der Modellkoordinaten mehr haben.
+			(Das entspricht wrapperHandler.prepareOperation())
+		Außerdem müssen entsprechend der neuen Kapazität des Viewports Knoten Inside hinzugefügt oder entfernt werden und danach In-Out-/Out-In-Wrapper hinzugefügt werden. Die neue Kapazität berechnet sich aus der
+			Anzahl der Knoten, welche noch inside sind und den neuen Viewportmaßen.
+		Wenn Knoten hinzugefügt werden, entspricht dies einem ZoomIn. Wenn Knoten gelöscht werden, dann kann der AToA-Schritt des ZoomIn weggelassen werden (wurde aber nicht implementiert!).
+	Bei Vergrößerung:
+		Anschließend müssen Knoten entsprechend der Kapazität nachgeladen werden.
+		Dies entspricht einem ZoomOut.
+		
 late-TODO: Server ausführung über java -jar command line funktioniert nicht, BlinkExecutorFactory-class fehlt, obwohl in der Jar vorhanden
 late-TODO: sometimes frontend error when zooming in from initial view, but only rarely --> extensive debugging!
 late-TODO: buildTopViewRetract verursacht manchmal NullPointer bei Execution mit Fat-jar....

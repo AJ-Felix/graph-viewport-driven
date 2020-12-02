@@ -187,8 +187,32 @@ public class Server implements Serializable{
                 	System.out.println("viewportSize, maxVertices before: " + maxVertices);
 					calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
         			System.out.println("viewportSize, maxVertices after: " + maxVertices);
-                	if (tempMaxVertices != maxVertices) {
-                		
+                	if (!wrapperHandler.getGlobalVertices().isEmpty()) {
+                		flinkCore.setModelPositionsOld();
+            			setModelPositions(topModel, rightModel, bottomModel, leftModel);
+            			if (viewportPixelX < viewportPixelXOld || viewportPixelY < viewportPixelYOld) {
+    						setOperation("zoomIn");
+    						wrapperHandler.prepareOperation();
+    						if (layout) {
+    							if (stream) zoomStream();
+    							else zoomSet();
+    						} else {								
+    							System.out.println("in zoom in layout function");
+    							if (stream) zoomInLayoutStep1Stream();
+    							else  zoomInLayoutStep1Set();				
+    						}
+    					} else {
+    						setOperation("zoomOut");
+    						wrapperHandler.prepareOperation();
+    						if (layout) {
+    							if (stream) zoomStream();
+    							else zoomSet();
+    						}
+    						else {
+    							if (stream)	zoomOutLayoutStep1Stream();
+    							else zoomOutLayoutStep1Set();
+    						}
+    					}
                 		//TODO: Resizing... Add or remove vertices, write new model coordinates to data structures
                 		//ideally find out, how much resizing in x and y direction and add vertices accordingly
                 	}
@@ -954,18 +978,24 @@ public class Server implements Serializable{
     
     private void calculateMaxVertices(float topModel, float rightModel, float bottomModel, 
     		float leftModel, float zoomLevel) {
-    	topModel = Math.max(0, topModel);
-		rightModel = Math.min(4000, rightModel);
-		bottomModel = Math.min(4000, bottomModel);
-		leftModel = Math.max(0, leftModel);
-		float xPixelProportion = (rightModel - leftModel) * zoomLevel;
-		float yPixelProportion = (bottomModel - topModel) * zoomLevel;
-		System.out.println("xPixelProportion: " + xPixelProportion + " of total pixels: " + 
-				viewportPixelX);
-		System.out.println("yPixelProportion: " + yPixelProportion + " of total pixels: " + 
-				viewportPixelY);
-		maxVertices = (int) (viewportPixelY * (yPixelProportion / viewportPixelY) *
-				viewportPixelX * (xPixelProportion / viewportPixelX) / vertexCountNormalizationFactor);
+    	if (wrapperHandler.getGlobalVertices().isEmpty()) {
+    		maxVertices = (int) (viewportPixelY * viewportPixelX) / vertexCountNormalizationFactor;
+    	} else {
+	    	topModel = Math.max(0, topModel);
+			rightModel = Math.min(4000, rightModel);
+			bottomModel = Math.min(4000, bottomModel);
+			leftModel = Math.max(0, leftModel);
+			System.out.println("calculateMaxVertices, top, right, bottom, left: " + 
+					topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
+			float xPixelProportion = (rightModel - leftModel) * zoomLevel;
+			float yPixelProportion = (bottomModel - topModel) * zoomLevel;
+			System.out.println("xPixelProportion: " + xPixelProportion + " of total pixels: " + 
+					viewportPixelX);
+			System.out.println("yPixelProportion: " + yPixelProportion + " of total pixels: " + 
+					viewportPixelY);
+			maxVertices = (int) (viewportPixelY * (yPixelProportion / viewportPixelY) *
+					viewportPixelX * (xPixelProportion / viewportPixelX) / vertexCountNormalizationFactor);
+    	}
 		wrapperHandler.setMaxVertices();
     }
 }
