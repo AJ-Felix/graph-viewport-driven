@@ -668,13 +668,14 @@ public class WrapperHandler implements Serializable {
 					globalVertices.get(sourceId).get("incidence"));
 			if (layout) {
 				System.out.println("channel size of Server: " + server.channels.size());
-				server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + vertex.getY() + ";" + vertex.getIdNumeric());
+				server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + 
+				vertex.getY() + ";" + vertex.getIdNumeric() + ";" + vertex.getDegree());
 				sentToClientInSubStep = true;
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
 					VertexGVD layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
 					server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
-							+ vertex.getIdNumeric());
+							+ vertex.getIdNumeric() + ";" + vertex.getDegree());
 					sentToClientInSubStep = true;
 				} else {
 					server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());

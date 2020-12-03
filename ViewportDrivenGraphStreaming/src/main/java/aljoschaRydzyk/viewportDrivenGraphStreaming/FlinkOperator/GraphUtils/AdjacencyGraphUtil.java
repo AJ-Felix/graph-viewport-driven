@@ -30,10 +30,10 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInside;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterMaxDegree;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotInsideBefore;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotLayouted;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapIsLayoutedInnerNewNotOldUni;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapIsLayoutedInnerOldNotNewBi;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapIsLayoutedOutsideBi;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotLayoutedBi;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotLayoutedUni;
@@ -285,13 +285,25 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		 * newly visualized inside the current model window on the one hand, and neighbour vertices that are layouted with coordinates 
 		 * outside the current model window on the other hand.
 		 */
-		System.out.println("in panLayoutFourthStep");		
+		System.out.println("in panLayoutFourthStep");	
+		
+		//produce wrapper stream from C to D and vice versa
 		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
-		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
-				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
-		DataStream<String> wrapperIds = newlyAddedInsideVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
-				adjMatrix, topNew, rightNew, bottomNew, leftNew));
-		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+		DataStream<Row> cVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
+				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
+		DataStream<String> wrapperIds = cVertices.flatMap(new VertexFlatMapIsLayoutedInnerOldNotNewBi(
+				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
+				bottomOld, leftOld));
+		
+		//produce wrapper stream from A to B+D and vice versa
+		DataStream<Row> aVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
+				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices,
+						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+		DataStream<String> wrapperIds2 = aVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(
+				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew));
+		
+		DataStream<Row> nonIdentityWrapper = wrapperIds.union(wrapperIds2)
+				.map(new WrapperIDMapWrapper(this.wrapperMap));
 		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		return nonIdentityWrapper;
 	}
@@ -308,8 +320,8 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		
 		//IDENTITY WRAPPER NEEDED
 		
-		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftNew, rightNew, topNew, 
-				bottomNew, leftOld, rightOld, topOld, bottomOld);
+		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, topNew, rightNew, bottomNew, 
+				leftNew, topOld, rightOld, bottomOld, leftOld);
 		DataStream<Row> vertices = this.vertexStream.filter(zoomOutVertexFilter);
 		DataStream<String> wrapperIds = vertices.flatMap(new VertexFlatMapIsLayoutedInnerNewNotOldUni(adjMatrix, layoutedVertices, 
 				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));

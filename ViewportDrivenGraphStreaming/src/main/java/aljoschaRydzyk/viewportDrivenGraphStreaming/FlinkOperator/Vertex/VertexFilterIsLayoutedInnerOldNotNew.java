@@ -7,7 +7,7 @@ import org.apache.flink.types.Row;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 
-public class VertexFilterIsLayoutedInnerNewNotOld implements FilterFunction<Row> {
+public class VertexFilterIsLayoutedInnerOldNotNew implements FilterFunction<Row> {
 	private Map<String,VertexGVD> layoutedVertices;
 	private Float leftNew;
 	private Float rightNew;
@@ -18,7 +18,7 @@ public class VertexFilterIsLayoutedInnerNewNotOld implements FilterFunction<Row>
 	private Float topOld;
 	private Float bottomOld;
 	
-	public VertexFilterIsLayoutedInnerNewNotOld(Map<String,VertexGVD> layoutedVertices,
+	public VertexFilterIsLayoutedInnerOldNotNew(Map<String,VertexGVD> layoutedVertices,
 			Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld, 
 			Float leftOld) {
 		this.layoutedVertices = layoutedVertices;
@@ -38,8 +38,8 @@ public class VertexFilterIsLayoutedInnerNewNotOld implements FilterFunction<Row>
 		if (this.layoutedVertices.containsKey(value.getField(1).toString())) {
 			int x = this.layoutedVertices.get(value.getField(1).toString()).getX();
 			int y = this.layoutedVertices.get(value.getField(1).toString()).getY();
-			if ((leftNew <= x) &&  (x <= rightNew) && (topNew <= y) && (y <= bottomNew)
-					&& ((leftOld > x) || (x > rightOld) || (topOld > y) || (y > bottomOld))) {
+			if (leftOld <= x &&  x <= rightOld && topOld <= y && y <= bottomOld
+					&& (leftNew > x || x > rightNew || topNew > y || y > bottomNew)) {
 				return true;
 			} else {
 				return false;

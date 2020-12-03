@@ -8,11 +8,15 @@ let operationStep;
 
 let layoutBase;
 let layoutEdges;
-let nodeWidth = 50;
-let nodeHeight = 50;
+let maxNodeWidth = 80;
+let minNodeWidth = 20;
+let maxNodeHeight = 80;
+let minNodeHeight = 20;
 let nodeLabelFontSize = 32;
 let edgeWidth = 5;
 let edgeArrowSize = 2;
+let currentMaxDegree;
+let currentMinDegree;
 
 var cy = cytoscape({
   container: $('#cy'),
@@ -34,8 +38,8 @@ var cy = cytoscape({
       style: {
         'background-color': '#666',
         'label': 'data(label)',
-		'height': nodeHeight,
-		'width': nodeWidth,
+		'height': maxNodeHeight,
+		'width': maxNodeWidth,
 		'font-size': nodeLabelFontSize
       }
     },
@@ -93,6 +97,7 @@ let yRenderDiff = 0;
 
 function finalOperations(){
 	console.log("in finalOperations funtion");
+	updateVertexSize();
 	if (!layout){
 		let layoutBaseString = "";
 		console.log("layoutBase size: " + layoutBase.size);
@@ -214,10 +219,6 @@ cyto.addEventListener("mouseup", function(e){
 	console.log(boundingBoxVar);
 	cy.nodes().lock();
 	layoutBase = new Set();
-	if (graphOperationLogic == "clientSide"){
-		handler.operation = "pan";
-		handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-	}
 	ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + zoomLevel);
 });
 
@@ -242,24 +243,29 @@ cyto.addEventListener("wheel", function(e) {
 	let pan = cy.pan();
 	layoutBase = new Set();
 	if (delta < 0){
-		nodeWidth = nodeWidth / zFactor;
-		nodeHeight = nodeHeight / zFactor;
+		// maxNodeWidth = maxNodeWidth / zFactor;
+		// maxNodeHeight = maxNodeHeight / zFactor;
 		nodeLabelFontSize = nodeLabelFontSize / zFactor;
 		edgeWidth = edgeWidth / zFactor;
 		edgeArrowSize = edgeArrowSize / zFactor;
 		cy.style().selector('node').style({
-			'width': nodeWidth,
-			'height': nodeHeight,
+			// 'width': maxNodeWidth,
+			// 'height': maxNodeHeight,
 			'font-size': nodeLabelFontSize
 		}).update();
 		cy.style().selector('edge').style({
 			'width': edgeWidth,
 			'arrow-scale': edgeArrowSize
 		}).update();
+		cy.nodes().forEach( function(node){
+			let nodeWidth = node.style().width;
+			nodeWidth = parseInt(nodeWidth.substring(0, nodeWidth.length - 2)) / zFactor;
+			node.style({'width': nodeWidth, 'height': nodeWidth});
+		});
 		cy.zoom(cy.zoom() * zFactor);
 		cy.pan({x:-cyWidthHalf + zFactor * pan.x + (cyWidthHalf - cytoX) * zFactor, y:-cyHeightHalf + zFactor * pan.y + (cyHeightHalf - cytoY) * zFactor});
 		pan = cy.pan();
-		const zoomLevel = cy.zoom();
+		zoomLevel = cy.zoom();
 		const topModelPos = - pan.y / zoomLevel;
 		const leftModelPos = - pan.x / zoomLevel;
 		const bottomModelPos = topModelPos + cyHeight / zoomLevel;
@@ -270,20 +276,16 @@ cyto.addEventListener("wheel", function(e) {
 		console.log("new boundingBox");
 		console.log(boundingBoxVar);
 		cy.nodes().lock();
-		if (graphOperationLogic == "clientSide"){
-			handler.operation = "zoomIn";
-			handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-		}
 		ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	} else {
-		nodeWidth = nodeWidth * zFactor;
-		nodeHeight = nodeHeight * zFactor;
+		// maxNodeWidth = maxNodeWidth * zFactor;
+		// maxNodeHeight = maxNodeHeight * zFactor;
 		nodeLabelFontSize = nodeLabelFontSize * zFactor;
 		edgeWidth = edgeWidth * zFactor;
 		edgeArrowSize = edgeArrowSize * zFactor;
 		cy.style().selector('node').style({
-			'width': nodeWidth,
-			'height': nodeHeight,
+			// 'width': maxNodeWidth,
+			// 'height': maxNodeHeight,
 			'font-size': nodeLabelFontSize
 		}).update();
 		cy.style().selector('edge').style({
@@ -293,15 +295,7 @@ cyto.addEventListener("wheel", function(e) {
 		cy.zoom(cy.zoom() / zFactor);
 		cy.pan({x:cyWidthHalf + pan.x - (cyWidthHalf + pan.x) / zFactor - (cytoX - cyWidthHalf) / zFactor, y:cyHeightHalf + pan.y - (cyHeightHalf + pan.y) / zFactor - (cytoY - cyHeightHalf) / zFactor});
 		pan = cy.pan();
-		const zoomLevel = cy.zoom();
-		if (graphOperationLogic == "clientSide"){
-			const topModelPos = - pan.y / zoomLevel;
-			const leftModelPos = - pan.x / zoomLevel;
-			const bottomModelPos = topModelPos + cyHeight / zoomLevel;
-			const rightModelPos = leftModelPos + cyWidth / zoomLevel;
-			handler.operation = "zoomOut";
-			handler.prepareOperation(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-		}
+		zoomLevel = cy.zoom();
 		ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + zoomLevel);
 	}
 });
@@ -331,5 +325,45 @@ function deriveboundingBox(topModel, rightModel, bottomModel, leftModel){
 	return {x1: x1Var, y1: y1Var, x2: x2Var, y2: y2Var};
 }
 
+function updateVertexSize(vertexId){
+	const nodeWidth = minNodeWidth / (zoomLevel * 2);
+	const nodeHeight = minNodeHeight / (zoomLevel * 2);
+	cy.$id(vertexId).style({'width': nodeWidth, 'height': nodeHeight});
+}
 
+function updateVerticesSize(){
+	console.log("currentMinDegree: " + currentMinDegree);
+	console.log("currentMaxDegree: " + currentMaxDegree);
+	const zoomScale = zoomLevel * 2
+	const maxNodeHeightThisZoom = maxNodeHeight / zoomScale;
+	const minNodeHeightThisZoom = minNodeHeight / zoomScale;
+	const nodeHeightDiff = maxNodeHeightThisZoom - minNodeHeightThisZoom;
+	const maxNodeWidthThisZoom = maxNodeWidth / zoomScale;
+	const minNodeWidthThisZoom = minNodeWidth / zoomScale;
+	const nodeWidthDiff = maxNodeWidthThisZoom - minNodeWidthThisZoom;
+	const nodeLabelFontSizeThisZoom = nodeLabelFontSize / zoomScale;
+	const degreeRange = currentMaxDegree - currentMinDegree;
+	console.log("nodeHeightDiff: " + nodeHeightDiff);
+	console.log("nodeWidthDiff: " + nodeWidthDiff);
+	cy.nodes().forEach( function(node){
+		console.log(node.data('id') + " " + node.data('degree'));
+		const scale = (node.data('degree') - currentMinDegree) / degreeRange;
+		console.log("scale: " + scale);
+		const nodeHeight = minNodeHeightThisZoom + scale * nodeHeightDiff;
+		console.log("node height: " + nodeHeight);
+		const nodeWidth = minNodeWidthThisZoom + scale * nodeWidthDiff;
+		const nodeLabelFontSize = nodeLabelFontSizeThisZoom * scale;
+		node.style({'height':nodeHeight, 'width':nodeWidth});
+	});
+}
 
+function updateDegreeExtrema(degree){
+	if (currentMaxDegree == null || currentMinDegree == null){
+		currentMaxDegree = degree;
+		currentMinDegree = degree;
+	} else if (degree > currentMaxDegree){
+		currentMaxDegree = degree;
+	} else if (degree < currentMinDegree){
+		currentMinDegree = degree;
+	}
+}

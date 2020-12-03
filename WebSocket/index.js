@@ -9,6 +9,7 @@ let graphOperationLogic = "serverSide";
 let layout = true;
 let boundingBoxVar;
 let boundingBoxVarOld;
+let zoomLevel;
 
 function addMessageToQueue(dataArray){
 		messageQueue.push(dataArray);
@@ -24,23 +25,26 @@ async function processMessage(){
 		let promise = new Promise((resolve, reject) => {
 			switch (dataArray[0]){
 				case 'addVertexServer':
-					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4]}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
-					if (!layout){
+					cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4], degree: parseInt(dataArray[5])}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
+					updateVertexSize(dataArray[1])
+					updateDegreeExtrema(parseInt(dataArray[5]));
+					// if (!layout){
 						clearTimeout(this.timeOut);
 						this.timeOut = setTimeout(finalOperations, 2000);
-					}
+					// }
 					break;
 				case 'addVertexServerToBeLayouted':
+					updateDegreeExtrema(parseInt(dataArray[2]));
 					addVertexToLayoutBase(dataArray);
-						clearTimeout(this.timeOut);
-						this.timeOut = setTimeout(finalOperations, 2000);
+					clearTimeout(this.timeOut);
+					this.timeOut = setTimeout(finalOperations, 2000);
 					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
-					if (!layout){
+					// if (!layout){
 						clearTimeout(this.timeOut);
 						this.timeOut = setTimeout(finalOperations, 2000);
-					}
+					// }
 					break;
 				case 'removeObjectServer':
 					console.log(cy.$id(dataArray[1]));
@@ -59,6 +63,8 @@ async function processMessage(){
 					break;
 				case 'fit':
 					cy.fit();
+					zoomLevel = cy.zoom();
+					updateVerticesSize();
 					const pan = cy.pan();
 					ws.send("fitted;" + pan.x + ";" + pan.y + ";" + cy.zoom());
 					break;

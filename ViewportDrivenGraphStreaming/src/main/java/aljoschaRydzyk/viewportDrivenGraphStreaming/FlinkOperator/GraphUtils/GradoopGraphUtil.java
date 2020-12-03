@@ -39,10 +39,10 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Wra
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerOldNotNew;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInnerNewNotOld;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInnerOldNotNew;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInside;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedOutside;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsVisualized;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotInsideBefore;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotLayouted;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
@@ -423,25 +423,43 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * outside the current model window on the other hand.
 		 */
 		
+		//produce wrapper set from C To D and vice versa
 		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
-		DataSet<Row> newlyAddedInsideVertices = verticesIndexed.filter(new VertexFilterIsVisualized(newVerticesKeySet))
-				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
-		DataSet<Row> layoutedOutsideVertices = verticesIndexed
-				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
-				topNew, rightNew, bottomNew, leftNew));
-		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = newlyAddedInsideVertices
+		DataSet<Row> cVertices = verticesIndexed.filter(new VertexFilterIsVisualized(newVerticesKeySet))
+				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
+		DataSet<Row> dVertices = verticesIndexed
+				.filter(new VertexFilterIsLayoutedInnerOldNotNew(layoutedVertices,
+				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = cVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(layoutedOutsideVertices).where(new WrapperTargetIDKeySelector())
+				.join(dVertices).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector())
-			.union(layoutedOutsideVertices
+			.union(dVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(newlyAddedInsideVertices).where(new WrapperTargetIDKeySelector())
+				.join(cVertices).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector()));
 
+		//produce wrapper set from A to B+D and vice versa
+		DataSet<Row> aVertices = verticesIndexed.filter(new VertexFilterIsVisualized(newVerticesKeySet))
+				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices,
+						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+		DataSet<Row> bdVertices = verticesIndexed.filter(new VertexFilterIsLayoutedOutside(
+				layoutedVertices, topNew, rightNew, bottomNew, leftNew));
+		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple2 = aVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(bdVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector())
+			.union(bdVertices
+				.join(wrapper).where(new VertexIDRowKeySelector())
+				.equalTo(new WrapperSourceIDKeySelector())
+				.join(aVertices).where(new WrapperTargetIDKeySelector())
+				.equalTo(new VertexIDRowKeySelector()));
+		
 		//filter out already visualized edges in wrapper set
-		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.union(wrapperTuple2).map(new WrapperTupleMapWrapperRow())
 				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
 				.map(new WrapperRowMapWrapperGVD());
 		return wrapperGVD;
@@ -456,8 +474,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * layouted inside the model space which was added by operation.
 		 */
 		
-		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftNew, rightNew, topNew, 
-				bottomNew, leftOld, rightOld, topOld, bottomOld);
+		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, topNew, rightNew, bottomNew, 
+				leftNew, topOld, rightOld, bottomOld, leftOld);
 		DataSet<Row> vertices = verticesIndexed.filter(zoomOutVertexFilter);
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = vertices
 				.join(wrapper).where(new VertexIDRowKeySelector())

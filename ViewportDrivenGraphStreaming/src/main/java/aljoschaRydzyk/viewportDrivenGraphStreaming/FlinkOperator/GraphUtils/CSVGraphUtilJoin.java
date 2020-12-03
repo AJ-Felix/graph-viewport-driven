@@ -23,11 +23,11 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Ver
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerOldNotNew;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInnerNewNotOld;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInnerOldNotNew;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedInside;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsLayoutedOutside;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterIsVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterMaxDegree;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotInsideBefore;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotLayouted;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
@@ -326,20 +326,38 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * outside the current model window on the other hand.
 		 */
 		
+		//produce wrapper stream from C To D and vice versa
 		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
-		DataStream<Row> newlyAddedInsideVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
-				.filter(new VertexFilterNotInsideBefore(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
-		DataStream<Row> layoutedOutsideVertices = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(layoutedVertices,
-				topNew, rightNew, bottomNew, leftNew));
-		Table newlyAddedInsideVerticesTable = this.fsTableEnv.fromDataStream(newlyAddedInsideVertices).as(this.vertexFields);
-		Table layoutedOutsideVerticesTable = this.fsTableEnv.fromDataStream(layoutedOutsideVertices).as(this.vertexFields);
+		DataStream<Row> cVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
+				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
+		DataStream<Row> dVertices = this.vertexStream.filter(new VertexFilterIsLayoutedInnerOldNotNew(layoutedVertices,
+				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+		Table cVerticesTable = this.fsTableEnv.fromDataStream(cVertices).as(this.vertexFields);
+		Table dVerticesTable = this.fsTableEnv.fromDataStream(dVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = this.fsTableEnv.toAppendStream(wrapperTable
-				.join(newlyAddedInsideVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-				.join(layoutedOutsideVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo)
+				.join(cVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+				.join(dVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo)
 			.union(this.fsTableEnv.toAppendStream(wrapperTable
-				.join(layoutedOutsideVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
-				.join(newlyAddedInsideVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo));
-		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+				.join(dVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+				.join(cVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo));
+		
+		//produce wrapper stream from A to B+D and vice versa
+		DataStream<Row> aVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
+				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices,
+						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+		DataStream<Row> bdVertices = this.vertexStream.filter(new VertexFilterIsLayoutedOutside(
+				layoutedVertices, topNew, rightNew, bottomNew, leftNew));
+		Table aVerticesTable = this.fsTableEnv.fromDataStream(aVertices).as(this.vertexFields);
+		Table bdVerticesTable = this.fsTableEnv.fromDataStream(bdVertices).as(this.vertexFields);
+		DataStream<Row> wrapperStream2 = this.fsTableEnv.toAppendStream(wrapperTable
+				.join(aVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+				.join(bdVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo)
+			.union(this.fsTableEnv.toAppendStream(wrapperTable
+				.join(bdVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
+				.join(aVerticesTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields), wrapperRowTypeInfo));
+		
+		wrapperStream = wrapperStream.union(wrapperStream2)
+				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		return wrapperStream;
 	}
 	
@@ -352,8 +370,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * layouted inside the model space which was added by operation.
 		 */
 		
-		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, leftNew, rightNew, topNew, 
-				bottomNew, leftOld, rightOld, topOld, bottomOld);
+		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, topNew, rightNew, bottomNew, 
+				leftNew, topOld, rightOld, bottomOld, leftOld);
 		DataStream<Row> vertices = this.vertexStream.filter(zoomOutVertexFilter);
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
