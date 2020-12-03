@@ -189,18 +189,17 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 
 TODO: Überlegung bei Panning-Gelayoutet: Manchmal leert sich der Viewport am Rand des Graph, weil keine Wrapper nachgeladen werden mit Knoten die vor und nach der Operation beide Inner waren (bzw. einer NewInner)
 
-TODO: Überlegung bei GRadoopGraphUtil: identityWRapper-Initialisierung wieder rausschmeißen, weil sie sowieso nicht funktioniert
-
 TODO: introduce better layout algorithms --> fcose und cose verändern die Knotenposition nicht und andere force-directed algorithms lassen sich nicht per src-tag in plain html einbinden
 
 TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
 
-TODO: Front-End aufhübschen
+TODO: Front-End aufhübschen, Knotengrößen anpassen
 
 TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 
 TODO: Auf Galaxy Cluster testen
 
+TODO: Panning-Layout4: Wrapper von AllInner nach Outer, nicht nur NewInner!
 
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
 	Bei Verkleinerung: 

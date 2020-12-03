@@ -183,7 +183,6 @@ public class Server implements Serializable{
                 	Float leftModel = - xRenderPos / zoomLevel;
                 	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
                 	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
-                	int tempMaxVertices = maxVertices;
                 	System.out.println("viewportSize, maxVertices before: " + maxVertices);
 					calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
         			System.out.println("viewportSize, maxVertices after: " + maxVertices);
@@ -213,9 +212,7 @@ public class Server implements Serializable{
     							else zoomOutLayoutStep1Set();
     						}
     					}
-                		//TODO: Resizing... Add or remove vertices, write new model coordinates to data structures
-                		//ideally find out, how much resizing in x and y direction and add vertices accordingly
-                	}
+                  	}
                 } else if (messageData.startsWith("layoutBaseString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
@@ -263,11 +260,11 @@ public class Server implements Serializable{
                 	if (!stream) {
                     	System.out.println("wrapperCollection size: " + wrapperCollection.size());
                 		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
-                		if (layout) {
+//                		if (layout) {
                 			wrapperHandler.clearOperation();
 //    		            	Server.getInstance().sendToAll("fit");
                 			sendToAll("fit");
-                		}
+//                		}
                 	}
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
@@ -554,11 +551,22 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
-    		zoomInLayoutStep2Set();
-    	} else {
+    		if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		if (wrapperHandler.getCapacity() == 0) {
+        			zoomInLayoutStep4Set();
+        		} else {
+        			zoomInLayoutStep2Set();
+        		}
+        	}    	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep2Set();
+        	if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		if (wrapperHandler.getCapacity() == 0) {
+        			zoomInLayoutStep4Set();
+        		} else {
+        			zoomInLayoutStep2Set();
+        		}
+        	}
     	}
     }
 
@@ -575,7 +583,13 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep2Stream();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) {
+			if (wrapperHandler.getCapacity() == 0) {
+				zoomInLayoutStep4Stream();
+			} else {
+				zoomInLayoutStep2Stream();
+			}
+		}
     }
     
 	private void zoomInLayoutStep2Set() {
@@ -597,11 +611,23 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
-    		zoomInLayoutStep3Set();
+    		if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		if (wrapperHandler.getCapacity() == 0) {
+        			zoomInLayoutStep4Set();
+        		} else {
+        			zoomInLayoutStep3Set();
+        		}
+        	}
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep3Set();
+        	if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		if (wrapperHandler.getCapacity() == 0) {
+        			zoomInLayoutStep4Set();
+        		} else {
+        			zoomInLayoutStep3Set();
+        		}
+        	}
     	}
     }
 	
@@ -617,7 +643,13 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) zoomInLayoutStep3Stream();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) {
+			if (wrapperHandler.getCapacity() == 0) {
+				zoomInLayoutStep4Stream();
+			} else {
+				zoomInLayoutStep3Stream();
+			}
+		}
     }
     
     private  void zoomInLayoutStep3Set() {
@@ -793,11 +825,23 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
-    		panLayoutStep2Set();
+    		if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		if (wrapperHandler.getCapacity() == 0) {
+        			panLayoutStep4Set();
+        		} else {
+        			panLayoutStep2Set();
+        		}
+        	}
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep2Set();
+        	if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		if (wrapperHandler.getCapacity() == 0) {
+        			panLayoutStep4Set();
+        		} else {
+        			panLayoutStep2Set();
+        		}
+        	}
     	}
     }
     
@@ -814,7 +858,13 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep2Stream();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) {
+			if (wrapperHandler.getCapacity() == 0) {
+				panLayoutStep4Stream();
+			} else {
+				panLayoutStep2Stream();
+			}
+		}
     }
     
     private void panLayoutStep2Set() {
@@ -831,11 +881,21 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
-    		panLayoutStep3Set();
+    		if (wrapperHandler.getCapacity() == 0) {
+    			panLayoutStep4Set();
+    		} else { 
+    			panLayoutStep3Set();
+    		}
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep3Set();
+        	if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		if (wrapperHandler.getCapacity() == 0) {
+        			panLayoutStep4Set();
+        		} else { 
+        			panLayoutStep3Set();
+        		}
+        	}
     	}
     }
     
@@ -851,7 +911,13 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) panLayoutStep3Stream();
+		if (flinkResponseHandler.getLine() == "empty" || wrapperHandler.getSentToClientInSubStep() == false) {
+			if (wrapperHandler.getCapacity() == 0) {
+				panLayoutStep4Stream();
+			} else {
+				panLayoutStep3Stream();
+			}
+		}
     }
     
     private void panLayoutStep3Set() {
@@ -924,7 +990,8 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}		
 		if (flinkResponseHandler.getLine() == "empty" || 
-				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();    }
+				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();    
+	}
 
     /**
      * sends a message to the all connected web socket clients

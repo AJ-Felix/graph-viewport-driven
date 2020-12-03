@@ -63,9 +63,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	private FilterFunction<Row> zoomOutVertexFilter;
 
 	
-	//batch
+	//Batch
 	private DataSet<Row> verticesIndexed;
-	private DataSet<EPGMEdge> edges;
 	private DataSet<Row> wrapper;
 	
 	
@@ -108,14 +107,14 @@ public class GradoopGraphUtil implements GraphUtilSet{
 								vertex.getPropertyValue("degree").getLong());
 					}
 				});
-		edges = this.graph.getEdges();
+		DataSet<EPGMEdge> edges = this.graph.getEdges();
 		DataSet<Tuple2<Tuple2<Row, EPGMEdge>, Row>> wrapperTuple = 
 				verticesIndexed.join(edges).where(new VertexIDRowKeySelector())
 			.equalTo(new EdgeSourceIDKeySelector())
 			.join(verticesIndexed).where(new EdgeTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector());
 		
-		DataSet<Row> nonIdentityWrapper = wrapperTuple.map(new MapFunction<Tuple2<Tuple2<Row, EPGMEdge>,Row>,Row>(){
+		wrapper = wrapperTuple.map(new MapFunction<Tuple2<Tuple2<Row, EPGMEdge>,Row>,Row>(){
 			@Override
 			public Row map(Tuple2<Tuple2<Row, EPGMEdge>, Row> tuple) throws Exception {
 				EPGMEdge edge = tuple.f0.f1;
@@ -126,17 +125,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				return Row.join(vertices, Row.of(edge.getId().toString(), edge.getLabel()));
 			}
 		});
-		
-		DataSet<Row> identityWrapper = verticesIndexed.map(new MapFunction<Row,Row>(){
-			@Override
-			public Row map(Row row) throws Exception {
-				return Row.of(Row.join(row, Row.project(row, new int[] {1, 2, 3, 4, 5, 6})), "identityEdge",
-						"identityEdge");
-			}
-		});
-		wrapper = identityWrapper
-				.union(nonIdentityWrapper)
-				;
 	}
 	
 	@Override
@@ -224,7 +212,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				verticesIndexed.filter(new VertexFilterOuter(top, right, bottom, left));
 		
 		//produce identity wrapper set for in-view area
-		for (String key : visualizedVertices) System.out.println("visualizedVertices, zoom, gradoop: "+ key);
 		DataSet<Row> identityWrapper = verticesInner.map(new VertexMapIdentityWrapperRow())
 				.filter(new WrapperFilterVisualizedVertices(visualizedVertices));
 		

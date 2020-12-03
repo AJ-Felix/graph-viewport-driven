@@ -1,0 +1,16 @@
+Einleitung:
+	- Vorstellung des Titels
+	- Klärung von Begriffen (Graph, Stream, Viewport, Parallelität, Wrapper)
+	- Vorstellung des Problems (Langsame Visualisierung von Big Data-Graphen)
+	- Bezug zu bisherigen Arbeiten
+Methoden:
+	- Darlegung des Lösungsansatzes
+	- Grafische Darstellung der Anwendungskomponenten (Server, Client, Cluster)
+	- Unterscheidung zwischen Batch und Stream
+	- Unterscheidung zwischen den Graphdatenstrukturen (sortierte Liste von Wrappern vs. Adjazenzmatrix)
+	- Grafische Darstellung der Flusskontrolle in der Anwendung
+	- Demonstration der Anwendung
+	- Erwähnung von Mit/Ohne Layout
+Fazit:
+	- Ausblick zum weiteren Vorgehen (Evaluation)
+	- Ausblick zu eventuellen, weiteren Ansätzen zur Problemlösung

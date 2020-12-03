@@ -37,7 +37,6 @@ async function processMessage(){
 					break;
 				case 'addEdgeServer':
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
-					console.log(cy.$id(dataArray[1]).style());
 					if (!layout){
 						clearTimeout(this.timeOut);
 						this.timeOut = setTimeout(finalOperations, 2000);
@@ -125,7 +124,10 @@ function sendSignalAdjacency(){
 }
 
 function buildTopViewOperations(){
-	if (!layout) layoutBase = new Set();
+	if (!layout) {
+		layoutBase = new Set();
+		layoutEdges = new Set();
+	}
 	boundingBoxVar = {x1: 0, y1: 0, x2: 4000, y2: 4000};
 	cy.zoom(1 / (4000 / Math.min(cyWidth, cyHeight)));
 }
