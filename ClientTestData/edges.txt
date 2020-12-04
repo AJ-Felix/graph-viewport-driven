@@ -1,0 +1,4 @@
+#Edges #EdgeID;SourceID,TargetID
+addEdgeServer;1;1;2
+addEdgeServer;2;1;3
+addEdgeServer;3;2;3

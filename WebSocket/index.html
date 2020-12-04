@@ -29,9 +29,9 @@
 		.disconnect-msg {color:red;}
 		.send-msg {color:#888}
 		
-		<!-- #myContainer { -->
-			<!-- background: blue; -->
-		<!-- } -->
+		/* #myContainer { 
+			background: blue;
+		} */
 		
 	</style>
 
@@ -120,11 +120,11 @@
 				<form>
 					<input id="graphIsLayouted" type="checkbox"/>
 					<button type="button" onclick="sendGraphIsLayouted(document.getElementById('graphIsLayouted').checked)">Graph Already Layouted</button>
-				</form
+				</form>
 				<form>
 					<input id="verticesHaveDegrees" type="checkbox"/>
 					<button type="button" onclick="sendVerticesHaveDegrees(document.getElementById('verticesHaveDegrees').checked)">Vertex Degrees Already Calculated</button>
-				</form
+				</form>
 				<form>
 					<input id="maxVerticesInput" type="number"/>
 					<button type="button" onclick="sendMaxVertices(document.getElementById('maxVerticesInput').value)">Max. Vertices</button>
@@ -216,6 +216,9 @@
 	<script src="js/vertex.js"></script>
 	<script src="js/AppendHandler.js"></script>
 	<script src="js/RetractHandler.js"></script>
+	<script src="testDataSet/vertices.js"></script>
+	<script src="testDataSet/edges.js"></script>
+	<script src="testDataSet/loadDataSet.js"></script>
 </body>
 
 </html>

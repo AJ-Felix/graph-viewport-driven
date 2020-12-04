@@ -1,0 +1,4 @@
+#Vertices #GradoopID;Degree;NumericID
+addVertexServerLayout;1;2;1
+addVertexServerLayout;2;2;2
+addVertexServerLayout;3;2;2

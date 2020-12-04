@@ -103,10 +103,9 @@ function finalOperations(){
 		console.log("layoutBase size: " + layoutBase.size);
 		if (layoutBase.size > 0){
 			console.log("performing layout!");
-			// cy.nodes().lock();
 			console.log(boundingBoxVar);
 			let layoutOptions = {};
-			layoutOptions.name = 'random';
+			layoutOptions.name = 'grid';
 			layoutOptions.randomize = true;
 			layoutOptions.fit = false;
 			layoutOptions.boundingBox = boundingBoxVar;
@@ -115,51 +114,38 @@ function finalOperations(){
 			layoutBase.forEach(function (vertexId){
 				layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
 			});
-			// layoutBase.forEach( function (map){
-				// cy.add({group: 'nodes', data: {id: map.get('id'), label: map.get('label'), position: {x: map.get('x'), y: map.get('y')}}});
-			// });
-			// layoutEdges.forEach( function (dataArray){
-				// cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
-			// });
-			// let layout = cy.layout(layoutOptions).run();
 			cy.layout(layoutOptions).run();
-			// layout.run();
-			// setTimeout(function(){
-				// console.log("stopped layout");
-				// layout.stop();
-			// }, 100);
 			console.log("layout performed");
 			layoutBaseCy.forEach(function(node){
-				// console.log(node.style({"width":"50" ,"height":"50", "font-size":"32px"}));
 				let pos = node.position();
 				layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
 			})
 			cy.nodes().lock();
 			layoutBase = new Set();
 		}	
-		ws.send("layoutBaseString" + layoutBaseString);
+		ws.send("layoutBaseString" + layoutBaseString); //comment this line for layouting algorithm testing
 	}
 }
 
 function addVertexToLayoutBase(dataArray){
-	console.log(boundingBoxVar);
-	console.log(boundingBoxVar.x2);
-	console.log(Math.random());
-	console.log(boundingBoxVar.x2 * Math.random());
-	console.log(boundingBoxVar.x1 + Math.random() * (boundingBoxVar.x2 - boundingBoxVar.x1));
+	// console.log(boundingBoxVar);
+	// console.log(boundingBoxVar.x2);
+	// console.log(Math.random());
+	// console.log(boundingBoxVar.x2 * Math.random());
+	// console.log(boundingBoxVar.x1 + Math.random() * (boundingBoxVar.x2 - boundingBoxVar.x1));
 	let xVertex = boundingBoxVar.x1 + Math.random() * (boundingBoxVar.x2 - boundingBoxVar.x1);
 	let yVertex = boundingBoxVar.y1 + Math.random() * (boundingBoxVar.y2 - boundingBoxVar.y1);
-	console.log("xVertex: " + xVertex);
-	console.log("yVertex: " + yVertex);
+	// console.log("xVertex: " + xVertex);
+	// console.log("yVertex: " + yVertex);
 	cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3]}, position: {x: xVertex, y: yVertex}});
 	const vertex = cy.$id(dataArray[1]);
-	console.log(vertex);
+	// console.log(vertex);
 	// let map = new Map();
 	// map.set('id', dataArray[1]);
 	// map.set('label', dataArray[3]);
 	// map.set('x', xVertex);
 	// map.set('y', yVertex);
-	console.log(dataArray[3]);
+	// console.log(dataArray[3]);
 	layoutBase.add(dataArray[1]);
 	// layoutBase.add(map);
 	console.log("layoutBase size: " + layoutBase.size);

@@ -40,6 +40,7 @@ async function processMessage(){
 					this.timeOut = setTimeout(finalOperations, 2000);
 					break;
 				case 'addEdgeServer':
+					console.log("adding edge");
 					cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
 					// if (!layout){
 						clearTimeout(this.timeOut);
@@ -177,6 +178,7 @@ document.getElementById('cy').addEventListener('mousedown',
 	}
 )
 
+//comment this function for layout algorithm testing
 $(document).ready(function(){
     ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897/graphData");
 	
