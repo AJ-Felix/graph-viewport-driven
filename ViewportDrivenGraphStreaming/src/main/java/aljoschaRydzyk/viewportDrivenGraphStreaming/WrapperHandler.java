@@ -717,7 +717,6 @@ public class WrapperHandler implements Serializable {
 	}
 	
 	private void updateMinDegreeVertex(VertexGVD vertex) {
-		//CHANGE: < to <=
 		if (vertex.getDegree() <= minDegreeVertex.getDegree()) {
 			secondMinDegreeVertex = minDegreeVertex;
 			minDegreeVertex = vertex;

@@ -109,45 +109,45 @@
 	</div>
 	
 	<div id="buttons" >
-					<button type="button" onClick="resetVisualization()" class="btn" id="send">Reset</button>
-					<button type="button" onClick="sendSignalHBase()" class="btn" id="send">buildTopViewHBase</button>
-					<button type="button" onClick="sendSignalGradoop()" class="btn" id="send">buildTopViewGradoop</button>
-					<button type="button" onClick="sendSignalCSV()" class="btn" id="send">buildTopViewCSV</button>
-					<button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button>
+					<button type="button" onClick="client.resetVisualization(client)" class="btn" id="send">Reset</button>
+					<button type="button" onClick="client.sendSignalHBase(client)" class="btn" id="send">buildTopViewHBase</button>
+					<button type="button" onClick="client.sendSignalGradoop(client)" class="btn" id="send">buildTopViewGradoop</button>
+					<button type="button" onClick="client.sendSignalCSV(client)" class="btn" id="send">buildTopViewCSV</button>
+					<button type="button" onClick="client.sendSignalAdjacency(client)" class="btn" id="send">buildTopViewAdjacency</button>
 					<!-- <button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button> -->
 					<!-- <button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button> -->
 				</div>
 				<form>
 					<input id="graphIsLayouted" type="checkbox"/>
-					<button type="button" onclick="sendGraphIsLayouted(document.getElementById('graphIsLayouted').checked)">Graph Already Layouted</button>
+					<button type="button" onclick="client.sendGraphIsLayouted(client)">Graph Already Layouted</button>
 				</form>
 				<form>
 					<input id="verticesHaveDegrees" type="checkbox"/>
-					<button type="button" onclick="sendVerticesHaveDegrees(document.getElementById('verticesHaveDegrees').checked)">Vertex Degrees Already Calculated</button>
+					<button type="button" onclick="client.sendVerticesHaveDegrees(client)">Vertex Degrees Already Calculated</button>
 				</form>
 				<form>
 					<input id="maxVerticesInput" type="number"/>
-					<button type="button" onclick="sendMaxVertices(document.getElementById('maxVerticesInput').value)">Max. Vertices</button>
+					<button type="button" onclick="client.sendMaxVertices(client)">Max. Vertices</button>
 				</form>
 				<form>
 					<input id="clusterEntryPointAddress" type="text"/>
-					<button type="button" onclick="sendClusterEntryAddress(document.getElementById('clusterEntryPointAddress').value)">Cluster Address</button>
+					<button type="button" onclick="client.sendClusterEntryAddress(client)">Cluster Address</button>
 				</form>
 				<form>
 					<input id="hDFSEntryPointAddress" type="text"/>
-					<button type="button" onclick="sendHDFSEntryAddress(document.getElementById('hDFSEntryPointAddress').value)">HDFS Address</button>
+					<button type="button" onclick="client.sendHDFSEntryAddress(client)">HDFS Address</button>
 				</form>
 				<form>
 					<input id="hDFSEntryPointPort" type="text"/>
-					<button type="button" onclick="sendHDFSEntryPort(document.getElementById('hDFSEntryPointPort').value)">HDFS Port</button>
+					<button type="button" onclick="client.sendHDFSEntryPort(client)">HDFS Port</button>
 				</form>
 				<form>
 					<input id="hDFSgraphFileDirectory" type="text"/>
-					<button type="button" onclick="sendHDFSGraphFilesDirectory(document.getElementById('hDFSgraphFileDirectory').value)">HDFS Graph Directory </button>
+					<button type="button" onclick="client.sendHDFSGraphFilesDirectory(client)">HDFS Graph Directory </button>
 				</form>
 				<form>
 					<input id="gradoopGraphID" type="text"/>
-					<button type="button" onclick="sendGradoopGraphId(document.getElementById('gradoopGraphID').value)">Gradoop Graph ID</button>
+					<button type="button" onclick="client.sendGradoopGraphId.call(client)">Gradoop Graph ID</button>
 				</form>
 	
 	<!-- <div id="cy" style="border:10px solid #cecece;" > -->

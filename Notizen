@@ -186,15 +186,15 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 	- Die Knoten des LDBC_1 können über DataSet API in eine Datei geschrieben werden. Ein '.print()'-Sink funktioniert nicht. Ein '.collect()' mit anschließendem Sink ebenfalls nicht (Caused by: java.io.IOException: The rpc invocation size 666780296 exceeds the maximum akka framesize.) Das Ganze wurde auf einem lokalen CLuster getestet, aber sollte entsprechend auch in einer Slurm-Session funktionieren.
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-TODO: Trouble shoot node sizeing
-
 TODO: introduce better layout algorithms --> fcose und cose verändern die Knotenposition nicht und andere force-directed algorithms lassen sich nicht per src-tag in plain html einbinden
 
 TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
 
 TODO: FrontEnd Sperre einbauen, bis Operation vollzogen
 
-TODO: Front-End aufhübschen, Knotengrößen anpassen
+TODO: Front-End aufhübschen
+
+TODO: Layout: ZoomOut löscht zu viele Kanten
 
 TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
 
