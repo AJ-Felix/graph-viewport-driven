@@ -1,20 +1,20 @@
 function loadtestDataSet(){
-    layout = false;
-    buildTopViewOperations();
+    client.layout = false;
+    client.buildTopViewOperations();
 	vertexSet.forEach(
 		function(array){
-			addMessageToQueue(array);
+			client.addMessageToQueue(array);
 			console.log(array);
 		}
     )
     edgeSet.forEach(
 		function(array){
-			addMessageToQueue(array);
+			client.addMessageToQueue(array);
 			console.log(array);
 		}
     )
 }
 
-// loadtestDataSet(); //uncomment this line if you like to load the test graph data set 
-
-
+$(document).ready(function(){
+    // loadtestDataSet();  //uncomment this line if you like to load the test graph data set
+});
