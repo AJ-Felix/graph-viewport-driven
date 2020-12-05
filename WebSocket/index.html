@@ -11,29 +11,14 @@
         <link href="bootstrap.css" type="stylesheet">
 
 	<style>
-		body {
+		/* body {
 			padding:20px;
-		}
+		} */
 		#cy {
-			width: auto;
-			height: 90vh;
-			display: block;
+			height: 100%;
+			/* min-height: 50vh; */
 			background: 777;
-			position: relative;
 		}
-		#console {
-			height: 200px;
-			overflow: auto;
-		}
-		.username-msg {color:orange;}
-		.connect-msg {color:green;}
-		.disconnect-msg {color:red;}
-		.send-msg {color:#888}
-		
-		#myContainer { 
-			/* background: blue; */
-		}
-		
 	</style>
 
 
@@ -42,154 +27,162 @@
 
 <body>
 	
-	<div class="container-fluid" id="myContainer">
-		<h1>My First Bootstrap Page</h1>
-		<p>This is some text.</p>
-		<p>Resize the browser window to fire the <code>resize</code> event.</p>
-		<p>Window height: <span id="height"></span></p>
-		<p>Window width: <span id="width"></span></p>
-		<p>Window height: <span id="height"></span></p>
-		<p>Window width: <span id="width"></span></p>
-	</div>
-	
-	<div class="container-fluid" id="myContainer">
-		<div class="row">
-			<div class="col-lg-9">
-				<div id="cy" style="border:10px solid #cecece;" >
+	<div class="container-fluid vh-100 d-flex flex-column" id="myContainer">
+		<div class="row p-2" id="topRow">
+			<div class="col-lg-12">
+				<h1>VDrive Graph Visualization</h1>
+				<p>by Aljoscha Rydzyk</p>
+			</div>
+		</div>
+		<div class="row flex-fill p-2" id="cyCol">
+			<div class="col-lg-12 bg-light">
+				<div class="row">
+					<div class="col-xs-6 p-1">
+						<button type="button" onClick="client.resetVisualization(client)" class="btn btn-outline-dark" id="send">Reset</button>
+					</div>
+					<div class="col-xs-6 p-1">
+						<button type="button" onClick="client.sendSignalHBase(client)" class="btn btn-outline-dark" id="send">HBase</button>
+					</div>
+					<div class="col-xs-6 p-1">
+						<button type="button" onClick="client.sendSignalGradoop(client)" class="btn btn-outline-dark" id="send">Gradoop</button>
+					</div>
+					<div class="col-xs-6 p-1">
+						<button type="button" onClick="client.sendSignalCSV(client)" class="btn btn-outline-dark" id="send">StreamCSV</button>
+					</div>
+					<div class="col-xs-6 p-1">
+						<button type="button" onClick="client.sendSignalAdjacency(client)" class="btn btn-outline-dark" id="send">StreamAdjacency</button>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-2 d-flex justify-content-center pr-1">
+										<input id="graphIsLayouted" type="checkbox"/>
+									</div>
+									<div class="col-sm-10 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendGraphIsLayouted(client)">Graph Not Layouted</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-2 d-flex justify-content-center pr-1">
+										<input id="verticesHaveDegrees" type="checkbox"/>
+									</div>
+									<div class="col-sm-10 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendVerticesHaveDegrees(client)">Degrees Not Calculated</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-6 d-flex justify-content-center pr-1">
+										<input id="maxVerticesInput" size="5" type="number"/>
+									</div>
+									<div class="col-sm-6 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendMaxVertices(client)">Max. Vertices</button>
+									</div>
+								</div>
+							</div>		
+						</form>
+					</div>
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-5 d-flex justify-content-center pr-1">
+										<input id="clusterEntryPointAddress" size="10" type="text"/>
+									</div>
+									<div class="col-sm-7 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendClusterEntryAddress(client)">Cluster Address</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-5 d-flex justify-content-center pr-1">
+										<input id="hDFSEntryPointAddress" size="10" type="text"/>
+									</div>
+									<div class="col-sm-7 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendHDFSEntryAddress(client)">HDFS Address</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-5 d-flex justify-content-center pr-1">
+										<input id="hDFSEntryPointPort" size="10" type="text"/>
+									</div>
+									<div class="col-sm-7 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendHDFSEntryPort(client)">HDFS Port</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-5 d-flex justify-content-center pr-1">
+										<input id="hDFSgraphFileDirectory" size="10" type="text"/>
+									</div>
+									<div class="col-sm-7 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendHDFSGraphFilesDirectory(client)">HDFS Dir</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+					<div class="col-12 col-md-6 col-xl-3">
+						<form>
+							<div class="form-group">
+								<div class="row">
+									<div class="col-sm-5 d-flex justify-content-center pr-1">
+										<input id="gradoopGraphID" size="10" type="text"/>
+									</div>
+									<div class="col-sm-7 d-flex justify-content-center pl-1">
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendGradoopGraphId(client)">Graph ID</button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
 				</div>
 			</div>
-			<div class="col-lg-3">
-				<div id="buttons" >
-					<button type="button" onClick="client.resetVisualization(client)" class="btn" id="send">Reset</button>
-					<button type="button" onClick="client.sendSignalHBase(client)" class="btn" id="send">buildTopViewHBase</button>
-					<button type="button" onClick="client.sendSignalGradoop(client)" class="btn" id="send">buildTopViewGradoop</button>
-					<button type="button" onClick="client.sendSignalCSV(client)" class="btn" id="send">buildTopViewCSV</button>
-					<button type="button" onClick="client.sendSignalAdjacency(client)" class="btn" id="send">buildTopViewAdjacency</button>
+		</div>
+		<div class="row flex-fill p-2" id="cyCol">
+			<div class="col-lg-12">
+				<div id="cy" style="border:10px solid #cecece;">
 				</div>
-				<form>
-					<input id="graphIsLayouted" type="checkbox"/>
-					<button type="button" onclick="client.sendGraphIsLayouted(client)">Graph Already Layouted</button>
-				</form>
-				<form>
-					<input id="verticesHaveDegrees" type="checkbox"/>
-					<button type="button" onclick="client.sendVerticesHaveDegrees(client)">Vertex Degrees Already Calculated</button>
-				</form>
-				<form>
-					<input id="maxVerticesInput" type="number"/>
-					<button type="button" onclick="client.sendMaxVertices(client)">Max. Vertices</button>
-				</form>
-				<form>
-					<input id="clusterEntryPointAddress" type="text"/>
-					<button type="button" onclick="client.sendClusterEntryAddress(client)">Cluster Address</button>
-				</form>
-				<form>
-					<input id="hDFSEntryPointAddress" type="text"/>
-					<button type="button" onclick="client.sendHDFSEntryAddress(client)">HDFS Address</button>
-				</form>
-				<form>
-					<input id="hDFSEntryPointPort" type="text"/>
-					<button type="button" onclick="client.sendHDFSEntryPort(client)">HDFS Port</button>
-				</form>
-				<form>
-					<input id="hDFSgraphFileDirectory" type="text"/>
-					<button type="button" onclick="client.sendHDFSGraphFilesDirectory(client)">HDFS Graph Directory </button>
-				</form>
-				<form>
-					<input id="gradoopGraphID" type="text"/>
-					<button type="button" onclick="client.sendGradoopGraphId.call(client)">Gradoop Graph ID</button>
-				</form>
 			</div>
 		</div>
 	</div>
 	
-				<div id="buttons" >
-					<button type="button" onClick="client.resetVisualization(client)" class="btn" id="send">Reset</button>
-					<button type="button" onClick="client.sendSignalHBase(client)" class="btn" id="send">buildTopViewHBase</button>
-					<button type="button" onClick="client.sendSignalGradoop(client)" class="btn" id="send">buildTopViewGradoop</button>
-					<button type="button" onClick="client.sendSignalCSV(client)" class="btn" id="send">buildTopViewCSV</button>
-					<button type="button" onClick="client.sendSignalAdjacency(client)" class="btn" id="send">buildTopViewAdjacency</button>
-					<!-- <button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button> -->
-					<!-- <button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button> -->
-				</div>
-				<form>
-					<input id="graphIsLayouted" type="checkbox"/>
-					<button type="button" onclick="client.sendGraphIsLayouted(client)">Graph Already Layouted</button>
-				</form>
-				<form>
-					<input id="verticesHaveDegrees" type="checkbox"/>
-					<button type="button" onclick="client.sendVerticesHaveDegrees(client)">Vertex Degrees Already Calculated</button>
-				</form>
-				<form>
-					<input id="maxVerticesInput" type="number"/>
-					<button type="button" onclick="client.sendMaxVertices(client)">Max. Vertices</button>
-				</form>
-				<form>
-					<input id="clusterEntryPointAddress" type="text"/>
-					<button type="button" onclick="client.sendClusterEntryAddress(client)">Cluster Address</button>
-				</form>
-				<form>
-					<input id="hDFSEntryPointAddress" type="text"/>
-					<button type="button" onclick="client.sendHDFSEntryAddress(client)">HDFS Address</button>
-				</form>
-				<form>
-					<input id="hDFSEntryPointPort" type="text"/>
-					<button type="button" onclick="client.sendHDFSEntryPort(client)">HDFS Port</button>
-				</form>
-				<form>
-					<input id="hDFSgraphFileDirectory" type="text"/>
-					<button type="button" onclick="client.sendHDFSGraphFilesDirectory(client)">HDFS Graph Directory </button>
-				</form>
-				<form>
-					<input id="gradoopGraphID" type="text"/>
-					<button type="button" onclick="client.sendGradoopGraphId.call(client)">Gradoop Graph ID</button>
-				</form>
-	
-	<!-- <div id="cy" style="border:10px solid #cecece;" > -->
-	<!-- </div> -->
-
-	<!-- <div id="buttons" > -->
-		<!-- <button type="button" onClick="resetVisualization()" class="btn" id="send">Reset</button> -->
-		<!-- <button type="button" onClick="sendSignalHBase()" class="btn" id="send">buildTopViewHBase</button> -->
-		<!-- <button type="button" onClick="sendSignalGradoop()" class="btn" id="send">buildTopViewGradoop</button> -->
-		<!-- <button type="button" onClick="sendSignalCSV()" class="btn" id="send">buildTopViewCSV</button> -->
-		<!-- <button type="button" onClick="sendSignalAdjacency()" class="btn" id="send">buildTopViewAdjacency</button> -->
-		<!-- <button type="button" onClick="preLayout()" class="btn" id="send">PreLayout</button> -->
-		<!-- <button type="button" onClick="postLayout()" class="btn" id="send">PostLayout</button> -->
-		<!-- <button type="button" onClick="verticesHaveDegrees()" class="btn" id="send">Vertex Degrees Already Calculated</button> -->
-		<!-- <button type="button" onClick="verticesDoNotHaveDegrees()" class="btn" id="send">Vertex Degrees Not Yet Calculated</button> -->
-	<!-- </div> -->
-	<!-- <form> -->
-		<!-- <input id="maxVerticesInput" type="number"/> -->
-		<!-- <button type="button" onclick="sendMaxVertices(document.getElementById('maxVerticesInput').value)"> Maximal Number of Vertices in Viewport</button> -->
-	<!-- </form> -->
-	<!-- <form> -->
-		<!-- <input id="clusterEntryPointAddress" type="text"/> -->
-		<!-- <button type="button" onclick="sendClusterEntryAddress(document.getElementById('clusterEntryPointAddress').value)"> Cluster Entry Point Address</button> -->
-	<!-- </form> -->
-	<!-- <form> -->
-		<!-- <input id="hDFSEntryPointAddress" type="text"/> -->
-		<!-- <button type="button" onclick="sendHDFSEntryAddress(document.getElementById('hDFSEntryPointAddress').value)"> HDFS Entry Point Address</button> -->
-	<!-- </form> -->
-	<!-- <form> -->
-		<!-- <input id="hDFSEntryPointPort" type="text"/> -->
-		<!-- <button type="button" onclick="sendHDFSEntryPort(document.getElementById('hDFSEntryPointPort').value)"> HDFS Entry Point Port</button> -->
-	<!-- </form> -->
-	<!-- <form> -->
-		<!-- <input id="hDFSgraphFileDirectory" type="text"/> -->
-		<!-- <button type="button" onclick="sendHDFSGraphFilesDirectory(document.getElementById('hDFSgraphFileDirectory').value)"> Graph Files HDFS Directory</button> -->
-	<!-- </form> -->
-	<!-- <form> -->
-		<!-- <input id="gradoopGraphID" type="text"/> -->
-		<!-- <button type="button" onclick="sendGradoopGraphId(document.getElementById('gradoopGraphID').value)"> Gradoop Graph ID</button> -->
-	<!-- </form> -->
-	
-	
-	
-	
 	
 
-	<!-- <script src="cytoscape.min.js"></script> -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.15.0/cytoscape.min.js"></script>
+	<script src="cytoscape.min.js"></script>
+	<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.15.0/cytoscape.min.js"></script> -->
 	<!-- <script src="https://unpkg.com/layout-base/layout-base.js"></script> -->
 	<!-- <script src="https://unpkg.com/cose-base/cose-base.js"></script> -->
 	<!-- <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script> -->
@@ -214,5 +207,4 @@
 	<script src="testDataSet/edges.js"></script>
 	<script src="testDataSet/loadDataSet.js"></script>
 </body>
-
 </html>

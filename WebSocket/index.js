@@ -97,12 +97,12 @@ class Client {
 	}
 
 	sendVerticesHaveDegrees(){
-		const haveDegrees = document.getElementById('verticesHaveDegrees').checked;
-		this.ws.send("degrees;" + haveDegrees.to);
+		const haveDegrees = !document.getElementById('verticesHaveDegrees').checked;
+		this.ws.send("degrees;" + haveDegrees);
 	}
 
 	sendGraphIsLayouted(){
-		this.layout = document.getElementById('graphIsLayouted').checked;
+		this.layout = !document.getElementById('graphIsLayouted').checked;
 		this.ws.send("layoutMode;" + this.layout);
 	}
 
@@ -156,10 +156,6 @@ class Client {
 		if (this.graphVisualizer.cy.nodes().length != 0) this.resizeGraph(cyHeightOld, cyWidthOld);
 		this.cyHeightHalf = this.cyHeight / 2;
 		this.cyWidthHalf = this.cyWidth / 2;
-		const heightOutput = document.querySelector('#height');
-		const widthOutput = document.querySelector('#width');
-		heightOutput.textContent = this.cyWidth;
-		widthOutput.textContent = this.cyHeight;
 		const pan = this.graphVisualizer.cy.pan();
 		this.ws.send("viewportSize;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom() + ";" +  this.cyWidth + ";" + this.cyHeight);
 	}
@@ -252,6 +248,7 @@ $(document).ready(function(){
 
 	let resizedTimeOut;
 	window.onresize = function(){
+		console.log($('#myContainer'));
 		clearTimeout(resizedTimeOut);
 		resizedTimeOut = setTimeout(function(){client.resize();}, 100);
 	};
