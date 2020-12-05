@@ -20,7 +20,7 @@ class Client {
 	async processMessage(){
 		if (this.messageQueue.length > 0){
 			const dataArray = this.messageQueue.shift();
-			let promise = new Promise((resolve, reject) => { //remove reject???
+			let promise = new Promise((resolve) => {
 				let client;
 				switch (dataArray[0]){
 					case 'addVertexServer':
@@ -131,8 +131,9 @@ class Client {
 			this.graphVisualizer.layoutBase = new Set();
 		}
 		this.graphVisualizer.layoutWindow = {x1: 0, y1: 0, x2: 4000, y2: 4000};
-		this.graphVisualizer.cy.zoom(1 / (4000 / Math.min(this.graphVisualizer.cyWidth, this.graphVisualizer.cyHeight)));
+		this.graphVisualizer.cy.zoom(1 / (4000 / Math.min(this.cyWidth, this.cyHeight)));
 		this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
+		this.disableMouseEvents();
 	}
 
 	sendMaxVertices(){
@@ -146,25 +147,32 @@ class Client {
 	}
 
 	resize(){
+		console.log("Resizing viewport!");
 		const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
-		let cyHeightOld = this.graphVisualizer.cyHeight;
-		let cyWidthOld = this.graphVisualizer.cyWidth;
-		this.graphVisualizer.cyHeight = boundingClientRect.height;
-		this.graphVisualizer.cyWidth = boundingClientRect.width;
-		if (this.graphVisualizer.cy.nodes().length != 0) resizeGraph(cyHeightOld, cyWidthOld, this.graphVisualizer.cyHeight, this.graphVisualizer.cyWidth);
-		this.graphVisualizer.cyHeightHalf = this.graphVisualizer.cyHeight / 2;
-		this.graphVisualizer.cyWidthHalf = this.graphVisualizer.cyWidth / 2;
-		console.log("resizing!");
+		let cyHeightOld = this.cyHeight;
+		let cyWidthOld = this.cyWidth;
+		this.cyHeight = boundingClientRect.height;
+		this.cyWidth = boundingClientRect.width;
+		if (this.graphVisualizer.cy.nodes().length != 0) this.resizeGraph(cyHeightOld, cyWidthOld);
+		this.cyHeightHalf = this.cyHeight / 2;
+		this.cyWidthHalf = this.cyWidth / 2;
 		const heightOutput = document.querySelector('#height');
 		const widthOutput = document.querySelector('#width');
-		heightOutput.textContent = this.graphVisualizer.cyWidth;
-		widthOutput.textContent = this.graphVisualizer.cyHeight;
+		heightOutput.textContent = this.cyWidth;
+		widthOutput.textContent = this.cyHeight;
 		const pan = this.graphVisualizer.cy.pan();
-		this.ws.send("viewportSize;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom() + ";" +  this.graphVisualizer.cyWidth + ";" + this.graphVisualizer.cyHeight);
+		this.ws.send("viewportSize;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom() + ";" +  this.cyWidth + ";" + this.cyHeight);
+	}
+
+	resizeGraph(cyHeightOld, cyWidthOld){
+		const yVar = (cyHeightOld - this.cyHeight) / 2;
+		const xVar = (cyWidthOld - this.cyWidth) / 2;
+		const pan = this.graphVisualizer.cy.pan();
+		this.graphVisualizer.cy.pan({x: - xVar + pan.x, y: - yVar + pan.y});
 	}
 	
 	finalOperations(){
-		console.log("in finalOperations function");
+		console.log("Final Operations!");
 		this.graphVisualizer.updateVerticesSize();
 		if (!this.layout){
 			let layoutBaseString = "";
@@ -192,20 +200,38 @@ class Client {
 				this.graphVisualizer.cy.nodes().lock();
 				this.graphVisualizer.layoutBase = new Set();
 			}	
-			this.ws.send("layoutBaseString" + layoutBaseString); //comment this line for layouting algorithm testing
+			this.ws.send("layoutBaseString" + layoutBaseString);
 		}
+		this.enableMouseEvents();
+	}
+
+	disableMouseEvents(){
+		$("body").css("cursor", "progress");
+		console.log("disabling mouse events");
+		const cyto = document.getElementById('cy');
+		cyto.removeEventListener("mousedown", mouseDown);
+		cyto.removeEventListener("mouseup", mouseUp);
+		cyto.removeEventListener("wheel", mouseWheel);
+	}
+
+	enableMouseEvents(){
+		$("body").css("cursor", "default");
+		console.log("enabling mouse events");
+		const cyto = document.getElementById('cy');
+		cyto.addEventListener("mouseup", mouseUp);
+		cyto.addEventListener("mousedown", mouseDown);
+		cyto.addEventListener("wheel", mouseWheel);
 	}
 }
 
-
-//comment this function for layout algorithm testing
 $(document).ready(function(){
 	ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897/graphData");
 	
 	ws.onopen = function() {
 		console.log("Opened!");
 		ws.send("Hello Server");
-		client.resize();
+		ws.send("resetWrapperHandler");
+		client.resize(client);
 	}
 
 	ws.onmessage = function (evt) {
@@ -227,70 +253,76 @@ $(document).ready(function(){
 	let resizedTimeOut;
 	window.onresize = function(){
 		clearTimeout(resizedTimeOut);
-		resizedTimeOut = setTimeout(client.resize, 100);
+		resizedTimeOut = setTimeout(function(){client.resize();}, 100);
 	};
 
-	let cyHTML = document.getElementById('cy');
-	cyHTML.addEventListener('mousedown', function(e){
-		this.xRenderDiff = 0;
-		this.yRenderDiff = 0;
-		this.onmousemove = function (e){
-			this.xRenderDiff = this.xRenderDiff + e.movementX;
-			this.yRenderDiff = this.yRenderDiff + e.movementY;
-			const xRenderPos = client.graphVisualizer.cy.pan().x;
-			const yRenderPos = client.graphVisualizer.cy.pan().y;
-			console.log("accumulated movement x: " + this.xRenderDiff.toString());
-			console.log("accumulated movement y: " + this.yRenderDiff.toString());
-			client.graphVisualizer.cy.pan({x:xRenderPos + e.movementX, y:yRenderPos + e.movementY});
-		}
-	});
-
-	cyHTML.addEventListener("mouseup", function(e){
-		this.onmousemove = null;
-		const xModelDiff = - (this.xRenderDiff / client.graphVisualizer.zoomLevel);
-		const yModelDiff = - (this.yRenderDiff / client.graphVisualizer.zoomLevel);
-		const pan = client.graphVisualizer.cy.pan();
-		const xRenderPos = pan.x;
-		const yRenderPos = pan.y;
-		const topModelPos= - yRenderPos / client.graphVisualizer.zoomLevel;
-		const leftModelPos = - xRenderPos / client.graphVisualizer.zoomLevel;
-		const bottomModelPos = topModelPos + client.graphVisualizer.cyHeight / client.graphVisualizer.zoomLevel;
-		const rightModelPos = leftModelPos + client.graphVisualizer.cyWidth / client.graphVisualizer.zoomLevel;
-		console.log("Pan... top , right, bottom, left: " + topModelPos + " " + rightModelPos + " " + bottomModelPos + " " + leftModelPos);
-		client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-		client.graphVisualizer.layoutBase = new Set();
-		client.ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + client.graphVisualizer.zoomLevel);
-	});
-
-	cyHTML.addEventListener("wheel", function(e) {
-		e.preventDefault();
-		const delta = Math.sign(e.deltaY);
-		const cytoX = e.pageX - cyHTML.offsetLeft;
-		const cytoY = e.pageY - cyHTML.offsetTop;
-		let pan = client.graphVisualizer.cy.pan();
-		client.graphVisualizer.layoutBase = new Set();
-		if (delta < 0){
-			client.graphVisualizer.styleOnZoom("in");
-			client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() * client.graphVisualizer.zFactor);
-			client.graphVisualizer.cy.pan({x:- client.graphVisualizer.cyWidthHalf + client.graphVisualizer.zFactor * pan.x + (client.graphVisualizer.cyWidthHalf - cytoX) * client.graphVisualizer.zFactor, 
-				y:- client.graphVisualizer.cyHeightHalf + client.graphVisualizer.zFactor * pan.y + (client.graphVisualizer.cyHeightHalf - cytoY) * client.graphVisualizer.zFactor});
-			pan = client.graphVisualizer.cy.pan();
-			client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
-			const topModelPos = - pan.y / client.graphVisualizer.zoomLevel;
-			const leftModelPos = - pan.x / client.graphVisualizer.zoomLevel;
-			const bottomModelPos = topModelPos + client.graphVisualizer.cyHeight / client.graphVisualizer.zoomLevel;
-			const rightModelPos = leftModelPos + client.graphVisualizer.cyWidth / client.graphVisualizer.zoomLevel;
-			client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModelPos, rightModelPos, bottomModelPos, leftModelPos);
-			client.ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
-		} else {
-			client.graphVisualizer.styleOnZoom("out");
-			client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() / client.graphVisualizer.zFactor);
-			client.graphVisualizer.cy.pan({x:client.graphVisualizer.cyWidthHalf + pan.x - (client.graphVisualizer.cyWidthHalf + pan.x) / client.graphVisualizer.zFactor - (cytoX - client.graphVisualizer.cyWidthHalf) /client.graphVisualizer.zFactor, 
-				y:client.graphVisualizer.cyHeightHalf + pan.y - (client.graphVisualizer.cyHeightHalf + pan.y) / client.graphVisualizer.zFactor - (cytoY - client.graphVisualizer.cyHeightHalf) / client.graphVisualizer.zFactor});
-			pan = client.graphVisualizer.cy.pan();
-			client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
-			client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
-			client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
-		}
-	});
+	client.enableMouseEvents();
 });
+
+function mouseWheel(e) {
+	client.disableMouseEvents();
+	e.preventDefault();
+	const delta = Math.sign(e.deltaY);
+	const rect = e.target.getBoundingClientRect();
+	const scroll = document.documentElement.scrollTop || document.body.scrollTop;
+	const cytoX = e.pageX - rect.left;
+	const cytoY = e.pageY - (rect.top + scroll);
+	let pan = client.graphVisualizer.cy.pan();
+	client.graphVisualizer.layoutBase = new Set();
+	if (delta < 0){
+		client.graphVisualizer.styleOnZoom("in");
+		client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() * client.graphVisualizer.zFactor);
+		client.graphVisualizer.cy.pan({x:- client.cyWidthHalf + client.graphVisualizer.zFactor * pan.x + (client.cyWidthHalf - cytoX) * client.graphVisualizer.zFactor, 
+			y:- client.cyHeightHalf + client.graphVisualizer.zFactor * pan.y + (client.cyHeightHalf - cytoY) * client.graphVisualizer.zFactor});
+		pan = client.graphVisualizer.cy.pan();
+		client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
+		const topModel = - pan.y / client.graphVisualizer.zoomLevel;
+		const leftModel = - pan.x / client.graphVisualizer.zoomLevel;
+		const bottomModel = topModel + client.cyHeight / client.graphVisualizer.zoomLevel;
+		const rightModel = leftModel + client.cyWidth / client.graphVisualizer.zoomLevel;
+		console.log("ZoomIn... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
+		client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
+		client.ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
+	} else {
+		client.graphVisualizer.styleOnZoom("out");
+		client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() / client.graphVisualizer.zFactor);
+		client.graphVisualizer.cy.pan({x:client.cyWidthHalf + pan.x - (client.cyWidthHalf + pan.x) / client.graphVisualizer.zFactor - (cytoX - client.cyWidthHalf) /client.graphVisualizer.zFactor, 
+			y:client.cyHeightHalf + pan.y - (client.cyHeightHalf + pan.y) / client.graphVisualizer.zFactor - (cytoY - client.cyHeightHalf) / client.graphVisualizer.zFactor});
+		pan = client.graphVisualizer.cy.pan();
+		client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
+		client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
+		client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
+	}
+}
+
+function mouseDown(e){
+	this.xRenderDiff = 0;
+	this.yRenderDiff = 0;
+	this.onmousemove = function (e){
+		this.xRenderDiff = this.xRenderDiff + e.movementX;
+		this.yRenderDiff = this.yRenderDiff + e.movementY;
+		const xRenderPos = client.graphVisualizer.cy.pan().x;
+		const yRenderPos = client.graphVisualizer.cy.pan().y;
+		console.log("accumulated movement x: " + this.xRenderDiff.toString());
+		console.log("accumulated movement y: " + this.yRenderDiff.toString());
+		client.graphVisualizer.cy.pan({x:xRenderPos + e.movementX, y:yRenderPos + e.movementY});
+	}
+}
+
+function mouseUp(e){
+	client.disableMouseEvents();
+	this.onmousemove = null;
+	const xModelDiff = - (this.xRenderDiff / client.graphVisualizer.zoomLevel);
+	const yModelDiff = - (this.yRenderDiff / client.graphVisualizer.zoomLevel);
+	const pan = client.graphVisualizer.cy.pan();
+	const xRenderPos = pan.x;
+	const yRenderPos = pan.y;
+	const topModel= - yRenderPos / client.graphVisualizer.zoomLevel;
+	const leftModel = - xRenderPos / client.graphVisualizer.zoomLevel;
+	const bottomModel = topModel + client.cyHeight / client.graphVisualizer.zoomLevel;
+	const rightModel = leftModel + client.cyWidth / client.graphVisualizer.zoomLevel;
+	console.log("Pan... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
+	client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
+	client.graphVisualizer.layoutBase = new Set();
+	client.ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + client.graphVisualizer.zoomLevel);
+}

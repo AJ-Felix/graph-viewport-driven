@@ -181,13 +181,4 @@ class GraphVisualizer {
 			this.currentMinDegree = degree;
 		}
 	}
-
-	resizeGraph(cyHeightOld, cyWidthOld, cyHeight, cyWidth){
-		const yVar = (cyHeightOld - cyHeight) / 2;
-		const xVar = (cyWidthOld - cyWidth) / 2;
-		const pan = this.cy.pan();
-		this.cy.pan({x: - xVar + pan.x, y: - yVar + pan.y});
-	}
-
-	
 }
