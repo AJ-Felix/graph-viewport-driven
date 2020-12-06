@@ -236,7 +236,7 @@ $(document).ready(function(){
 	}
 
 	ws.onmessage = function (evt) {
-		console.log(evt.data);
+		// console.log(evt.data);
 		const dataArray = evt.data.split(";");
 		client.addMessageToQueue(dataArray);
 	}
