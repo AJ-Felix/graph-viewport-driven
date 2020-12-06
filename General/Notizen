@@ -1,0 +1,370 @@
+Visualize .dot files using GVEdit (GUI callable via command line)
+
+Gradoop-HBase:
+	Hat unter 
+	<dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-java</artifactId>
+      <version>1.10.0</version>
+	</dependency>
+	funktioniert.
+	
+Flink-HBase:
+	Verwende "_2.12" Scala targets unter Version 1.10.0
+	
+Gradoop funktioniert wohl momentan nur mit Flink 1.7.2
+
+Logging muss programmatisch über BasicConfigurator.configure() oder über log4j.properties im class path aktiviert werden.
+
+Je nachdem ob über Gradoop oder Flink Table nach HBase geschrieben wird müssen die jeweiligen Environments ausgeführt (.execute()) werden.
+
+Environment Variable HADOOP_HOME muss in IDE gesetzt werden. Dadurch werden "core-site.xml" und "hdfs-site.xml" von
+org.apache.flink.api.java.hadoop.mapred.utils.HadoopUtils eingelesen. In den Dateien kann "mapred.output.dir" gesetzt werden.
+HBaseConfiguration.addResource() hat nicht funktioniert...
+
+Transformieren eines Gradoop-Vertex-DataSets in eine Flink Table mit der passenden Struktur fü den HBase Connector erfordert.
+dass jede Zeile der Tabelle als Flink Row definiert ist und die Tabelleneinträge Elemente einer darin geschachtelten Row sind
+...Row.of(<SomeType>, Row.of(<aCommaSeperatedListOfTypes>))...
+Nur dann ist eine Weitergabe der Type Informationen möglich.
+Sollte auch mit anderen Generic Types gehen, aber nicht geprüft.
+
+Beim Sinken von Flink Tables nach HBase über eine BatchTableEnvironment gibt es immer den Fehler:
+"BatchTableSink or OutputFormatTableSink required to emit batch Table."
+Kann nicht durch downgrading gelöst werden, weil es in Flink 1.7.2 noch keinen HBase Connector gibt (müsste selbst implementiert werden...).
+--> Vorübergehende Lösung: Da DataSets nicht Flink-intern in DataStreams transformiert werden können, muss dies über den Umweg einer Java-Standard-
+	Datenstruktur gemacht werden, die dann als Stream wieder eingelesen wird.
+	
+Tables müssen in HBase initial manuell über "create" erstellt werden, bevor sie mit Flink Table HBase Connector befüllt werden können.
+
+Sortierung:
+	Tables werden in HBase lexikografisch nach rowkey gespeichert...
+		-	Es gibt wohl die Möglichkeit einen sekundären rowkey zu erstellen, aber das ist sehr kompliziert und funktioniert höchstwahrscheinlich nicht
+			über den Flink Table API HBase Connector...
+		-	Keine Möglichkeit gefunden Tabellen in HBase in absteigender lexikografischer Ordnung zu speichern.
+		-	Keine Möglichkeit gefunden Flink Tables rückwärts in den Stream zu füttern (dann wäre auch die Datenbankanfrage nicht optimiert)
+	--> Lösung über die Verwendung eines anderen Speicherortes als HBase, z.B. einfach csv-Dateien auf einem FileSystem??
+
+Großer Sample Graph:
+	Aufruf bricht einfach nach einiger Zeit ohne Fehlermeldung ab beim Versuch, den großen sample graphen zu laden und eine degree matrix zu sinken...
+	Möglicherweise ein HBase-Problem. 
+	-	Überlegung anderes Sink zu verwenden, auch aus Sortierungsgründen (s.o.), allerdings macht gibt es bereits beim Laden über Gradoop HBase Source
+		Probleme...
+		--> Mit Sampling-operatoren versuchen, den Graphen zu verkleinern.
+
+Sampling von 2000 Knoten aus 330000 Knoten dauert 30 Minuten und verbraucht temporär ca. 5 Gb Speicher...
+
+Knotengrad berechnen und (vorerst) als Knoten-Property in das EPGM-Modell einfügen:
+	-	Zugriff auf Row-Attribute über HBase Connector Source Flink Table ist unbekannt, keine SQL query darauf möglich
+		--> Auf eigenes, reduziertes Graph-Format umsteigen, zunächst als HBase Tabelle implementieren. Jedoch: Sortierung in HBase nicht möglich
+
+Überlegung:
+	-	Ohne Sortierung kann die Datenbankanfrage für die Top-Ansicht nicht eindeutig formuliert werden, da unbekannt ist, bei welchem Knotengrad-
+		Cutoff (WHERE degree >=)in der Anfrage die vom Viewport definierte Anzahl an Knoten erreicht ist.
+		--> Vorerst Order By verwenden (OrderBy erfordert RetractStream!!!, AppendStream nur mit vorheriger Sortierung)
+		
+HBase Connector lässt nur eine begrenzte Auswahl an Datentypen für Felder zu. Es ist daher nicht möglich z.B. die VertexIDs (hexadezimal) einfach 
+korrekt einzulesen (über den HBase Connector).
+
+ORDER BY in SQL-Anfrage erfordert Blink Planner
+
+mit DataTypes wäre es möglich, binary abzufragen und anschließend umzuwandeln
+	--> DataTypes in Typeinfo zum Laufen kriegen ODER CSV verwenden, da können Tuple-Datastreams verwendet werden.
+		--> mit LegacyTypeInfoDataTypeConverter.toLegacyTypeInfo() können DataTypes in TypeInformation konvertiert werden, welche Argument
+			von new TypeInformation[]{...} sein können. So kann z.B. eine Ausgabe in Byte-Arrays (SQL: BYTES, FLINK API: DataTypes.BYTES())
+			gemacht werden, welche keinen Informationsverlust hat. Die Bytes werden als Ganzzahlen mit Vorzeichen angezeigt. Eine Übersetzung
+			in Binary Strings zeigt, dass nur die hinteren 8 Bits die Information tragen, z.B.:
+				Alle Binaries hintereinander: 5C006AFFB3FFFB001AFFB2FFCAFFB7FFC3FFAAFFD20050
+				Nur der zweite Teil der Binaries: 010111000110101010110011111110110001101010110010110010101011011111000011101010101101001001010000
+				ergibt: 5C6AB3FB1AB2CAB7C3AAD250
+				ist VERTEXID!!!
+
+	--> Eigenes Dateiformat verwenden (geht erstmal schneller die Corefunktionen aufzubauen), z.B. CSV
+		-	checken inwieweit FLINK Table API mit CSV klarkommt
+		
+Es kann nicht die ganze 'vertices' Tabelle aus HBase über Flink Table API eingelesen, weil unterschiedliche Knotentypen unterschiedliche Felder haben und man filtern müsste. Die Werte der Felder
+auf denen gefiltert werden müsste, lassen sich allerdings in der SQL-Anfrage nicht in einen Datentyp konvertieren auf dem Vergleiche gängig sind (z.B. String).
+		
+Unterschied zwischen den Operatoren max und maxBy ist wichtig!!
+
+Wenn das Layout vor der Visualisierung steht, dann können beim Zoom alle Knoten mit größtem Grad, die einerseits ihre Koordinaten im Bereich haben und
+andererseits die Bedingungen des Viewports ausfüllen angezeigt werden. Visualisierung von isolierten Knoten ist kein Problem.
+
+Anscheinend kann man einen Stream nicht an seinem Ende triggern. D.h. beim Erstellen der Top-Ansicht durch Hbase-Anfrage und Order BY (SQL) kommt es
+zu temporären Befüllen der Tabelle mit falschen Knoten (!?)
+
+Man kann anscheinend nicht über ein DataSet iterieren, daher die Konversion in Java-List für die Visualisierung mit Cytoscape
+ 
+Konversion von Row zu Tuple notwendig, weil join nicht auf komplexen Datentypen geht
+
+Logging wurde mit log4j.properties im class path eingerichtet
+
+Sehr seltsames Verhalten im Zusammenhang mit HBaseTableUpsertSink: Wenn man aus der Aggregation sich die Booleans mit in der Tabelle für jeden unique rowkey speichern will, dann wird automatisch
+nach '= true' gefiltert, es sei denn man filtert explizit nach false. Ausgabe ohne Filterung geht nicht, sobald man Booleans als Tabellenwerte hat...
+	Scheinbare Regeln:
+		Wenn in der Aggregatefunktion kein boolean gesammelt wird, dann wird nicht gefiltert
+		Wenn in der Aggregatefunktion der boolean des retract stream direkt als String gesammelt wird, wird automatisch nach 'true' gefiltert.
+		Vergleich mit "==" auf "true" oder "false" ergibt "false" obwohl die Werte des .toString() konvertierten Objekts genau das sind. Wenn dann alle gesammelten
+			booleans "false" sind, wird nicht automatisch gefiltert.
+			--> muss mit .equals() verglichen werden. 
+		Vergleich mit .equals() und entsprechendes befüllen mit "true" oder "false" und sammeln in der Aggregatefunktion führt zu automatischem Filtering
+			--> Wenn unterschiedliche (nicht alle "false"/"true") Werte gesammelt werden, wird danach automatisch gefiltert.
+		Wenn in dem Join keine Felder aus der Tabelle, welche aus einer Aggregation entstanden ist selektiert werden ("select"), dann wird nicht mehr
+			automatisch gefiltert, auch wenn unterschiedliche booleans aggregiert wurden...
+		Wenn unterschiedliche booleans aggregiert werden und Felder aus der Aggregat-Tabelle im join selektiert werden, dann scheint HBase nach true zu filtern
+			während der RetractStream (wie letztlich ohne Filterung erwartet) jeder Tabelleneintrag am Ende "true" ist (mit möglichen update-operationen zwischendurch)
+
+writeAsCSV hat keine exactly-once semantik... --> StreamingFileSink
+writeAsCSV funktioniert nur an bestimmten Stellen im Code
+StreamingFileSink funktioniert nicht...
+	--> 2 Varianten, bei beiden muss das zwischenergebnis kontrolliert werden!!!
+		- stdout nach file redirecten und daraus Cyto files konvertieren
+		- HBaseUpsertSink verwenden und dann wieder aus HBase laden (TODO: Implementieren!)
+
+KDEVTMPFSI:
+	To get rid of it:
+	-	remove /tmp/kdevtmpfsi and replace with dummy file
+	-	remove executables in /var/tmp/ and replace with dumy files
+	-	remove cronjob with "crontab -e"
+	- 	kill kdevtmpfsi and kinsing processes (possibly search with "pidof [process name]")
+	---> Does not work... maybe restart after
+
+
+Socket.IO: Nachrichten werden als JSON-Object übertragen. Die Felder des JSON-Object können aber komplexe Datentypen sein (getestet mit Java-List, im Javascript werden die Elemente dann array-like indiziert). Hat nicht funktioniert, weil für Flink SinkFunction alle Objekte in der invoke() serialisierbar sein müssen.
+Konversion from table to stream always produces row-typed streams --> without mapping operator streams of custom objects can not be generated from tables!!!
+
+Aus irgendeinem Grund muss man Flink für buildTopView-Operationen zwingend neu initialisieren, wenn die Anfrage vom Client kommt, während die displayAll-Operation auch bei Flink-Initialisation am Programmstart funktioniert...
+
+FLINK: Der Thread in dem Flink ausgeführt wird, stoppt bei .execute() solange bis alle Jobs terminiert sind. Um einen Job vorzeitig zu terminieren, muss daher eine Anfrage über einen anderen Thread entgegengenommen werden.
+
+Zoom: Minus-Operation of two unbounded tables is not supported: Die Wrapper welche in der vorherigen Ansicht schon vorhanden waren, können im BackEnd nicht herausgefiltert werden. Lösung: visualizedWrappers
+
+ACHTUNG: Möglicherweise ist für eine verteilte Ausführung über Flink Cluster ein rückschreiben der Koordinaten im Prelayout Modus in entsprechende CSV-Dateien notwendig, checken!
+
+Die Inzidenz wird bei Zoom-Out nicht verringert. Ist aber unproblematisch, weil die Inzidenz nur für buildTopViewRetract notwendig ist
+
+Die Adjazenzmatrix wird von jeder GraphUtil in der Graph-Visualisierung verwendet
+	
+Idee: Man kann über die REST API von extern (Client) Jobs terminieren. Damit kann der Client Kontrolle über die Ausführung der FlinkJobs auf dem Server bekommen und Jobs frühzeitig terminieren, wenn genug Daten bereits
+	gesendet wurden.
+
+Idee: ServerSide: Überlegung ob Anfrage an den Client, alle Kanten-Ids zu senden schneller ist, als die Lösch-Operationen im BackEnd. Da dies aber einer Operation der Graph-Visualisierung ist, ist eine Optimierung nicht notwendig für den Vergleich
+	
+
+union map is necessary in ZoomInLayoutFourthStep functions because vertices in innerVertices now have have relevant low-degree neighbours outside
+
+Die Adjazenzmatrix kann bei allen GraphUtil-Anwendungen für die Operationen in der Visualisierung verwendet werden, weil das keine GraphUtil-spezifischen Operationen mehr sind (im Prinzip alles nach Flink-Sink)
+
+Incidence might not work correct after buildTopView but is also only important for buildTopView, so nevermind...
+
+
+Annotate all functions and classes properly (late TODO)
+Initial coordinates of to be layouted vertices are in viewport model position but not in necessarily in new model area (late TODO)
+ignore pan;0;. this is causing errors in next operation (late TODO)
+
+Identity wrapper stream is necessary since some vertices are layouted in the respective area but none of their neighbours (adjaGrpahUtil)
+
+Main.sentToClientInSubStep ist eine Kontrollvariable für den Fall, dass der wrapperStream im SubStep nicht leer ist, aber auch keine Anweisungen an den Client geschickt werden.
+
+Layout: Layout does have to be performed after every suboperation step, because some following suboperation steps might access the layoutedVertices. But 
+	
+Serverseitige Graph-Semantik:
+	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
+
+
+
+
+
+
+Late-TODO: Visualisierung farbig etc.
+
+cytoscape bug mit zufälligen label-verschwinden trouble shooten +  Manchmal werden Knoten bei zoom in gelöscht... ist wieder normal, seltsam...
+
+OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen mit Server auf dieser Maschine und Flink-Cluster in slurm session! (Wahrscheinlich gibt es Datentypen-Fehler, Integer etc.)
+	- Möglicherweise gibt es MemoryError, weil die Kanten und Knotendatenstrukturen im BackEnd gespeichert werden...
+	- Die Knoten des LDBC_1 können über DataSet API in eine Datei geschrieben werden. Ein '.print()'-Sink funktioniert nicht. Ein '.collect()' mit anschließendem Sink ebenfalls nicht (Caused by: java.io.IOException: The rpc invocation size 666780296 exceeds the maximum akka framesize.) Das Ganze wurde auf einem lokalen CLuster getestet, aber sollte entsprechend auch in einer Slurm-Session funktionieren.
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+TODO: introduce better layout algorithms --> fcose und cose verändern die Knotenposition nicht und andere force-directed algorithms lassen sich nicht per src-tag in plain html einbinden
+
+TODO: Front-End, die Buttons daneben zu setzen macht Probleme beim zoomIn
+
+TODO: Layout: ZoomOut löscht zu viele Kanten
+
+TODO: Client testen...
+
+TODO: parallelität > 1 ausprobieren, maybe retract sink needs special handling
+
+TODO: Auf Galaxy Cluster testen
+
+TOOD After präsi: mouse enabling/disabling for non-layout mode
+
+Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
+	Bei Verkleinerung: 
+		Anschließend werden Knoten außerhalb der neuen Modellkoordinaten, welche vorher drin waren (also in innerVertices/newVertices), gelöscht, falls sie keine Nachbarn innerhalb der Modellkoordinaten mehr haben.
+			(Das entspricht wrapperHandler.prepareOperation())
+		Außerdem müssen entsprechend der neuen Kapazität des Viewports Knoten Inside hinzugefügt oder entfernt werden und danach In-Out-/Out-In-Wrapper hinzugefügt werden. Die neue Kapazität berechnet sich aus der
+			Anzahl der Knoten, welche noch inside sind und den neuen Viewportmaßen.
+		Wenn Knoten hinzugefügt werden, entspricht dies einem ZoomIn. Wenn Knoten gelöscht werden, dann kann der AToA-Schritt des ZoomIn weggelassen werden (wurde aber nicht implementiert!).
+	Bei Vergrößerung:
+		Anschließend müssen Knoten entsprechend der Kapazität nachgeladen werden.
+		Dies entspricht einem ZoomOut.
+		
+late-TODO: Server ausführung über java -jar command line funktioniert nicht, BlinkExecutorFactory-class fehlt, obwohl in der Jar vorhanden
+late-TODO: sometimes frontend error when zooming in from initial view, but only rarely --> extensive debugging!
+late-TODO: buildTopViewRetract verursacht manchmal NullPointer bei Execution mit Fat-jar....
+late-TODO: implement parser for different ports given by command-line arguments
+late-TODO: auf neue Flink-Version upgraden (HBase connector sieht dann anders aus...)
+
+FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
+
+BuildTopView: Aus dem kleineren von cyWidth/cyHeight jeweils den zoom berechnen, damit 4000 * 4000 Modellkoordinaten visualisiert werden. Dann Knoten kommen lassen und am Ende cy.fit() durchführen und zurückschreiben.
+
+Flink lokal: Yarn Session schmiert ab, sobald ein Job submitted wird oder das REST Interface im Browser aufgerufen wird --> standalone cluster funktioniert und kann mit ExecutionEnvironment.createRemoveEnvironment(...) auf
+Port 8081 angesprochen werden
+
+BuildTopViewAppend:
+	- Server sendet alle relevanten Wrapper genau einmal. Daher ist kaum Kontrollstruktur notwendig.
+
+wrapperHandler.clearOperation() muss vom FlinkResponseHandler und nicht vom Server ausgeführt werden! Sonst gibt es Reihenfolgeprobleme
+
+Es muss gewährleistet sein, dass der Server keine Operation mehr auf den Knoten-Maps durchführt, wenn "layoutBaseString" ankommt!!!
+
+Die Flink-Konfigurationen müssen innerhalb des AbstractReceiveListeners durchgeführt werden. Wenn Sie vorher, z.B. während der Serverinitialisierung durchgeführt werden, kommt es bei der ersten Ausführung von Table API Operationen zu einem kryptischen Fehler. Möglicherweise liegt das daran, dass der gleiche Thread welcher die Flink config ausführt, auch das erste .execute() ausführen muss, um die Environment zu erstellen. Man kann .execute() aber nicht Exception-free ausführen, ohne vorher Flink Operator definiert zu haben. Die Ausführung der Flink-Konfiguration in einem Thread der anschließend terminiert, behebt das Problem NICHT. 
+
+FlinkSink (SocketClient Sink): Der Socket muss wirklich immer komplett neu geöffnet werden, weil Flink den Socket schließt.
+
+Not-Runnable Jar, Retract Mode needs:
+	- HADOOP_HOME set
+	- flink-runtime-web package for Java application
+	- TaskManager memory > 8 GB
+	- gradoop-hbase and flink-hbase dependencies (3 in total, making up roughly 98% of Jar volume)
+
+REST API: Aus irgendeinem Grund werden Patch requests über ajax, welche über javascript im browser-basierten Client ausgeführt werden, vom Server blockiert (CORS). GET requests funktionieren. Die Patch requests sind notwendig
+um Jobs zu terminieren. Ein Workaround wäre, Flink serverseitig in einem separaten Thread laufen zu lassen und den patch request über die java library der rest api vom server aus durch zuführen.
+
+NEUES GRADOOP:
+	- .join() funktioniert nicht mit identityWrappern --> Workaround, indem aus der Knotenmenge gemappt wird
+	- Es werden downstream von flink die gleichen Funktionaliäten benutzt wie bei Streaming
+	- Seltsamerweise muss für die DataSet API in jedem Filter für die Funktion .containsKey() von Map-Objekten die .toString() Methode aufgerufen werden, damit eine Gleichheit erkannt wird...!!!
+	- pan: Wahrscheinlich ist es in A to A nicht notwendig identity edges herauszufiltern wie bisher
+
+
+Verschiedene Grundansätze der BackEnd-Struktur:
+	-	Gradoop (Standard)
+	-	WrappersCSV
+		-	Map im FrontEnd
+		-	Join im BackEnd
+	-	Adjazenzmatrix/Index (für den Ansatz ohne PreLayout)
+	-	Darstellung als Tabelle mittels Table API
+	
+Adjazenzmatrix:
+	-	Konvertierung in Adjazenzmatrix und Speicherung der Matrix als CSV. Dabei sollten die Einträge in der Matrix Indizes für Kantenobjekte sein
+	-	Speicherung einer indizierten Kantentabelle als CSV
+	- 	Spericherung einer indizierten Knotentabelle als CSV
+	-	Operationen:
+		- BuildTopView: Unverändert
+		- ZoomIn/pan/ZoomOut: Auswahl der Knoten im Zielbereich wird wie bisher durch den Knotengrad bestimmt. Die Auswahl an Kanten kann durch die Adjazenzmatrix bestimmt werden. Dafür z.B. für jeden Knoten im Zielbereich eine Map-Operation durchführen, sodass alle relevanten Nachbarn ausgewählt werden. Diese Auswahl dann ggf. noch durch die bereits visualisierten Kanten filtern, viellecht findet sich jedoch auch eine elegantere Variante.
+	-	Entweder wird die Adjazenz-Matrix als Java-HashMap implementiert und DataStreams werden aus Map-Operation mit dieser Map gebildet oder die Adjazenz-Matrix wird als Flink Table implementiert und joins werden verwendet. Intuitiv würde ich den Join weniger performant einschätzen, weil die Indexierung nicht ausgenutzt wird, sondern für jeden Knoten über die ganze Table iteriert wird. --> Außerdem verfehlt der zweite Ansatz den eigentlichen Zweck dieser Variante, nämlich mittels Indexierung Nachbarschaften festzustellen. 
+	--> Daher wird die Adjazenzmatrix über die DataSet API in eine Java-HashMap gelesen.
+	- vertexMap is redundant, can be substituted by downstream filter on wrapperstream
+
+
+	
+Zoom-PreLayout:
+	- neuer Koordinatenbereich wird definiert
+	  - Ausschnitt auf den neuen Koordinatenbereich fokussieren
+	  - alle Knoten, welche nicht im Koordinatenbereich liegen und keine Nachbarn haben, die im Koordinatenbereich liegen, rausschmeißen
+	  - entsprechend der Kapazität des Viewports Knoten und entsprechende Kanten nachladen, vorrangig Knoten mit höherem Grad
+
+Panning-Prelayout:
+	- neuer Koordinatenbereich wird definiert
+	  - Ausschnitt auf den neuen Koordinatenbereich fokussieren
+	  - alle Knoten, welche nicht im Koordinatenbereich liegen und keine Nachbarn haben, die im Koordinatenbereich liegen, rausschmeißen
+	  - entsprechend der Kapazität des Viewports Knoten und entsprechende Kanten, welche sich im neu hinzukommendem Koordinatenbereich befinden, nachladen, vorrangig Knoten mit höherem Grad
+	  
+Zoom-Postlayout:
+	- neue(, kleinere) Knotenmenge und Koordinatenbereich wird definiert
+	  - alle Knoten, deren Koordinaten aus dem Layout der vorherigen Operation nicht mehr im Koordinatenbereich liegen und keine Nachbarn im Koordinatenbereich haben, rausschmeißen
+	    - möglicherweise ist rausschmeißen auch nicht notwendig. Ein Behalten der bereits gelayouteten Knoten verhindert, dass diese später unterschiedlich als zu Beginn positioniert werden können
+	  - entsprechend der Kapazität des Viewports Nachbarknoten und entsprechende Kanten nachladen, vorrangig Knoten mit höherem Grad
+	  - Layout berechnen, dabei zwingend die absolute Position bereits gelayouteter Knoten und Kanten beibehalten, um Übersicht und Konsistenz zu wahren
+	  
+Panning-Postlayout:
+	- neue(, kleinere) Knotenmenge und Koordinatenbereich wird definiert
+	- alle Knoten, deren Koordinaten aus dem Layout der vorherigen Operation nicht mehr im Koordinatenbereich liegen und keine Nachbarn im Koordinatenbereich haben, rausschmeißen
+	    - möglicherweise ist rausschmeißen auch nicht notwendig. Ein Behalten der bereits gelayouteten Knoten verhindert, dass diese später unterschiedlich als zu Beginn positioniert werden können
+	- entsprechend der Kapazität des Viewports bereits gelayoutete Knoten im Koordinatenbereich und Nachbarknoten sowie entsprechende Kanten nachladen, vorrangig Knoten mit höherem Grad
+	- Layout der nicht gelayouteten Knoten berechnen, dabei zwingend die absolute Position bereits gelayouteter Knoten und Kanten beibehalten, um Konsistenz zu wahren
+
+WebSockets: 
+	Server in pure Java while Client in pure Javascript, thats the challenge...
+	https://stackoverflow.com/questions/25777279/call-specific-functions-with-websockets
+	https://www.npmjs.com/package/websocket
+	https://github.com/TooTallNate/Java-WebSocket/blob/master/src/main/example/ChatServer.java
+	Funktioniert mit anderem Server: https://jansipke.nl/websocket-tutorial-with-java-server-jetty-and-javascript-client/
+
+
+TODO: Dynamic Tables in Upsert Mode sind nicht nativ unterstützt, zumindest nicht gefunden. 
+		Workaround wie https://stackoverflow.com/questions/48554999/apache-flink-how-to-enable-upsert-mode-for-dynamic-tables
+		beschrieben ausprobieren ODER gleich auf andere, vorsortierbare Source wechseln
+		 --> CsvTableSink kann nicht mehr verwendet werden, da nur für AppendOnlyTables --> HBase Connector
+			--> HBase Connector gibt unique key error
+				--> Add-on HBaseTableUpsertSink verwenden
+				
+Streaming from FrontEnd to BackEnd and back:
+	-	Glassfish/Comet beinhaltet ein HTTP Streaming. Es hört sich allerdings so an, also würde nur vom BackEnd zum FrontEnd gestreamt und nicht andersherum
+				
+				
+Express.js: Async und Await verwenden, damit man nicht in einer "Callback hell" landet, Feathers.js ist möglicherweise eine Alternative, greift aber anscheinend teils auf Express.js 	zurück, weshalb man erstmal mit Express.js gehen kann
+
+Inwiefern Batch oder Stream an welcher Stelle der Verarbeitung sinnvoll/performant sind, ist Teil dieser Masterarbeit,
+daher sollten alle Ideen gesammelt und in sinnvoller Reihenfolge ausprobiert werden, hier erstmal ungeordnet:
+	-	Wie oben formuliert ist eine Batchverarbeitung nur dann sinnvoll, wenn für die jeweilige Operation das ganze Datenset
+		betrachtet werden muss ODER das Datenset ungeordnet vorliegt. Da das nicht für gegeben angenommen werden muss, wird vorerst 
+		der Streaming-Ansatz verfolgt
+	-	Graph-Daten als Stream: Die Graphdaten werden als Stream dargestellt und die Datenquelle ist optimalerweise bereits geordnet.
+		Hier gibt es verschiedene Ansätze/Überlegungen:
+		-	Die Knoten der Top-Ansicht sollten vorne im Stream liegen, um nicht den ganzen Stream einlesen zu müssen. Mit einem Count-based Window
+			kann auf einer vorsortierten Knotenmenge eine von den Viewport-Constraints definierte Anzahl an Knoten ausgewählt und visualisiert werden.
+		-	Man unterscheidet zwischen Zoom- und Panning-Operationen. Der Panning-Operation (Bewegung in gleicher Vergößerungsebene) sollte mehr 
+			Bedeutung zugeordnet werden, weil eine Verzögerung hier die Interaktivität stärker behindert als in der Zoom-Operation. Dafür könnte ein 
+			Vorladen der 8 Nachbarquadranten der jeweiligen Zoom-Ebene hilfreich sein. Da unbekannt ist, in welchen Quadranten der Anwender als Erstes 
+			zoomen wird, ist auch unbekannt, welche die Nachbarquadranten sein werden und können daher nicht im Vorhinein in die Ordnung des Streams 
+			integriert werden.
+		-	Je nach Anzahl der Knoten im Graphen kann man eine unterschiedliche Anzahl an Zoom-Ebenen definieren und daraus die Reihenfolge der 
+			Knoten im Stream konstruieren. Nachbarknoten der Knoten der Top-Ansicht sollten vorrangig visualisiert werden. 
+			Da allerdings unbekannt ist, welche Anzahl an Knoten der Viewport in der Top-Ansicht abbilden wird, ist auch unbekannt welches die 
+			Nachbarknoten sein werden. In der Annahme das immer eine definierte Anzahl an Knoten in der Top-Ansicht dargestellt wird, wäre diese 
+			Ordnung möglich, allerdings ist die Darstellung dann weniger flexibel gegenüber verschiedenen Viewports.
+		-	Flink-intern gilt es herauszufinden, welche Datenstrukturen und Operationen performant sind. Folgende Ideen dazu:
+			-	Ungeordnet, Top-Ansicht: Darstellung der Knoten des Graphen u.a. als Degree-Matrix (oder andere Metrik)auf der nach einer bestimmten 
+				Anzahl Knoten mit definiertem Grad-Bereich abgefragt werden kann.
+			- 	Geordnet, Top-Ansicht: Darstellung der Knoten als geordnete Objektfolge
+				-	Flink Table: Nach Knotengrad (oder anderer Metrik) sortierte Tabelle. SQL-Anfragen möglich.
+				-	Flink Streaming: In Verbindung mit bspw. Apache Kafka (Knoten als geordnete Events in eine Topic) ein geordneter Stream von 
+					Knotenobjekten.
+			- 	Ungeordnet, Zoom-Ebene mit Nachbarknoten: 
+				- 	Flink Table: Adjazenzmatrix
+				- 	Flink Streaming: Verkettung von Knotenobjekten (im Prinzip EPGM-Modell), realisierbar z.B. über Verweis auf anderes Topic
+			-	Geordnet, Zoom-Ebene mit Nachbarknoten:
+				- 	Flink Table: Adjazenzmatrix, in welcher die Knoteneinträge nach gegebener Metrik geordnet sind.
+				-	Flink Streaming: Einträge der Adjazenzmatrix als geordnetes Topic nach gegebener Metrik, Stream kann ab dem letzten Knoten der	
+					Top-Ansicht eingelesen werden. 
+		-	Super-Knoten und Edge-Bundling. Wenn das Graph-Layout diese Eigenschaften haben soll, ist eine vorheriges Erstellen des Layouts notwendig,
+			da diese Elemente nicht ohne Betrachtung des gesamten Datensets erstellt werden können. Ein Betrachtung des gesamten Datensets in der 
+			Visualisierung ist nicht performant.
+		-	Layout vor der Visualisierung gegeben.
+			-	Streaming-Windows befüllen, Ideen:
+				- 	Jeweils Einteilung der Zoom-Ebenen in Quadranten, mit welchen die Windows befüllt werden (der Viewport muss dann nicht mehr 
+					zwangsweise ausgeschöpft werden). Bei einer Zoom- oder Panning-Operation werden dann die entsprechenden Windows getriggert. 
+					Wenn ein Quadrant der Größe des Viewports entspricht, dann werden maximal 4 Windows neu getriggert, bei horizontalem/vertikalem 
+					Panning nur zwei.
+		-	Layout ad hoc bei der Visualisierung (Super-Knoten und Edge-Bundling nicht performant, siehe oben): 
+			-	Mehr Raum für Knoten mit hohem Grad.
+			-	Zur Übersichtlichkeit sollte die Platzierung von Knoten im Layout nicht mehr verändert werden, sobald sie das erste Mal visualisiert
+				wurden. Dadurch wird das Layout nicht optimal, die Erstellung jedoch performanter.
+			- 	Streaming-Windows befüllen, Ideen:
+				-	Für jeden Knoten der Top-Ansicht wird ein Window mit Nachbarknoten befüllt. Bei Zoom in die erste Unterebene werden alle Windows
+					mit Knoten aus der Top-Ansicht getriggert, welche noch im Viewport enthalten sind. Der Viewport bestimmt die Anzahl der zu 
+					visualisierenden Knoten. Wenn Knoten mehrmals getriggert werden, werden diese bevorzugt visualisiert (Stream-Reihenfolge).
+			

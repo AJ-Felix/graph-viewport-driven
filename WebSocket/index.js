@@ -61,6 +61,9 @@ class Client {
 						const pan = this.graphVisualizer.cy.pan();
 						this.ws.send("fitted;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom());
 						break;
+					case 'enableMouse':
+						if (!this.mouseEnabled) this.enableMouseEvents();
+						break;
 				}
 				resolve(true);
 			});
@@ -208,6 +211,7 @@ class Client {
 		cyto.removeEventListener("mousedown", mouseDown);
 		cyto.removeEventListener("mouseup", mouseUp);
 		cyto.removeEventListener("wheel", mouseWheel);
+		this.mouseEnabled = false;
 	}
 
 	enableMouseEvents(){
@@ -217,6 +221,7 @@ class Client {
 		cyto.addEventListener("mouseup", mouseUp);
 		cyto.addEventListener("mousedown", mouseDown);
 		cyto.addEventListener("wheel", mouseWheel);
+		this.mouseEnabled = true;
 	}
 }
 
@@ -248,9 +253,10 @@ $(document).ready(function(){
 
 	let resizedTimeOut;
 	window.onresize = function(){
-		console.log($('#myContainer'));
+		client.disableMouseEvents();
+		// console.log($('#myContainer'));
 		clearTimeout(resizedTimeOut);
-		resizedTimeOut = setTimeout(function(){client.resize();}, 100);
+		resizedTimeOut = setTimeout(function(){client.resize();}, 500);
 	};
 
 	client.enableMouseEvents();

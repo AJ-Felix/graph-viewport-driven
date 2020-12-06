@@ -16,7 +16,7 @@ public class FlinkResponseHandler extends Thread{
 	private String threadName;
 	
 	private String operation;
-	private boolean verticesHaveCoordinates;
+	private boolean layout;
 	private WrapperHandler wrapperHandler;
 	private int port = 8898;
     private ServerSocket serverSocket = null;
@@ -61,12 +61,14 @@ public class FlinkResponseHandler extends Thread{
             System.out.println("connected to socket!!!");
             line = "empty";
             if (!(operation.startsWith("initial"))) {
-            	if (verticesHaveCoordinates) {
+            	if (layout) {
+            		wrapperHandler.setSentToClientInSubStep(false);
             		while((line = in.readLine()) != null)  {
     	            	System.out.println("flinkResponseHandler: " + line);
     	            	wrapperHandler.addWrapper(parseWrapperString(line));
     	            }
-	                wrapperHandler.clearOperation();
+            		if (wrapperHandler.getSentToClientInSubStep() == false) server.sendToAll("enableMouse");
+            		else wrapperHandler.clearOperation();
             	} else {
             		while((line = in.readLine()) != null)  {
     	            	System.out.println("flinkResponseHandler: " + line);
@@ -74,23 +76,23 @@ public class FlinkResponseHandler extends Thread{
     	            }
             	}	
             } else {
-            	if (verticesHaveCoordinates) {
+            	if (layout) {
 	            	if (operation.contains("Append")) {
 	            		while((line = in.readLine()) != null)  {
 	    	            	System.out.println("flinkResponseHandler: " + line);
 	    	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	    	            }
-	            	} else if (operation.contains("Retract")) {
-	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println("flinkResponseHandler: " + line);
-	    	            	if (line.endsWith("true")) {
-	    		            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
-	    	            	} else if (line.endsWith("false")) {
-	    	            		wrapperHandler.removeWrapper(parseWrapperString(line));
-	    	            	}
-	    	            }
-	            	}
-//	            	Server.getInstance().sendToAll("fit");
+	            	} 
+//	            	else if (operation.contains("Retract")) {
+//	            		while((line = in.readLine()) != null)  {
+//	    	            	System.out.println("flinkResponseHandler: " + line);
+//	    	            	if (line.endsWith("true")) {
+//	    		            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
+//	    	            	} else if (line.endsWith("false")) {
+//	    	            		wrapperHandler.removeWrapper(parseWrapperString(line));
+//	    	            	}
+//	    	            }
+//	            	}
 	            	server.sendToAll("fit");
 	                wrapperHandler.clearOperation();
             	} else  {
@@ -146,7 +148,7 @@ public class FlinkResponseHandler extends Thread{
 	}
 	
 	public void setVerticesHaveCoordinates(Boolean have) {
-		this.verticesHaveCoordinates = have;
+		this.layout = have;
 	}
 	
 	private WrapperGVD parseWrapperString(String line) {

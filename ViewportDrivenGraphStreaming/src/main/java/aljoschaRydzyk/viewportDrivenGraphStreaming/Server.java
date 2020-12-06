@@ -28,7 +28,6 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.Wrapper
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinatesRetract;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineRetract;
 import io.undertow.Undertow;
-import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.WebSocketChannel;
@@ -212,7 +211,7 @@ public class Server implements Serializable{
     							else zoomOutLayoutStep1Set();
     						}
     					}
-                  	}
+                  	} 
                 } else if (messageData.startsWith("layoutBaseString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
@@ -408,6 +407,7 @@ public class Server implements Serializable{
     private void zoomSet() {
     	DataSet<WrapperGVD> wrapperSet = flinkCore.zoomSet();
 		System.out.println("executing zoomSet on server class");
+		wrapperHandler.setSentToClientInSubStep(false);
 		try {
 			wrapperCollection = wrapperSet.collect();
 			flinkCore.getEnv().execute();
@@ -415,10 +415,15 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		//do stuff with wrapperCollection
-		System.out.println("wrapperCollection size: " + wrapperCollection.size());
-		wrapperHandler.addWrapperCollection(wrapperCollection);
-    	wrapperHandler.clearOperation();
+		if (wrapperCollection.isEmpty()) sendToAll("enableMouse");
+		else {
+			wrapperHandler.addWrapperCollection(wrapperCollection);
+			if (wrapperHandler.getSentToClientInSubStep() == false) {
+		        sendToAll("enableMouse");
+			} else {
+		    	wrapperHandler.clearOperation();
+			}
+		}
     }
     
     private void zoomStream() {
@@ -427,17 +432,18 @@ public class Server implements Serializable{
 		System.out.println("executing zoomStream on server class");		    				
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+		wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			flinkCore.getFsEnv().execute();
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//    	wrapperHandler.clearOperation();
     }
     
     private void panSet() {
     	DataSet<WrapperGVD> wrapperSet = flinkCore.panSet();
+    	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			wrapperCollection = wrapperSet.collect();
 			flinkCore.getEnv().execute();
@@ -445,10 +451,14 @@ public class Server implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		//do stuff with wrapperCollection
-		System.out.println("wrapperCollection size: " + wrapperCollection.size());
-		wrapperHandler.addWrapperCollection(wrapperCollection);
-    	wrapperHandler.clearOperation();
+    	if (wrapperCollection.isEmpty()) sendToAll("enableMouse");
+    	else {
+    		wrapperHandler.addWrapperCollection(wrapperCollection);
+    		if (wrapperHandler.getSentToClientInSubStep() == false) sendToAll("enableMouse");
+    		else {
+    	    	wrapperHandler.clearOperation();
+    		}
+    	}
     }
     
     private void panStream() {
@@ -456,13 +466,13 @@ public class Server implements Serializable{
     	DataStream<Row> wrapperStream = flinkCore.pan();	
 		DataStream<String> wrapperLine = wrapperStream.map(new WrapperMapLine());
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
+		wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			flinkCore.getFsEnv().execute();
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//    	wrapperHandler.clearOperation();
     }
     
     private void nextSubStep() {
@@ -471,7 +481,6 @@ public class Server implements Serializable{
     	System.out.println("operationStep: " + operationStep);
     	if (operation.equals("initial")) {
             wrapperHandler.clearOperation();
-//        	Server.getInstance().sendToAll("fit");
             sendToAll("fit");
     	} else if (operation.startsWith("zoom")) {
     		if (operation.contains("In")) {
@@ -538,10 +547,6 @@ public class Server implements Serializable{
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep1Set(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices());
     	wrapperHandler.setSentToClientInSubStep(false);
-
-    	//debug
-    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn1", WriteMode.OVERWRITE);
-    	
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
@@ -551,13 +556,12 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
-    		if (wrapperHandler.getSentToClientInSubStep() == false) {
-        		if (wrapperHandler.getCapacity() == 0) {
-        			zoomInLayoutStep4Set();
-        		} else {
-        			zoomInLayoutStep2Set();
-        		}
-        	}    	} else {
+    		if (wrapperHandler.getCapacity() == 0) {
+    			zoomInLayoutStep4Set();
+    		} else {
+    			zoomInLayoutStep2Set();
+    		}
+    	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
         	if (wrapperHandler.getSentToClientInSubStep() == false) {
@@ -696,10 +700,6 @@ public class Server implements Serializable{
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep4Set(wrapperHandler.getLayoutedVertices(),
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	wrapperHandler.setSentToClientInSubStep(false);
-
-    	//debug
-    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn4", WriteMode.OVERWRITE);
-    	
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
