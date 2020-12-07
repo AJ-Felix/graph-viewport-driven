@@ -173,6 +173,8 @@ Serverseitige Graph-Semantik:
 
 TODO: Präsentation!!!!!
 
+TODO: Pipeline zur produktion von Präsi-Datensatz testen/ausführen
+
 TODO: Adjacency: WrapperMap wird in JVM Speicher gehalten. Überlegung, das nach Flink auszulagern (weil zu groß) und entsprechend der ID-prefixe zu partitionieren, um einen effizienteren Zugriff zu ermöglichen.
 
 Late-TODO: Visualisierung farbig etc.

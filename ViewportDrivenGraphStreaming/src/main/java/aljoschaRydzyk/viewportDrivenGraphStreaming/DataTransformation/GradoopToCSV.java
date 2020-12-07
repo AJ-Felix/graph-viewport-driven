@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.DataTransformation;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -14,6 +14,7 @@ import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
 import org.gradoop.common.model.impl.pojo.EPGMVertex;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.VertexEPGMDegreeComparator;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.EdgeGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
