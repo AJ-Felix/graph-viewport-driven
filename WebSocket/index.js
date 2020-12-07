@@ -190,7 +190,8 @@ class Client {
 				this.graphVisualizer.layoutBase.forEach(function (vertexId){
 					layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
 				});
-				this.graphVisualizer.cy.layout(layoutOptions).run();
+				this.graphVisualizer.cy.layout(cose).run();
+				// this.graphVisualizer.cy.layout(layoutOptions).run();
 				console.log("layout performed");
 				layoutBaseCy.forEach(function(node){
 					let pos = node.position();
@@ -329,3 +330,27 @@ function mouseUp(e){
 	client.graphVisualizer.layoutBase = new Set();
 	client.ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + client.graphVisualizer.zoomLevel);
 }
+
+var cose = {
+	name: "cose",  // called on `layoutready`
+	ready: function () {},  // called on `layoutstop`
+	stop: function () {},  // whether to animate while running the layout
+	animate: true,  // number of iterations between consecutive screen positions update (0 ->
+	// only updated on the end)
+	refresh: 4,  // whether to fit the network view after when done
+	fit: true,  // padding on fit
+	padding: 30,  // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+	boundingBox: undefined,  // whether to randomize node positions on the beginning
+	randomize: true,  // whether to use the JS console to print debug messages
+	debug: false,  // node repulsion (non overlapping) multiplier
+	nodeRepulsion: 8000000,  // node repulsion (overlapping) multiplier
+	nodeOverlap: 10,  // ideal edge (non nested) length
+	idealEdgeLength: 1,  // divisor to compute edge forces
+	edgeElasticity: 100,  // nesting factor (multiplier) to compute ideal edge length for nested edges
+	nestingFactor: 5,  // gravity force (constant)
+	gravity: 250,  // maximum number of iterations to perform
+	numIter: 100,  // initial temperature (maximum node displacement)
+	initialTemp: 200,  // cooling factor (how the temperature is reduced between consecutive iterations
+	coolingFactor: 0.95,  // lower temperature threshold (below this point the layout will end)
+	minTemp: 1.0,
+  };
