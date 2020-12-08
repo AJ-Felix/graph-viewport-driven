@@ -16,6 +16,12 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
 
 public class BuildCSVFromGradoop {
 	public static void main(String[] args) throws Exception {
+		//execute with 4 arguments:
+			//1	sourcePath of gradoop graph data
+			//2	writePath of result graph data
+			//3 gradoop graphID
+			//4 one of 'gradoop' or 'gvd' to determine result graph format
+		
 		String sourcePath = args[0];
 		String writePath = args[1];
 		String gradoopGraphId = args[2];
