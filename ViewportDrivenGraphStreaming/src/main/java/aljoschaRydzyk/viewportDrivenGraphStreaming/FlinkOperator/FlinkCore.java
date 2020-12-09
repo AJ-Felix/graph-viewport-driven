@@ -57,11 +57,11 @@ public class FlinkCore {
 	  private Float rightOld;
 	  private Float bottomOld;
 	  private Float leftOld;
-	  private String vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree";
+	  private String vertexFields = "graphId2, vertexIdGradoop, vertexIdNumeric, vertexLabel, x, y, vertexDegree, vertexZoomLevel";
 	  private String wrapperFields = "graphId, sourceVertexIdGradoop, sourceVertexIdNumeric, sourceVertexLabel, sourceVertexX, "
-				+ "sourceVertexY, sourceVertexDegree, targetVertexIdGradoop, targetVertexIdNumeric, targetVertexLabel, targetVertexX, targetVertexY, "
-				+ "targetVertexDegree, edgeIdGradoop, edgeLabel";
-	  
+				+ "sourceVertexY, sourceVertexDegree, sourceZoomLevel, targetVertexIdGradoop, targetVertexIdNumeric, "
+				+ "targetVertexLabel, targetVertexX, targetVertexY, targetVertexDegree, targetZoomLevel, "
+				+ "edgeIdGradoop, edgeLabel";	  
 	  
 	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId,
 			Boolean degreesCalculated) {

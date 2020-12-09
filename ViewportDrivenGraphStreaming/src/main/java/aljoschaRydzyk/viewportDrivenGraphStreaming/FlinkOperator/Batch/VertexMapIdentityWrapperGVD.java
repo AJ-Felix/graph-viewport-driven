@@ -16,14 +16,16 @@ public class VertexMapIdentityWrapperGVD implements MapFunction<Row,WrapperGVD> 
 				(long) row.getField(2),
 				(int) row.getField(4),
 				(int) row.getField(5),
-				(long) row.getField(6));
+				(long) row.getField(6),
+				(int) row.getField(7));
 		VertexGVD targetVertex = new VertexGVD(
 				row.getField(1).toString(),
 				row.getField(3).toString(),
 				(long) row.getField(2),
 				(int) row.getField(4),
 				(int) row.getField(5),
-				(long) row.getField(6));
+				(long) row.getField(6),
+				(int) row.getField(7));
 		EdgeGVD edge = new EdgeGVD(
 				"identityEdge",
 				"identityEdge",

@@ -31,7 +31,7 @@ public class VertexFlatMapMaxDegree implements FlatMapFunction<Row,Row>{
 			Row wrapper = wrapperMap.get(wrapperId);
 			Long secondVertexIdNumeric;
 			if (wrapper.getField(1).equals(firstVertexIdGradoop)) {
-				secondVertexIdNumeric = (long) wrapper.getField(8);
+				secondVertexIdNumeric = (long) wrapper.getField(9);
 			} else {
 				secondVertexIdNumeric = (long) wrapper.getField(2);
 			}

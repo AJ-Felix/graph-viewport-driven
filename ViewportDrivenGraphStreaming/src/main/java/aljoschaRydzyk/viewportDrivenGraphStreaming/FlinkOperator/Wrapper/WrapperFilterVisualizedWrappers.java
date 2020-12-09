@@ -14,6 +14,8 @@ public class WrapperFilterVisualizedWrappers implements FilterFunction<Row> {
 	
 	@Override
 	public boolean filter(Row value) throws Exception {
-		return !visualizedWrappers.contains(value.getField(13).toString()); 
+		System.out.println(value.getField(15).toString());
+		System.out.println(!visualizedWrappers.contains(value.getField(15).toString()));
+		return !visualizedWrappers.contains(value.getField(15).toString()); 
 	}
 }

@@ -602,10 +602,6 @@ public class Server implements Serializable{
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(), 
     			wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
     	wrapperHandler.setSentToClientInSubStep(false);
-    	
-    	//debug
-    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn2", WriteMode.OVERWRITE);
-    	
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
@@ -660,10 +656,6 @@ public class Server implements Serializable{
     	setOperationStep(3);
     	DataSet<WrapperGVD> wrapperGVD = flinkCore.zoomInLayoutStep3Set(wrapperHandler.getLayoutedVertices());
     	wrapperHandler.setSentToClientInSubStep(false);
-    	
-    	//debug
-    	wrapperGVD.map(new WrapperGVDMapWrapperRow()).writeAsText("/home/aljoscha/debug/zoomIn3", WriteMode.OVERWRITE);
-    	
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();

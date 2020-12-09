@@ -14,9 +14,11 @@ public class WrapperMapLineNoCoordinates implements MapFunction<Row,String> {
 			value.getField(7).toString() + "," +
 			value.getField(8).toString() + "," +
 			value.getField(9).toString() + "," +
-			value.getField(12).toString() + "," +
+			value.getField(10).toString() + "," +
 			value.getField(13).toString() + "," +
-			value.getField(14).toString() +
+			value.getField(14).toString() + "," +
+			value.getField(15).toString() + "," +
+			value.getField(16).toString() + "," +
 			"\n";
 	}
 }

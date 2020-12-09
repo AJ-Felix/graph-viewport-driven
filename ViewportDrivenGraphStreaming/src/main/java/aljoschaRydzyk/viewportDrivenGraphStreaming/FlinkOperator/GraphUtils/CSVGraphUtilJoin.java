@@ -67,12 +67,14 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		this.visualizedWrappers = new HashSet<String>();
 		this.visualizedVertices = new HashSet<String>();
 		this.wrapperFields = wrapperFields;
-		this.wrapperFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, 
-				Types.LONG, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.LONG, 
-				Types.STRING, Types.INT, Types.INT, Types.LONG,
+		this.wrapperFormatTypeInfo = new TypeInformation[] {
+				Types.STRING, 
+				Types.STRING, Types.LONG, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.INT,
+				Types.STRING, Types.LONG, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.INT,
 				Types.STRING, Types.STRING};
-		this.vertexFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, Types.LONG, Types.STRING, 
-				Types.INT, Types.INT, Types.LONG};
+		this.vertexFormatTypeInfo = new TypeInformation[] {
+				Types.STRING, 
+				Types.STRING, Types.LONG, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.INT};
 		this.wrapperRowTypeInfo = new RowTypeInfo(this.wrapperFormatTypeInfo);
 	}
 	

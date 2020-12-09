@@ -44,8 +44,8 @@ public class VertexFlatMapPanDefNotVis implements FlatMapFunction<Row,Row>{
 			int secondVertexY;
 			if (firstVertexId.equals(wrapper.getField(1))) {
 				secondVertexId = wrapper.getField(7).toString();
-				secondVertexX = (int) wrapper.getField(10);
-				secondVertexY = (int) wrapper.getField(11);
+				secondVertexX = (int) wrapper.getField(11);
+				secondVertexY = (int) wrapper.getField(12);
 			} else {
 				secondVertexId = wrapper.getField(1).toString();
 				secondVertexX = (int) wrapper.getField(4);

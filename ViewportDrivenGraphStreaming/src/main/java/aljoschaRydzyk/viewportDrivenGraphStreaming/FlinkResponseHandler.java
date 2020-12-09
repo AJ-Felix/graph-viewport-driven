@@ -154,10 +154,12 @@ public class FlinkResponseHandler extends Thread{
 	private WrapperGVD parseWrapperString(String line) {
 		String[] array = line.split(",");
 		VertexGVD sourceVertex = new VertexGVD(array[1], array[3], 
-				Integer.parseInt(array[2]), Integer.parseInt(array[4]), Integer.parseInt(array[5]), Long.parseLong(array[6]));
-		VertexGVD targetVertex = new VertexGVD(array[7], array[9], 
-				Integer.parseInt(array[8]), Integer.parseInt(array[10]), Integer.parseInt(array[11]), Long.parseLong(array[12]));
-		EdgeGVD edge = new EdgeGVD(array[13], array[14], array[1], array[7]);
+				Integer.parseInt(array[2]), Integer.parseInt(array[4]), Integer.parseInt(array[5]), 
+				Long.parseLong(array[6]), Integer.parseInt(array[7]));
+		VertexGVD targetVertex = new VertexGVD(array[8], array[10], 
+				Integer.parseInt(array[9]), Integer.parseInt(array[11]), Integer.parseInt(array[12]), 
+				Long.parseLong(array[13]), Integer.parseInt(array[14]));
+		EdgeGVD edge = new EdgeGVD(array[15], array[16], array[1], array[8]);
 		return new WrapperGVD(sourceVertex, targetVertex, edge);
 	}
 	

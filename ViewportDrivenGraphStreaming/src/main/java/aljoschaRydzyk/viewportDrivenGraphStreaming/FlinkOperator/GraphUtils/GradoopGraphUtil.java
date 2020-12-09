@@ -61,6 +61,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] wrapperFormatTypeInfo;
 	private FilterFunction<Row> zoomOutVertexFilter;
+	private int zoomLevelCoefficient = 1000;
 
 	
 	//Batch
@@ -80,8 +81,10 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		this.wrapperFields = wrapperFields;
 		this.visualizedWrappers = new HashSet<String>();
 		this.visualizedVertices = new HashSet<String>();
-		this.wrapperFormatTypeInfo = new TypeInformation[] {Types.STRING, Types.STRING, 
-				Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG,
+		this.wrapperFormatTypeInfo = new TypeInformation[] {
+				Types.STRING, 
+				Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.INT,
+				Types.STRING, Types.INT, Types.STRING, Types.INT, Types.INT, Types.LONG, Types.INT,
 				Types.STRING, Types.STRING};
 	}
 	
@@ -91,6 +94,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		System.out.println(this.graph);
 		System.out.println("graphHeadSize: " + this.graph.getGraphHead().collect().size());
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
+		int numberVertices = Integer.parseInt(String.valueOf(this.graph.getVertices().count()));
+		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
+		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
 		verticesIndexed = DataSetUtils.zipWithIndex((this.graph.getVertices()
 					.map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {
 						@Override
@@ -106,7 +112,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 						EPGMVertex vertex = tuple.f1.f0;
 						return Row.of(graphId, vertex.getId(), tuple.f0, vertex.getLabel(),
 								vertex.getPropertyValue("X").getInt(), vertex.getPropertyValue("Y").getInt(),
-								vertex.getPropertyValue("degree").getLong());
+								vertex.getPropertyValue("degree").getLong(), 
+								Integer.parseInt(String.valueOf(tuple.f0)) / zoomLevelSetSize);
 					}
 				});
 		DataSet<EPGMEdge> edges = this.graph.getEdges();
@@ -122,7 +129,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				EPGMEdge edge = tuple.f0.f1;
 				Row sourceVertex = tuple.f0.f0;
 				Row targetVertex = tuple.f1;
-				Row vertices = Row.join(sourceVertex, Row.project(targetVertex, new int[] {1, 2, 3, 4, 5, 6}));
+				Row vertices = Row.join(sourceVertex, Row.project(targetVertex, new int[] {1, 2, 3, 4, 5, 6, 7}));
 				System.out.println(vertices.getArity());
 				return Row.join(vertices, Row.of(edge.getId().toString(), edge.getLabel()));
 			}
@@ -150,6 +157,13 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			.join(vertices).where(new WrapperTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector())
 			.map(new WrapperTupleMapWrapperGVD());
+		try {
+			wrapperSet.print();
+			System.out.println("wrapperSetSize: " + wrapperSet.count());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		//produce identity wrapper
 		wrapperSet = wrapperSet.union(vertices.map(new VertexMapIdentityWrapperGVD()));

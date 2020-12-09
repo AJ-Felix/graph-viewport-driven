@@ -13,11 +13,7 @@ public class VertexFilterTargetInitial implements FilterFunction<Row> {
 	@Override
 	public boolean filter(Row row) throws Exception {
 		long sourceIdNumeric = (long) row.getField(2);
-		long targetIdNumeric = (long) row.getField(8);
-		System.out.println(sourceIdNumeric);
-		System.out.println(targetIdNumeric);
-		System.out.println(sourceIdNumeric > targetIdNumeric);
-		System.out.println(targetIdNumeric < numberVertices);
+		long targetIdNumeric = (long) row.getField(9);
 		return sourceIdNumeric > targetIdNumeric && targetIdNumeric < numberVertices;
 	}
 	

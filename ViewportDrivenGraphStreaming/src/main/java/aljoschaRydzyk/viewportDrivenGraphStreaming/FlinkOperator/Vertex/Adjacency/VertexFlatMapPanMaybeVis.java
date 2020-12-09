@@ -33,8 +33,8 @@ public class VertexFlatMapPanMaybeVis implements FlatMapFunction<Row,Row>{
 			int secondVertexY;
 			Row wrapper = wrapperMap.get(wrapperId);
 			if (firstVertexId.equals(wrapper.getField(1))) {
-				secondVertexX = (int) wrapper.getField(10);
-				secondVertexY = (int) wrapper.getField(11);
+				secondVertexX = (int) wrapper.getField(11);
+				secondVertexY = (int) wrapper.getField(12);
 			} else {
 				secondVertexX = (int) wrapper.getField(4);
 				secondVertexY = (int) wrapper.getField(5);

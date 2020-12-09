@@ -17,6 +17,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.CsvReader;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
 import org.apache.flink.api.java.tuple.Tuple15;
+import org.apache.flink.api.java.tuple.Tuple17;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -69,7 +70,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {
 				Types.STRING, Types.STRING, Types.LONG, Types.STRING, 
-				Types.INT, Types.INT, Types.LONG});
+				Types.INT, Types.INT, Types.LONG, Types.INT});
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
 		try {
@@ -79,6 +80,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.out.println("adjMatrix: " + this.adjMatrix);
 	}
 
 	@Override
@@ -170,19 +172,29 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		this.wrapperMap = new HashMap<String,Row>();
 		CsvReader reader = env.readCsvFile(this.inPath + "_wrappers");
 		reader.fieldDelimiter(";");
-		DataSet<Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
+		DataSet<Tuple17<
+			String,
+			String,Long,String,Integer,Integer,Long,Integer,
+			String,Long,String,Integer,Integer,Long,Integer,
 			String,String>> source = reader.types(
-					String.class, String.class, Long.class, String.class, Integer.class, Integer.class, Long.class,
-					String.class, Long.class, String.class, Integer.class, Integer.class, Long.class,
+					String.class, 
+					String.class, Long.class, String.class, Integer.class, Integer.class, Long.class, Integer.class,
+					String.class, Long.class, String.class, Integer.class, Integer.class, Long.class, Integer.class,
 					String.class, String.class);
-		List<Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
-		String,String>> list = null;
+		List<Tuple17<
+			String,
+			String,Long,String,Integer,Integer,Long,Integer,
+			String,Long,String,Integer,Integer,Long,Integer,
+			String,String>> list = null;
 		list = source.collect();
 		for (int i = 0; i < list.toArray().length; i++ ) {
-			Tuple15<String,String,Long,String,Integer,Integer,Long,String,Long,String,Integer,Integer,Long,
-				String,String> tuple = list.get(i);
-			wrapperMap.put(tuple.f13, Row.of(tuple.f0, tuple.f1, tuple.f2, tuple.f3, tuple.f4, tuple.f5, tuple.f6,
-					tuple.f7, tuple.f8, tuple.f9, tuple.f10, tuple.f11, tuple.f12, tuple.f13, tuple.f14));
+			Tuple17<String,
+					String,Long,String,Integer,Integer,Long,Integer,
+					String,Long,String,Integer,Integer,Long,Integer,
+					String,String> tuple = list.get(i);
+			wrapperMap.put(tuple.f15, Row.of(tuple.f0, tuple.f1, tuple.f2, tuple.f3, tuple.f4, tuple.f5, tuple.f6,
+					tuple.f7, tuple.f8, tuple.f9, tuple.f10, tuple.f11, tuple.f12, tuple.f13, tuple.f14, tuple.f15,
+					tuple.f16));
 		}
 		for (Row row : this.wrapperMap.values()) System.out.println("wrapperMap: " + row);
 		return this.wrapperMap;

@@ -7,6 +7,6 @@ import org.apache.flink.types.Row;
 public class WrapperTargetIDKeySelector implements KeySelector<Tuple2<Row,Row>,String> {
 	@Override
 	public String getKey(Tuple2<Row, Row> tuple) throws Exception {
-		return tuple.f1.getField(7).toString();
+		return tuple.f1.getField(8).toString();
 	}
 }

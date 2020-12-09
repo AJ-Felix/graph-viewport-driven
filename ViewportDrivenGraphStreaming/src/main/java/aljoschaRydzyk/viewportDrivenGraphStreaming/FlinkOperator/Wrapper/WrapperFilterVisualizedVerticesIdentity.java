@@ -14,6 +14,6 @@ public class WrapperFilterVisualizedVerticesIdentity implements FilterFunction<R
 
 	@Override
 	public boolean filter(Row value) throws Exception {
-		return !(visualizedVertices.contains(value.getField(1).toString()) && value.getField(14).equals("identityEdge"));
+		return !(visualizedVertices.contains(value.getField(1).toString()) && value.getField(16).equals("identityEdge"));
 	}
 }

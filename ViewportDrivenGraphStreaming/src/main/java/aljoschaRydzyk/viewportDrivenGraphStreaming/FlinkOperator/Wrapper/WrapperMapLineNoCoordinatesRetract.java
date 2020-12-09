@@ -15,9 +15,11 @@ public class WrapperMapLineNoCoordinatesRetract implements MapFunction<Tuple2<Bo
 				value.f1.getField(7).toString() + "," +
 				value.f1.getField(8).toString() + "," +
 				value.f1.getField(9).toString() + "," +
-				value.f1.getField(12).toString() + "," +
+				value.f1.getField(10).toString() + "," +
 				value.f1.getField(13).toString() + "," +
 				value.f1.getField(14).toString() + "," +
+				value.f1.getField(15).toString() + "," +
+				value.f1.getField(16).toString() + "," +
 				value.f0.toString() +
 				"\n";
 	}

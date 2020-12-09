@@ -164,9 +164,6 @@ class GraphVisualizer {
 		const degreeRange = this.currentMaxDegree - this.currentMinDegree;
 		const currentMinDegree = this.currentMinDegree;
 		this.cy.nodes().forEach(function(node){
-			console.log(node.data('degree'));
-			console.log(currentMinDegree);
-			console.log(degreeRange);
 			let scale;
 			if (degreeRange == 0) scale = 1;
 			else scale = (node.data('degree') - currentMinDegree) / degreeRange;
