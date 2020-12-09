@@ -51,10 +51,14 @@ public class GradoopToCSV {
 		PrintWriter verticesWriter = new PrintWriter(verticesFile);
 		lVertices.sort(new VertexEPGMDegreeComparator());
 		int numberVertices = lVertices.size();
-		int numberZoomLevels = numberVertices / zoomLevelCoefficient;
-		int zoomLevelSetSize = numberVertices / numberZoomLevels;
+		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
+		System.out.println(numberZoomLevels);
+		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
 		for (int i = 0; i < lVertices.size(); i++) 	{
+			System.out.println("vertex numericId: " + i);
 			int vertexZoomLevel = i / zoomLevelSetSize;
+			System.out.println("zoomLevelSetSize: " + zoomLevelSetSize);
+			System.out.println("zoomLevel: " + vertexZoomLevel);
 			Map<String,Integer> map = new HashMap<String,Integer>();
 			map.put("numericId", i);
 			map.put("zoomLevel", vertexZoomLevel);

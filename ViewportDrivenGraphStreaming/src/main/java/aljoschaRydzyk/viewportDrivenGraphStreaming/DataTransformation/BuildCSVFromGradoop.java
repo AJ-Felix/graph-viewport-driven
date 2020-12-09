@@ -19,13 +19,14 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
 
 /*
  * To be executed using local flink cluster on port 8081
- * execute with at least 6 arguments:
+ * execute with at least 5 arguments in this order:
 			1	sourcePath of gradoop graph data
 			2	writePath of result graph data
 			3 gradoop graphID
 			4 one of 'gradoop' or 'gvd' to determine result graph format
 			5 jar files necessary for flink job execution (ExecutionEnvironment.createRemoteEnvironment())
-			6 one of 'sample', 'degree', 'layout' or a combination (up to 8 arguments then)
+			optional:
+				one of 'sample', 'degree', 'layout' or a combination (up to 8 arguments then)
  * 
  */
 
@@ -87,7 +88,6 @@ public class BuildCSVFromGradoop {
 			csvDataSink.write(log, true);
 		} else if (formatType.equals("gvd")) {
 			GradoopToCSV.parseGradoopToCSV(log, writePath);
-			fsEnv.execute();
 		}
 		env.execute();
 	}
