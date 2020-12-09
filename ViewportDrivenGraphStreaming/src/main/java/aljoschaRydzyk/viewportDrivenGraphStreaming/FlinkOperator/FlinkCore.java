@@ -67,6 +67,7 @@ public class FlinkCore {
 			Boolean degreesCalculated) {
 		this.degreesCalculated = degreesCalculated;
 		this.hdfsFullPath = hdfsFullPath;
+		this.gradoopGraphID = gradoopGraphId;
 		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, 
 				flinkJobJarPath);
 		

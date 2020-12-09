@@ -88,6 +88,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	
 	@Override
 	public void initializeDataSets() throws Exception{
+		System.out.println(this.graph);
+		System.out.println("graphHeadSize: " + this.graph.getGraphHead().collect().size());
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
 		verticesIndexed = DataSetUtils.zipWithIndex((this.graph.getVertices()
 					.map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {

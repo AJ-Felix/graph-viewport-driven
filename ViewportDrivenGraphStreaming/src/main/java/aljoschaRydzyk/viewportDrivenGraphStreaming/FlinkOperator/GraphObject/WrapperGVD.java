@@ -12,17 +12,18 @@ public class WrapperGVD {
 	private int sourceY;
 	private long sourceIdNumeric;
 	private long sourceDegree;
+	private int sourceZoomLevel;
 	private String targetIdGradoop;
 	private String targetLabel;
 	private int targetX;
 	private int targetY;
 	private long targetIdNumeric;
 	private long targetDegree;
+	private int targetZoomLevel;
 	
-	
-	public WrapperGVD() {
-		
-	}
+//	public WrapperGVD() {
+//		
+//	}
 	
 	public WrapperGVD (VertexGVD sourceVertex, VertexGVD targetVertex, EdgeGVD edge) {
 		this.sourceVertex = sourceVertex;
@@ -36,12 +37,14 @@ public class WrapperGVD {
 		this.sourceX = sourceVertex.getX();
 		this.sourceY = sourceVertex.getY();
 		this.sourceDegree = sourceVertex.getDegree();
+		this.sourceZoomLevel = sourceVertex.getZoomLevel();
 		this.targetIdGradoop = targetVertex.getIdGradoop();
 		this.targetLabel = targetVertex.getLabel();
 		this.targetIdNumeric = targetVertex.getIdNumeric();
 		this.targetX = targetVertex.getX();
 		this.targetY = targetVertex.getY();
 		this.targetDegree = targetVertex.getDegree();
+		this.targetZoomLevel = targetVertex.getZoomLevel();
 	}
 	
 	public void setSourceVertex(VertexGVD sourceVertex) {
@@ -132,6 +135,10 @@ public class WrapperGVD {
 		return this.sourceDegree;
 	}
 	
+	public int getSourceZoomLevel() {
+		return this.sourceZoomLevel;
+	}
+	
 	public void setTargetIdGradoop(String targetIdGradoop) {
 		this.targetIdGradoop = targetIdGradoop;
 	}
@@ -178,5 +185,9 @@ public class WrapperGVD {
 	
 	public long getTargetDegree() {
 		return this.targetDegree;
+	}
+	
+	public int getTargetZoomLevel() {
+		return this.targetZoomLevel;
 	}
 }

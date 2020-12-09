@@ -23,6 +23,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Wra
 //targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
 
 public class GradoopToCSV {
+	private static int zoomLevelCoefficient = 1000;
 	
 	public static class WrapperDegreeComparator implements Comparator<WrapperGVD>{
 		@Override
@@ -43,14 +44,21 @@ public class GradoopToCSV {
 		List<EPGMGraphHead> lGraphHead = graph.getGraphHead().collect();
 		List<EPGMVertex> lVertices = graph.getVertices().collect();
 		List<EPGMEdge> lEdges = graph.getEdges().collect();
-		Map<String,Integer> vertexIdMap =  new HashMap<String,Integer>();
+		Map<String,Map<String,Integer>> vertexIdMap =  new HashMap<String,Map<String,Integer>>();
 		List<WrapperGVD> lVVEdgeWrapper = new ArrayList<WrapperGVD>();
 		File verticesFile = new File(outPath + "_vertices");
 		verticesFile.createNewFile();
 		PrintWriter verticesWriter = new PrintWriter(verticesFile);
 		lVertices.sort(new VertexEPGMDegreeComparator());
+		int numberVertices = lVertices.size();
+		int numberZoomLevels = numberVertices / zoomLevelCoefficient;
+		int zoomLevelSetSize = numberVertices / numberZoomLevels;
 		for (int i = 0; i < lVertices.size(); i++) 	{
-			vertexIdMap.put(lVertices.get(i).getId().toString(), i);
+			int vertexZoomLevel = i / zoomLevelSetSize;
+			Map<String,Integer> map = new HashMap<String,Integer>();
+			map.put("numericId", i);
+			map.put("zoomLevel", vertexZoomLevel);
+			vertexIdMap.put(lVertices.get(i).getId().toString(), map);
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append(lGraphHead.get(0).toString());
 			stringBuilder.append(";");
@@ -66,6 +74,8 @@ public class GradoopToCSV {
 			stringBuilder.append(";");
 			stringBuilder.append(lVertices.get(i).getPropertyValue("degree"));
 			stringBuilder.append(";");
+			stringBuilder.append(vertexZoomLevel);
+			stringBuilder.append(";");
 			stringBuilder.append(lVertices.get(i).getId().toString());
 			stringBuilder.append(";");
 			stringBuilder.append(i);
@@ -77,6 +87,8 @@ public class GradoopToCSV {
 			stringBuilder.append(lVertices.get(i).getPropertyValue("Y"));
 			stringBuilder.append(";");
 			stringBuilder.append(lVertices.get(i).getPropertyValue("degree"));
+			stringBuilder.append(";");
+			stringBuilder.append(vertexZoomLevel);
 			stringBuilder.append(";");
 			stringBuilder.append("identityEdge");
 			stringBuilder.append(";");
@@ -92,13 +104,15 @@ public class GradoopToCSV {
 					if ((edgeSourceId.equals(sourceVertex.getId())) && (edge.getTargetId().equals(targetVertex.getId()))) {
 						EdgeGVD edgeCustom = new EdgeGVD(edge.getId().toString(), edge.getLabel(), edgeSourceId.toString(), edge.getTargetId().toString());
 						VertexGVD sourceVertexCustom = new VertexGVD(sourceVertex.getId().toString(), sourceVertex.getLabel(), 
-								vertexIdMap.get(sourceVertex.getId().toString()), 
+								vertexIdMap.get(sourceVertex.getId().toString()).get("numericId"), 
 								sourceVertex.getPropertyValue("X").getInt(), sourceVertex.getPropertyValue("Y").getInt(),
-								sourceVertex.getPropertyValue("degree").getLong());
+								sourceVertex.getPropertyValue("degree").getLong(),
+								vertexIdMap.get(sourceVertex.getId().toString()).get("zoomLevel"));
 						VertexGVD targetVertexCustom = new VertexGVD(targetVertex.getId().toString(), targetVertex.getLabel(),
-								vertexIdMap.get(targetVertex.getId().toString()),
+								vertexIdMap.get(targetVertex.getId().toString()).get("numericId"),
 								targetVertex.getPropertyValue("X").getInt(), targetVertex.getPropertyValue("Y").getInt(),
-								targetVertex.getPropertyValue("degree").getLong());
+								targetVertex.getPropertyValue("degree").getLong(),
+								vertexIdMap.get(sourceVertex.getId().toString()).get("zoomLevel"));
 						lVVEdgeWrapper.add(new WrapperGVD(sourceVertexCustom, targetVertexCustom, edgeCustom));
 					}
 				}
@@ -124,6 +138,8 @@ public class GradoopToCSV {
 			stringBuilder.append(";");
 			stringBuilder.append(wrapper.getSourceDegree());
 			stringBuilder.append(";");
+			stringBuilder.append(wrapper.getSourceZoomLevel());
+			stringBuilder.append(";");
 			stringBuilder.append(wrapper.getTargetIdGradoop());
 			stringBuilder.append(";");
 			stringBuilder.append(wrapper.getTargetIdNumeric());
@@ -135,6 +151,8 @@ public class GradoopToCSV {
 			stringBuilder.append(wrapper.getTargetY());
 			stringBuilder.append(";");
 			stringBuilder.append(wrapper.getTargetDegree());
+			stringBuilder.append(";");
+			stringBuilder.append(wrapper.getTargetZoomLevel());
 			stringBuilder.append(";");
 			stringBuilder.append(wrapper.getEdgeIdGradoop());
 			stringBuilder.append(";");
