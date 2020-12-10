@@ -330,4 +330,8 @@ public class FlinkCore {
 				leftNew + " " +  topOld + " " + rightOld +" " + bottomOld + " " + leftOld);
 		return set;
 	}
+	
+	public void setVertexZoomLevel(int zoomLevel) {
+		this.getGraphUtil().setVertexZoomLevel(zoomLevel);
+	}
 }

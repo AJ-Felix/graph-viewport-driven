@@ -62,12 +62,7 @@ public class Server implements Serializable{
     private FlinkResponseHandler flinkResponseHandler;
     private String localMachinePublicIp4 = "localhost";
     private int flinkResponsePort = 8898;
-//    private static Server server = null;
-  
-//    public static Server getInstance() {
-//    	if (server == null) server = new Server();
-//		return server;
-//    }
+	private int vertexZoomLevel;
 
     public Server () {
     	System.out.println("executing server constructor");
@@ -249,6 +244,7 @@ public class Server implements Serializable{
                     	setStreamBool(false);
         				buildTopViewGradoop();
         			}
+                	setVertexZoomLevel(0);
                 	try {
                 		if (stream)	flinkCore.getFsEnv().execute();
                 		else flinkCore.getEnv().execute();
@@ -286,6 +282,7 @@ public class Server implements Serializable{
 					System.out.println("Zoom ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					if (messageData.startsWith("zoomIn")) {
 						setOperation("zoomIn");
+						setVertexZoomLevel(vertexZoomLevel + 1);
 						wrapperHandler.prepareOperation();
 						if (layout) {
 							if (stream) zoomStream();
@@ -297,6 +294,7 @@ public class Server implements Serializable{
 						}
 					} else {
 						setOperation("zoomOut");
+						setVertexZoomLevel(vertexZoomLevel - 1);
 						wrapperHandler.prepareOperation();
 						if (layout) {
 							if (stream) zoomStream();
@@ -345,7 +343,12 @@ public class Server implements Serializable{
         };
     }
     
-    private void buildTopViewHBase() {
+    private void setVertexZoomLevel(int zoomLevel) {
+		this.vertexZoomLevel = zoomLevel;
+		flinkCore.setVertexZoomLevel(zoomLevel);	
+	}
+
+	private void buildTopViewHBase() {
     	flinkCore.initializeGradoopGraphUtil();
 		wrapperHandler.initializeGraphRepresentation();
 		DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewHBase(maxVertices);

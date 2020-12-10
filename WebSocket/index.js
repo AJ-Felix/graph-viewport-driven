@@ -7,6 +7,7 @@ class Client {
 		this.layout = true
 		this.graphVisualizer = new GraphVisualizer();
 		this.timeOut = 200;
+		this.vertexZoomLevel = 0;
 	}
 
 	addMessageToQueue(dataArray){
@@ -274,6 +275,7 @@ function mouseWheel(e) {
 	let pan = client.graphVisualizer.cy.pan();
 	client.graphVisualizer.layoutBase = new Set();
 	if (delta < 0){
+		client.vertexZoomLevel += 1;
 		client.graphVisualizer.styleOnZoom("in");
 		client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() * client.graphVisualizer.zFactor);
 		client.graphVisualizer.cy.pan({x:- client.cyWidthHalf + client.graphVisualizer.zFactor * pan.x + (client.cyWidthHalf - cytoX) * client.graphVisualizer.zFactor, 
@@ -288,14 +290,20 @@ function mouseWheel(e) {
 		client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
 		client.ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
 	} else {
-		client.graphVisualizer.styleOnZoom("out");
-		client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() / client.graphVisualizer.zFactor);
-		client.graphVisualizer.cy.pan({x:client.cyWidthHalf + pan.x - (client.cyWidthHalf + pan.x) / client.graphVisualizer.zFactor - (cytoX - client.cyWidthHalf) /client.graphVisualizer.zFactor, 
-			y:client.cyHeightHalf + pan.y - (client.cyHeightHalf + pan.y) / client.graphVisualizer.zFactor - (cytoY - client.cyHeightHalf) / client.graphVisualizer.zFactor});
-		pan = client.graphVisualizer.cy.pan();
-		client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
-		client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
-		client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
+		if (client.vertexZoomLevel == 0){
+			alert("Top Zoom Level reached already!")
+			client.enableMouseEvents();
+		} else {
+			client.vertexZoomLevel -= 1;
+			client.graphVisualizer.styleOnZoom("out");
+			client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() / client.graphVisualizer.zFactor);
+			client.graphVisualizer.cy.pan({x:client.cyWidthHalf + pan.x - (client.cyWidthHalf + pan.x) / client.graphVisualizer.zFactor - (cytoX - client.cyWidthHalf) /client.graphVisualizer.zFactor, 
+				y:client.cyHeightHalf + pan.y - (client.cyHeightHalf + pan.y) / client.graphVisualizer.zFactor - (cytoY - client.cyHeightHalf) / client.graphVisualizer.zFactor});
+			pan = client.graphVisualizer.cy.pan();
+			client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
+			client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
+			client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
+		}
 	}
 }
 

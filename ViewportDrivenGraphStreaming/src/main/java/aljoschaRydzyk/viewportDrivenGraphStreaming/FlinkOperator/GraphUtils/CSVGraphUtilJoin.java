@@ -32,6 +32,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterZoomLevel;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedVerticesIdentity;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
@@ -52,6 +53,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] vertexFormatTypeInfo;
 	private FilterFunction<Row> zoomOutVertexFilter;
+	
+	private int zoomLevel;
 	
 	//Area Definition
 		//A	: Inside viewport after operation
@@ -117,7 +120,9 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	public DataStream<Row> getMaxDegreeSubset(int numberVertices){
 		
 		//filter for X vertices with highest degree where X is 'numberVertices' to retain a subset
-		DataStream<Row> verticesMaxDegree = this.vertexStream.filter(new VertexFilterMaxDegree(numberVertices));
+		DataStream<Row> verticesMaxDegree = this.vertexStream
+				.filter(new VertexFilterMaxDegree(numberVertices))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table vertexTable = fsTableEnv.fromDataStream(verticesMaxDegree).as(this.vertexFields);
 			
 		//produce wrappers containing only the subset of vertices
@@ -136,10 +141,15 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		
 		System.out.println("Zoom, in csv zoom function ... top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
 
+		System.out.println("zoomLevel in graphUtil: " + zoomLevel);
+		
+		//zoomLevel
+		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterZoomLevel(zoomLevel));
+		vertices.print();
 		
 		//vertex stream filter for in-view and out-view area and conversion to Flink Tables
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
-		DataStream<Row> vertexStreamOuter = this.vertexStream.filter(new VertexFilterOuter(top, right, bottom, left));
+		DataStream<Row> vertexStreamInner = vertices.filter(new VertexFilterInner(top, right, bottom, left));
+		DataStream<Row> vertexStreamOuter = vertices.filter(new VertexFilterOuter(top, right, bottom, left));
 		Table vertexTable = fsTableEnv.fromDataStream(vertexStreamInner).as(this.vertexFields);		
 		Table vertexTableOuter = fsTableEnv.fromDataStream(vertexStreamOuter).as(this.vertexFields);
 		
@@ -176,12 +186,15 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * Pan function for graphs with layout
 		 */
 		
+		//zoomLevel
+		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterZoomLevel(zoomLevel));
+		
 		//vertex stream filter and conversion to Flink Tables for areas A, B and C
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
+		DataStream<Row> vertexStreamInner = vertices.filter(new VertexFilterInner(topNew, rightNew, bottomNew, leftNew));
 		DataStream<Row> vertexStreamInnerNewNotOld = vertexStreamInner
 				.filter(new VertexFilterOuter(topOld, rightOld, bottomOld, leftOld));
-		DataStream<Row> vertexStreamOldOuterBoth = this.vertexStream.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
-		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldOuterBoth = vertices.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
+		DataStream<Row> vertexStreamOldInnerNotNewInner = vertices.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		Table vertexTableInnerNew = fsTableEnv.fromDataStream(vertexStreamInnerNewNotOld).as(this.vertexFields);
 		Table vertexTableOldOuterExtend = fsTableEnv.fromDataStream(vertexStreamOldOuterBoth).as(this.vertexFields);
 		Table vertexTableOldInNotNewIn = fsTableEnv.fromDataStream(vertexStreamOldInnerNotNewInner).as(this.vertexFields);
@@ -409,5 +422,10 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				wrapperRowTypeInfo));
 		wrapperStream = wrapperStream.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		return wrapperStream;
+	}
+
+	@Override
+	public void setVertexZoomLevel(int zoomLevel) {
+		this.zoomLevel = zoomLevel;
 	}
 }

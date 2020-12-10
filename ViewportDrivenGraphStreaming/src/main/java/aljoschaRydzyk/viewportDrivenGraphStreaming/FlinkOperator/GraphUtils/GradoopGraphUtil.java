@@ -47,6 +47,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterZoomLevel;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
@@ -61,7 +62,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] wrapperFormatTypeInfo;
 	private FilterFunction<Row> zoomOutVertexFilter;
-	private int zoomLevelCoefficient = 1000;
+	private int zoomLevelCoefficient = 250;
+	private int zoomLevel;
 
 	
 	//Batch
@@ -95,8 +97,11 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		System.out.println("graphHeadSize: " + this.graph.getGraphHead().collect().size());
 		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
 		int numberVertices = Integer.parseInt(String.valueOf(this.graph.getVertices().count()));
+		System.out.println("numberVertices: " + numberVertices);
 		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
+		System.out.println("numberZoomLevels: " + numberZoomLevels);
 		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
+		System.out.println("zoomLevelSetSize: " + zoomLevelSetSize);
 		verticesIndexed = DataSetUtils.zipWithIndex((this.graph.getVertices()
 					.map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {
 						@Override
@@ -147,8 +152,12 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	}
 	
 	public DataSet<WrapperGVD> getMaxDegreeSubsetGradoop(int numberVertices){
+		
+		//zoomLevel
+		DataSet<Row> vertices = verticesIndexed.filter(new VertexFilterZoomLevel(zoomLevel));
+		
 		//filter for vertices with degree above cut off
-		DataSet<Row> vertices = verticesIndexed.filter(row -> (long) row.getField(2) < numberVertices);
+		vertices = vertices.filter(row -> (long) row.getField(2) < numberVertices);
 		
 		//produce non-identity wrapper
 		DataSet<WrapperGVD> wrapperSet = 
@@ -157,13 +166,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			.join(vertices).where(new WrapperTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector())
 			.map(new WrapperTupleMapWrapperGVD());
-		try {
-			wrapperSet.print();
-			System.out.println("wrapperSetSize: " + wrapperSet.count());
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		//produce identity wrapper
 		wrapperSet = wrapperSet.union(vertices.map(new VertexMapIdentityWrapperGVD()));
@@ -221,11 +223,14 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	@Override
 	public DataSet<WrapperGVD> zoom(Float top, Float right, Float bottom, Float left){
 		
+		//zoomLevel
+		DataSet<Row> vertices = verticesIndexed.filter(new VertexFilterZoomLevel(zoomLevel));
+		
 		//vertex set filter for in-view and out-view area
 		DataSet<Row> verticesInner = 
-				verticesIndexed.filter(new VertexFilterInner(top, right, bottom, left));
+				vertices.filter(new VertexFilterInner(top, right, bottom, left));
 		DataSet<Row> verticesOuter =
-				verticesIndexed.filter(new VertexFilterOuter(top, right, bottom, left));
+				vertices.filter(new VertexFilterOuter(top, right, bottom, left));
 		
 		//produce identity wrapper set for in-view area
 		DataSet<Row> identityWrapper = verticesInner.map(new VertexMapIdentityWrapperRow())
@@ -271,16 +276,19 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			Float rightOld,
 			Float bottomOld, Float leftOld){
 		
+		//zoomLevel 
+		DataSet<Row> vertices = verticesIndexed.filter(new VertexFilterZoomLevel(zoomLevel));
+		
 		//vertex set filter for areas A, B and C
-		DataSet<Row> verticesInner = verticesIndexed.filter(new VertexFilterInner(topNew, rightNew, bottomNew, 
+		DataSet<Row> verticesInner = vertices.filter(new VertexFilterInner(topNew, rightNew, bottomNew, 
 				leftNew));
 		DataSet<Row> verticesInnerNewNotOld = verticesInner
 				.filter(new VertexFilterOuter(topOld, rightOld, bottomOld, leftOld));
 		DataSet<Row> verticesOuterBoth = 
-				verticesIndexed.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, 
+				vertices.filter(new VertexFilterOuterBoth(leftNew, rightNew, topNew, bottomNew, leftOld, 
 						rightOld, topOld, bottomOld));
 		DataSet<Row> verticesOldInnerNotNewInner = 
-				verticesIndexed.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, 
+				vertices.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, 
 						rightOld, topOld, bottomOld));
 		
 		//produce identity wrapper for A to A
@@ -534,5 +542,11 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
 				.map(new WrapperRowMapWrapperGVD());
 		return wrapperGVD;
+	}
+
+
+	@Override
+	public void setVertexZoomLevel(int zoomLevel) {
+		this.zoomLevel = zoomLevel;
 	}
 }

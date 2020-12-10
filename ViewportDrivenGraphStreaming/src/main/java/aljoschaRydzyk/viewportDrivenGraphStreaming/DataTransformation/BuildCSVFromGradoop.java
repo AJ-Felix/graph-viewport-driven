@@ -87,7 +87,7 @@ public class BuildCSVFromGradoop {
 			DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
 			csvDataSink.write(log, true);
 		} else if (formatType.equals("gvd")) {
-			GradoopToCSV.parseGradoopToCSV(log, writePath);
+			GradoopToCSV.parseGradoopToCSV(log, writePath, gradoopGraphId);
 		}
 		env.execute();
 	}

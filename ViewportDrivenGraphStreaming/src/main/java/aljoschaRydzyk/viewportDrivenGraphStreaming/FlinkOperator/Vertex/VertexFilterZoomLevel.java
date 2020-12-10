@@ -12,6 +12,9 @@ public class VertexFilterZoomLevel implements FilterFunction<Row>{
 
 	@Override
 	public boolean filter(Row value) throws Exception {
+		System.out.println("zoomLevel: " + zoomLevel);
+		System.out.println("vertexZoomLevel: " + value.getField(7));
+		System.out.println((int) value.getField(7) <= zoomLevel);
 		return (int) value.getField(7) <= zoomLevel;
 	}
 }

@@ -57,6 +57,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	private Set<String> visualizedWrappers;
 	private Set<String> visualizedVertices;
 	private FilterFunction<Row> zoomOutVertexFilter;
+	private int zoomLevel;
 
 	
 	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, ExecutionEnvironment env, String inPath) {
@@ -361,5 +362,10 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				adjMatrix, top, right, bottom, left));
 		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		return nonIdentityWrapper;
+	}
+
+	@Override
+	public void setVertexZoomLevel(int zoomLevel) {
+		this.zoomLevel = zoomLevel;
 	}
 }

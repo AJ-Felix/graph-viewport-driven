@@ -12,4 +12,5 @@ public interface GraphUtil {
 	void initializeDataSets() throws Exception;
 	void setVisualizedVertices(Set<String> visualizedVertices);
 	void setVisualizedWrappers(Set<String> visualizedWrappers);
+	void setVertexZoomLevel(int zoomLevel);
 }
