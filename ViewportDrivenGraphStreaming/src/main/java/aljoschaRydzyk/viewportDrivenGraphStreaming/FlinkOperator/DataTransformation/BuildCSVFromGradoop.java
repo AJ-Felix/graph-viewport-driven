@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming.DataTransformation;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.DataTransformation;
 
 import java.util.ArrayList;
 import java.util.List;

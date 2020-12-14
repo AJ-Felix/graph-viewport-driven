@@ -26,14 +26,17 @@ import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeSourceIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeTargetIDKeySelector;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexEPGMMapTupleDegreeComplex;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapIdentityWrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexTupleComplexMapRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperFilterVisualizedVertices;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperRowMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperSourceIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTargetIDKeySelector;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleMapWrapperGVD;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleMapWrapperRow;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleComplexMapRow;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleRowMapWrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleRowMapWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
@@ -103,24 +106,11 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
 		System.out.println("zoomLevelSetSize: " + zoomLevelSetSize);
 		verticesIndexed = DataSetUtils.zipWithIndex((this.graph.getVertices()
-					.map(new MapFunction<EPGMVertex, Tuple2<EPGMVertex,Long>>() {
-						@Override
-						public Tuple2<EPGMVertex, Long> map(EPGMVertex vertex) throws Exception {
-							return Tuple2.of(vertex, vertex.getPropertyValue("degree").getLong());
-						}
-					})
+					.map(new VertexEPGMMapTupleDegreeComplex())
 					.sortPartition(1, Order.DESCENDING).setParallelism(1)
 				))
-				.map(new MapFunction<Tuple2<Long,Tuple2<EPGMVertex,Long>>,Row>() {
-					@Override
-					public Row map(Tuple2<Long,Tuple2<EPGMVertex,Long>> tuple) throws Exception {
-						EPGMVertex vertex = tuple.f1.f0;
-						return Row.of(graphId, vertex.getId(), tuple.f0, vertex.getLabel(),
-								vertex.getPropertyValue("X").getInt(), vertex.getPropertyValue("Y").getInt(),
-								vertex.getPropertyValue("degree").getLong(), 
-								Integer.parseInt(String.valueOf(tuple.f0)) / zoomLevelSetSize);
-					}
-				});
+				.map(new VertexTupleComplexMapRow(graphId, zoomLevelSetSize));
+		
 		DataSet<EPGMEdge> edges = this.graph.getEdges();
 		DataSet<Tuple2<Tuple2<Row, EPGMEdge>, Row>> wrapperTuple = 
 				verticesIndexed.join(edges).where(new VertexIDRowKeySelector())
@@ -128,17 +118,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			.join(verticesIndexed).where(new EdgeTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector());
 		
-		wrapper = wrapperTuple.map(new MapFunction<Tuple2<Tuple2<Row, EPGMEdge>,Row>,Row>(){
-			@Override
-			public Row map(Tuple2<Tuple2<Row, EPGMEdge>, Row> tuple) throws Exception {
-				EPGMEdge edge = tuple.f0.f1;
-				Row sourceVertex = tuple.f0.f0;
-				Row targetVertex = tuple.f1;
-				Row vertices = Row.join(sourceVertex, Row.project(targetVertex, new int[] {1, 2, 3, 4, 5, 6, 7}));
-				System.out.println(vertices.getArity());
-				return Row.join(vertices, Row.of(edge.getId().toString(), edge.getLabel()));
-			}
-		});
+		wrapper = wrapperTuple.map(new WrapperTupleComplexMapRow());
 	}
 	
 	@Override
@@ -165,7 +145,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			.equalTo(new WrapperSourceIDKeySelector())
 			.join(vertices).where(new WrapperTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector())
-			.map(new WrapperTupleMapWrapperGVD());
+			.map(new WrapperTupleRowMapWrapperGVD());
 		
 		//produce identity wrapper
 		wrapperSet = wrapperSet.union(vertices.map(new VertexMapIdentityWrapperGVD()));
@@ -260,7 +240,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		inIn = inIn.union(inOut).union(outIn);
 		
 		//map to wrapper row 
-		DataSet<Row> wrapperRow = inIn.map(new WrapperTupleMapWrapperRow()).union(identityWrapper);
+		DataSet<Row> wrapperRow = inIn.map(new WrapperTupleRowMapWrapperRow()).union(identityWrapper);
 		
 		//filter out already visualized edges in wrapper set
 		wrapperRow = wrapperRow.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
@@ -327,13 +307,13 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.equalTo(new VertexIDRowKeySelector());
 			//filter out already visualized edges
 			DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAPlusCD = wrapperAPlusCToD.union(wrapperDToAPlusC);
-			DataSet<Row> wrapperRow = wrapperAPlusCD.map(new WrapperTupleMapWrapperRow());
+			DataSet<Row> wrapperRow = wrapperAPlusCD.map(new WrapperTupleRowMapWrapperRow());
 			wrapperRow = wrapperRow.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 			DataSet<WrapperGVD> wrapperGVD = wrapperRow.union(identityWrapper)
 					.map(new WrapperRowMapWrapperGVD());
 		
 		//dataset union
-		wrapperGVD = wrapperAToA.union(wrapperAToB).union(wrapperBToA).map(new WrapperTupleMapWrapperGVD())
+		wrapperGVD = wrapperAToA.union(wrapperAToB).union(wrapperBToA).map(new WrapperTupleRowMapWrapperGVD())
 				.union(wrapperGVD);
 		
 		return wrapperGVD;	
@@ -355,7 +335,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.equalTo(new WrapperSourceIDKeySelector())
 				.join(vertices).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
-		return wrapperGVDIdentity.union(wrapperTupleNonIdentity.map(new WrapperTupleMapWrapperGVD()));
+		return wrapperGVDIdentity.union(wrapperTupleNonIdentity.map(new WrapperTupleRowMapWrapperGVD()));
 	}
 	
 	@Override
@@ -379,7 +359,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.equalTo(new WrapperSourceIDKeySelector())
 				.join(visualizedVertices).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector()));
-		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperGVD());
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleRowMapWrapperGVD());
 		return wrapperGVD;
 	}
 	
@@ -398,7 +378,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.join(notLayoutedVertices).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		DataSet<WrapperGVD> wrapperGVDIdentity = notLayoutedVertices.map(new VertexMapIdentityWrapperGVD());
-		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperGVD()).union(wrapperGVDIdentity);
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleRowMapWrapperGVD()).union(wrapperGVDIdentity);
 		return wrapperGVD;
 	}
 	
@@ -431,7 +411,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.equalTo(new VertexIDRowKeySelector()));
 
 		//filter out already visualized edges in wrapper set
-		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleRowMapWrapperRow())
 				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
 				.map(new WrapperRowMapWrapperGVD());
 		return wrapperGVD;
@@ -483,7 +463,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.equalTo(new VertexIDRowKeySelector()));
 		
 		//filter out already visualized edges in wrapper set
-		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.union(wrapperTuple2).map(new WrapperTupleMapWrapperRow())
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.union(wrapperTuple2).map(new WrapperTupleRowMapWrapperRow())
 				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
 				.map(new WrapperRowMapWrapperGVD());
 		return wrapperGVD;
@@ -507,7 +487,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.join(vertices).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		DataSet<WrapperGVD> wrapperGVDIdentity = vertices.map(new VertexMapIdentityWrapperGVD());
-		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperGVD()).union(wrapperGVDIdentity);
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleRowMapWrapperGVD()).union(wrapperGVDIdentity);
 		return wrapperGVD;
 	}
 	
@@ -538,7 +518,7 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.equalTo(new VertexIDRowKeySelector()));
 		
 		//filter out already visualized edges in wrapper set
-		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleMapWrapperRow())
+		DataSet<WrapperGVD> wrapperGVD = wrapperTuple.map(new WrapperTupleRowMapWrapperRow())
 				.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers))
 				.map(new WrapperRowMapWrapperGVD());
 		return wrapperGVD;

@@ -8,7 +8,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Edg
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 
-public class WrapperTupleMapWrapperGVD implements MapFunction<Tuple2<Tuple2<Row, Row>,Row>,WrapperGVD> {
+public class WrapperTupleRowMapWrapperGVD implements MapFunction<Tuple2<Tuple2<Row, Row>,Row>,WrapperGVD> {
 	@Override
 	public WrapperGVD map(Tuple2<Tuple2<Row, Row>,Row> tuple) throws Exception {
 		VertexGVD sourceVertex = new VertexGVD(
