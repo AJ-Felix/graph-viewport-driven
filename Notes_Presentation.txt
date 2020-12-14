@@ -1,0 +1,19 @@
+A first step in data analysis is data exploration in which visualisation plays an important role
+If visualization is slow  not really interactive
+
+Common data reduction techniques: sampling, clustering, bundling
+Interactive technique: topology-based transformation (e.g fish-eye, detail/overall windows)
+
+Approach will be a streaming version of combination of graphMaps and graph data reduction
+Also includes streaming (not depicted)
+
+To make lookup in wrapper map feasible  partition data
+Mention layouting
+
+Adjazenzmatrix sowie WrapperMap sollten im BackEnd z.B. nach WrapperID-Prefixes sortiert werden, um einen schnellen LookUp zu ermöglichen
+
+Erweiterbar mit dynamic prefetching von Daten
+Prinzipiell kombinierbar mit anderen darstellungen a la graphMaps/googleMaps:
+Z.b. Cluster-graph als Top-Level-Ansicht und dann detaillierte Ansicht entsprechend viewport,
+Dafür müssen aber beide Graphen im backEnd gespeichert und verknüpft werden,
+Weil eine ad-hoc berechnung nicht performant ist

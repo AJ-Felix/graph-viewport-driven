@@ -5,6 +5,6 @@ the machine where the java server application is being executed
 */
 
 var jsonObject = {
-	"ServerIp4": "192.168.178.93"
+	"ServerIp4": "172.24.217.89"
 };
 

@@ -13,6 +13,7 @@ import org.gradoop.flink.io.impl.csv.CSVDataSink;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.model.impl.operators.layouting.CentroidFRLayouter;
+import org.gradoop.flink.model.impl.operators.layouting.FRLayouter;
 import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodSampling;
 import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.util.GradoopFlinkConfig;
@@ -78,10 +79,11 @@ public class BuildCSVFromGradoop {
 			log = log.callForGraph(new DistinctVertexDegrees(propertyKeyDegree, propertyKeyInDegree, 
 					propertyKeyOutDegree, includeZeroDegreeVertices));
 		}
-
+		
 		//layout graph
 //		if (operations.contains("layout")) log = new CentroidFRLayouter(5, 2000).execute(log);
 		if (operations.contains("layout")) log = new CentroidFRLayouter(20, 1000).execute(log);
+
 
 
 		//sink to gradoop format or GVD format
