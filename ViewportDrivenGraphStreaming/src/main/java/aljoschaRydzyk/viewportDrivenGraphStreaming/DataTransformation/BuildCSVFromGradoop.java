@@ -80,7 +80,9 @@ public class BuildCSVFromGradoop {
 		}
 
 		//layout graph
-		if (operations.contains("layout")) log = new CentroidFRLayouter(5, 2000).execute(log);
+//		if (operations.contains("layout")) log = new CentroidFRLayouter(5, 2000).execute(log);
+		if (operations.contains("layout")) log = new CentroidFRLayouter(20, 1000).execute(log);
+
 
 		//sink to gradoop format or GVD format
 		if (formatType.equals("gradoop")) {
