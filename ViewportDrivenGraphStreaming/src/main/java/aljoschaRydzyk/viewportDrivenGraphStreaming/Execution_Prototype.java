@@ -26,7 +26,6 @@ import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.utils.LegacyTypeInfoDataTypeConverter;
 import org.apache.flink.types.Row;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.log4j.BasicConfigurator;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
@@ -50,7 +49,6 @@ import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.model.impl.operators.sampling.functions.VertexDegree;
 import org.gradoop.flink.model.impl.operators.transformation.functions.TransformGraphHead;
 import org.gradoop.flink.util.GradoopFlinkConfig;
-import org.gradoop.storage.hbase.config.GradoopHBaseConfig;
 
 @SuppressWarnings("unused")
 public class Execution_Prototype {
@@ -64,10 +62,6 @@ public class Execution_Prototype {
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		GradoopFlinkConfig gra_flink_cfg = GradoopFlinkConfig.createConfig(env);
 
-		//create gradoop HBase configuration
-		GradoopHBaseConfig gra_hbase_cfg = GradoopHBaseConfig.getDefaultConfig();
-		Configuration hbase_cfg = HBaseConfiguration.create();
-		
 		//Flink 10.0
 		
 		//create Flink Table Stream Configuration

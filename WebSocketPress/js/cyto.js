@@ -117,7 +117,7 @@ class GraphVisualizer {
 	addVertexToLayoutBase(dataArray){
 		const xVertex = this.layoutWindow.x1 + Math.random() * (this.layoutWindow.x2 - this.layoutWindow.x1);
 		const yVertex = this.layoutWindow.y1 + Math.random() * (this.layoutWindow.y2 - this.layoutWindow.y1);
-		this.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3], degree: dataArray[2]}, position: {x: xVertex, y: yVertex}});
+		this.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3], degree: dataArray[2]}, position: {x: 0, y: 0}});
 		this.layoutBase.add(dataArray[1]);
 	}
 
@@ -164,7 +164,9 @@ class GraphVisualizer {
 		const degreeRange = this.currentMaxDegree - this.currentMinDegree;
 		const currentMinDegree = this.currentMinDegree;
 		this.cy.nodes().forEach(function(node){
-			const scale = (node.data('degree') - currentMinDegree) / degreeRange;
+			let scale;
+			if (degreeRange == 0) scale = 1;
+			else scale = (node.data('degree') - currentMinDegree) / degreeRange;
 			const nodeHeight = minNodeHeightThisZoom + scale * nodeHeightDiff;
 			const nodeWidth = minNodeWidthThisZoom + scale * nodeWidthDiff;
 			node.style({'height':nodeHeight, 'width':nodeWidth});

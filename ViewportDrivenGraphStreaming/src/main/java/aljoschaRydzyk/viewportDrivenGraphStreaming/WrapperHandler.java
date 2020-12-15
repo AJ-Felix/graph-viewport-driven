@@ -865,8 +865,8 @@ public class WrapperHandler implements Serializable {
 		this.operation = operation;
 	}
 	
-	public void setMaxVertices() {
-		this.maxVertices = server.getMaxVertices();
+	public void setMaxVertices(int maxVertices) {
+		this.maxVertices = maxVertices;
 	}
 
 	public void setLayoutMode(boolean layoutMode) {

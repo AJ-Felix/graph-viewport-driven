@@ -1,6 +1,5 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.DataTransformation;
 
-import java.util.Comparator;
 import java.util.List;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.java.DataSet;
@@ -24,30 +23,18 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexEPG
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexTupleComplexMapRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTupleComplexMapRow;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 
-//graphIdGradoop ; sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree
-//targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; edgeIdGradoop ; edgeLabel
+
 
 public class GradoopToCSV {
-	private static int zoomLevelCoefficient = 250;
+	private int zoomLevelCoefficient = 250;
 	
-	public static class WrapperDegreeComparator implements Comparator<WrapperGVD>{
-		@Override
-		public int compare(WrapperGVD w1, WrapperGVD w2) {
-			Long maxDegree = w1.getSourceDegree();
-			if (w1.getTargetDegree() > maxDegree) maxDegree = w1.getTargetDegree();
-			if ((w2.getSourceDegree() > maxDegree) || (w2.getTargetDegree() > maxDegree)){
-				return 1;
-			} else if ((w2.getSourceDegree() == maxDegree) || (w2.getTargetDegree() == maxDegree)){
-				return 0;
-			} else {
-				return -1;
-			}
-		}
+	public GradoopToCSV(int zoomLevelCoefficient) {
+		this.zoomLevelCoefficient = zoomLevelCoefficient;
 	}
 	
-	public static void parseGradoopToCSV(LogicalGraph graph, String outPath, String graphId) throws Exception {
+	
+	public void parseGradoopToCSV(LogicalGraph graph, String outPath, String graphId) throws Exception {
 		int numberVertices = Integer.parseInt(String.valueOf(graph.getVertices().count()));
 		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
 		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;

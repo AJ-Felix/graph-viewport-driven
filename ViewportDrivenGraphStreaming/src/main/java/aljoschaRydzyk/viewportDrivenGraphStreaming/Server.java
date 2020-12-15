@@ -14,19 +14,14 @@ import java.util.Enumeration;
 import java.util.List;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperGVDMapWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinates;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinatesRetract;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineRetract;
 import io.undertow.Undertow;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
@@ -63,6 +58,7 @@ public class Server implements Serializable{
     private String localMachinePublicIp4 = "localhost";
     private int flinkResponsePort = 8898;
 	private int vertexZoomLevel;
+	private boolean maxVerticesLock = false;
 
     public Server () {
     	System.out.println("executing server constructor");
@@ -77,8 +73,6 @@ public class Server implements Serializable{
 	                    channel.getReceiveSetter().set(getListener());
 	                    channel.resumeReceives();
 	                }))
-//                	.addPrefixPath("/", resource(new ClassPathResourceManager(Server.class.getClassLoader(),
-//                            Server.class.getPackage())).addWelcomeFiles("index.html")/*.setDirectoryListingEnabled(true)*/))
             	).build();
     	server.start();
         System.out.println("Server started!");  
@@ -107,9 +101,6 @@ public class Server implements Serializable{
                 if (address instanceof Inet4Address) {
                 	localMachinePublicIp4 = address.getHostAddress().toString();
                 	System.out.println("adress :" + address.getHostAddress().toString());
-                	
-                	//debug
-//                	localMachinePublicIp4 = "localhost";
                 }
             }
         }
@@ -178,7 +169,7 @@ public class Server implements Serializable{
                 	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
                 	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
                 	System.out.println("viewportSize, maxVertices before: " + maxVertices);
-					calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
+					if (!maxVerticesLock) calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
         			System.out.println("viewportSize, maxVertices after: " + maxVertices);
                 	if (!wrapperHandler.getGlobalVertices().isEmpty()) {
                 		flinkCore.setModelPositionsOld();
@@ -214,9 +205,10 @@ public class Server implements Serializable{
                 	wrapperHandler.updateLayoutedVertices(list);
                 	nextSubStep();
                 } else if (messageData.startsWith("maxVertices")) {
+                	maxVerticesLock = true;
                 	String[] arrMessageData = messageData.split(";");
                 	maxVertices = Integer.parseInt(arrMessageData[1]);
-                	wrapperHandler.setMaxVertices();
+                	wrapperHandler.setMaxVertices(maxVertices);
                 } 
                 else if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore(clusterEntryPointAddress, 
@@ -231,33 +223,29 @@ public class Server implements Serializable{
                 	setOperation("initial");
                 	String[] arrMessageData = messageData.split(";");
                 	System.out.println(arrMessageData[1]);
-                	if (arrMessageData[1].equals("HBase")) {
-                    	flinkCore.setGradoopWithHBase(true);
-                		buildTopViewHBase();        			
-                	} else if (arrMessageData[1].equals("CSV")) {
+                	if (arrMessageData[1].equals("CSV")) {
                 		System.out.println("appendjoin??!?!?");
+                    	setStreamBool(true);
                 		buildTopViewCSV();
         			} else if (arrMessageData[1].equals("adjacency")) {
+                    	setStreamBool(true);
         				buildTopViewAdjacency();
         			} else if (arrMessageData[1].equals("gradoop")) {
-                    	flinkCore.setGradoopWithHBase(false);
                     	setStreamBool(false);
         				buildTopViewGradoop();
         			}
                 	setVertexZoomLevel(0);
                 	try {
                 		if (stream)	flinkCore.getFsEnv().execute();
-                		else flinkCore.getEnv().execute();
+//                		else flinkCore.getEnv().execute();
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
-                	//do stuff with wrapperCollection
                 	if (!stream) {
                     	System.out.println("wrapperCollection size: " + wrapperCollection.size());
                 		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
 //                		if (layout) {
                 			wrapperHandler.clearOperation();
-//    		            	Server.getInstance().sendToAll("fit");
                 			sendToAll("fit");
 //                		}
                 	}
@@ -272,13 +260,9 @@ public class Server implements Serializable{
         			Float rightModel = (leftModel + viewportPixelX / zoomLevel);
         			flinkCore.setModelPositionsOld();
         			setModelPositions(topModel, rightModel, bottomModel, leftModel);
-        			
-        			
         			System.out.println("zoom, maxVertices before: " + maxVertices);
-					calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
+        			if (!maxVerticesLock) calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
 					System.out.println("zoom, maxVertices after: " + maxVertices);
-        			
-        			
 					System.out.println("Zoom ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					if (messageData.startsWith("zoomIn")) {
 						setOperation("zoomIn");
@@ -321,13 +305,9 @@ public class Server implements Serializable{
         			Float rightModel = rightModelOld + xModelDiff;
 					flinkCore.setModelPositionsOld();
 					setModelPositions(topModel, rightModel, bottomModel, leftModel);
-
-					
 					System.out.println("pan, maxVertices before: " + maxVertices);
-					calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
+					if (!maxVerticesLock) calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
 					System.out.println("pan, maxVertices after: " + maxVertices);
-
-					
 					System.out.println("Pan ... top, right, bottom, left:" + topModel + " " + rightModel + " "+ bottomModel + " " + leftModel);
 					setOperation("pan");
     				wrapperHandler.prepareOperation();
@@ -347,22 +327,6 @@ public class Server implements Serializable{
 		this.vertexZoomLevel = zoomLevel;
 		flinkCore.setVertexZoomLevel(zoomLevel);	
 	}
-
-	private void buildTopViewHBase() {
-    	flinkCore.initializeGradoopGraphUtil();
-		wrapperHandler.initializeGraphRepresentation();
-		DataStream<Tuple2<Boolean, Row>> wrapperStream = flinkCore.buildTopViewHBase(maxVertices);
-		flinkResponseHandler.setOperation("initialRetract");
-		DataStream<String> wrapperLine;
-		if (layout) {
-			flinkResponseHandler.setVerticesHaveCoordinates(true);
-			wrapperLine = wrapperStream.map(new WrapperMapLineRetract());
-		} else {
-			flinkResponseHandler.setVerticesHaveCoordinates(false);
-			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinatesRetract());
-		}
-		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
-    }
     
     private void buildTopViewGradoop() {
     	flinkCore.initializeGradoopGraphUtil();
@@ -413,7 +377,7 @@ public class Server implements Serializable{
 		wrapperHandler.setSentToClientInSubStep(false);
 		try {
 			wrapperCollection = wrapperSet.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -449,7 +413,7 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			wrapperCollection = wrapperSet.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1058,6 +1022,6 @@ public class Server implements Serializable{
 			maxVertices = (int) (viewportPixelY * (yPixelProportion / viewportPixelY) *
 					viewportPixelX * (xPixelProportion / viewportPixelX) / vertexCountNormalizationFactor);
     	}
-		wrapperHandler.setMaxVertices();
+		wrapperHandler.setMaxVertices(maxVertices);
     }
 }

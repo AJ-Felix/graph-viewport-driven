@@ -170,17 +170,13 @@ Layout: Layout does have to be performed after every suboperation step, because 
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
 
-TODO: VertexIDRowKeySelector.java ist nicht sichtbar in eclipse project obwohl sie existiert.
-
 TODO: zoomLevelCoefficient is still hard-coded in GradoopGraphUtil
 
 TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut
 
-TODO: Präsentation!!!!!
-
-TODO: gvdGraph pipeline refactorn
-
 TODO: aus der jar hbase rausschmeißen
+
+TODO: Testen nachdem zoomLevel in allen GraphUtils implementiert ist und HBase rausgeschmissen
 
 TODO: Pipeline zur produktion von Präsi-Datensatz testen/ausführen
 

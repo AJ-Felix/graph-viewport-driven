@@ -7,6 +7,7 @@ class Client {
 		this.layout = true
 		this.graphVisualizer = new GraphVisualizer();
 		this.timeOut = 200;
+		this.vertexZoomLevel = 0;
 	}
 
 	addMessageToQueue(dataArray){
@@ -190,7 +191,7 @@ class Client {
 				this.graphVisualizer.layoutBase.forEach(function (vertexId){
 					layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
 				});
-				this.graphVisualizer.cy.layout(fdLayout).run();
+				this.graphVisualizer.cy.layout(cose).run();
 				// this.graphVisualizer.cy.layout(layoutOptions).run();
 				console.log("layout performed");
 				layoutBaseCy.forEach(function(node){
@@ -237,7 +238,7 @@ $(document).ready(function(){
 	}
 
 	ws.onmessage = function (evt) {
-		// console.log(evt.data);
+		console.log(evt.data);
 		const dataArray = evt.data.split(";");
 		client.addMessageToQueue(dataArray);
 	}
@@ -274,6 +275,7 @@ function mouseWheel(e) {
 	let pan = client.graphVisualizer.cy.pan();
 	client.graphVisualizer.layoutBase = new Set();
 	if (delta < 0){
+		client.vertexZoomLevel += 1;
 		client.graphVisualizer.styleOnZoom("in");
 		client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() * client.graphVisualizer.zFactor);
 		client.graphVisualizer.cy.pan({x:- client.cyWidthHalf + client.graphVisualizer.zFactor * pan.x + (client.cyWidthHalf - cytoX) * client.graphVisualizer.zFactor, 
@@ -288,14 +290,20 @@ function mouseWheel(e) {
 		client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
 		client.ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
 	} else {
-		client.graphVisualizer.styleOnZoom("out");
-		client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() / client.graphVisualizer.zFactor);
-		client.graphVisualizer.cy.pan({x:client.cyWidthHalf + pan.x - (client.cyWidthHalf + pan.x) / client.graphVisualizer.zFactor - (cytoX - client.cyWidthHalf) /client.graphVisualizer.zFactor, 
-			y:client.cyHeightHalf + pan.y - (client.cyHeightHalf + pan.y) / client.graphVisualizer.zFactor - (cytoY - client.cyHeightHalf) / client.graphVisualizer.zFactor});
-		pan = client.graphVisualizer.cy.pan();
-		client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
-		client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
-		client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
+		if (client.vertexZoomLevel == 0){
+			alert("Top Zoom Level reached already!")
+			client.enableMouseEvents();
+		} else {
+			client.vertexZoomLevel -= 1;
+			client.graphVisualizer.styleOnZoom("out");
+			client.graphVisualizer.cy.zoom(client.graphVisualizer.cy.zoom() / client.graphVisualizer.zFactor);
+			client.graphVisualizer.cy.pan({x:client.cyWidthHalf + pan.x - (client.cyWidthHalf + pan.x) / client.graphVisualizer.zFactor - (cytoX - client.cyWidthHalf) /client.graphVisualizer.zFactor, 
+				y:client.cyHeightHalf + pan.y - (client.cyHeightHalf + pan.y) / client.graphVisualizer.zFactor - (cytoY - client.cyHeightHalf) / client.graphVisualizer.zFactor});
+			pan = client.graphVisualizer.cy.pan();
+			client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
+			client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
+			client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
+		}
 	}
 }
 
@@ -331,36 +339,26 @@ function mouseUp(e){
 	client.ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + client.graphVisualizer.zoomLevel);
 }
 
-let fdLayout = {
-	name: 'cose', // Called on `layoutready`
-	ready: function(){console.log('fd layout ready')}, // Called on `layoutstop`
-	stop: function(){}, // Whether to animate while running the layout
-	// true : Animate continuously as the layout is running
-	// false : Just show the end result
-	// 'end' : Animate with the end result, from the initial positions to the end positions
-	animate: true, // Easing of the animation for animate:'end'
-	animationEasing: undefined, // The duration of the animation for animate:'end'
-	animationDuration: undefined, // A function that determines whether the node should be animated
-	// All nodes animated by default on animate enabled
-	// Non-animated nodes are positioned immediately when the layout starts
-	animateFilter: function ( node, i ){ return true; }, // The layout animates only after this many milliseconds for animate:true
-	// (prevents flashing on fast runs)
-	animationThreshold: 250, // Number of iterations between consecutive screen positions update
-	refresh: 20, // Whether to fit the network view after when done
-	fit: true, // Padding on fit
-	padding: 30, // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
-	boundingBox: undefined, // Excludes the label when calculating node bounding boxes for the layout algorithm
-	nodeDimensionsIncludeLabels: false, // Randomize the initial positions of the nodes (true) or use existing positions (false)
-	randomize: false, // Extra spacing between components in non-compound graphs
-	componentSpacing: 40, // Node repulsion (non overlapping) multiplier
-	nodeRepulsion: function( node ){ return 2048; }, // Node repulsion (overlapping) multiplier
-	nodeOverlap: 4, // Ideal edge (non nested) length
-	idealEdgeLength: function( edge ){ return 32; }, // Divisor to compute edge forces
-	edgeElasticity: function( edge ){ return 32; }, // Nesting factor (multiplier) to compute ideal edge length for nested edges
-	nestingFactor: 1.2, // Gravity force (constant)
-	gravity: 1, // Maximum number of iterations to perform
-	numIter: 1000, // Initial temperature (maximum node displacement)
-	initialTemp: 1000, // Cooling factor (how the temperature is reduced between consecutive iterations
-	coolingFactor: 0.99, // Lower temperature threshold (below this point the layout will end)
-	minTemp: 1.0
-   }
+var cose = {
+	name: "cose",  // called on `layoutready`
+	ready: function () {},  // called on `layoutstop`
+	stop: function () {},  // whether to animate while running the layout
+	animate: true,  // number of iterations between consecutive screen positions update (0 ->
+	// only updated on the end)
+	refresh: 4,  // whether to fit the network view after when done
+	fit: true,  // padding on fit
+	padding: 30,  // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+	boundingBox: undefined,  // whether to randomize node positions on the beginning
+	randomize: true,  // whether to use the JS console to print debug messages
+	debug: false,  // node repulsion (non overlapping) multiplier
+	nodeRepulsion: 8000000,  // node repulsion (overlapping) multiplier
+	nodeOverlap: 10,  // ideal edge (non nested) length
+	idealEdgeLength: 1,  // divisor to compute edge forces
+	edgeElasticity: 100,  // nesting factor (multiplier) to compute ideal edge length for nested edges
+	nestingFactor: 5,  // gravity force (constant)
+	gravity: 250,  // maximum number of iterations to perform
+	numIter: 100,  // initial temperature (maximum node displacement)
+	initialTemp: 200,  // cooling factor (how the temperature is reduced between consecutive iterations
+	coolingFactor: 0.95,  // lower temperature threshold (below this point the layout will end)
+	minTemp: 1.0,
+  };

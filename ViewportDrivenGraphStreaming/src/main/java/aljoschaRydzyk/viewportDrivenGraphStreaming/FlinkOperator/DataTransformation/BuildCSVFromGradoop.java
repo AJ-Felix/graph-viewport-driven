@@ -13,7 +13,6 @@ import org.gradoop.flink.io.impl.csv.CSVDataSink;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.model.impl.operators.layouting.CentroidFRLayouter;
-import org.gradoop.flink.model.impl.operators.layouting.FRLayouter;
 import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodSampling;
 import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.util.GradoopFlinkConfig;
@@ -35,6 +34,9 @@ public class BuildCSVFromGradoop {
 	
 	private static int clusterEntryPointPort = 8081;
 	private static String clusterEntryPointAddress = "localhost";
+	private static int zoomLevelCoefficient = 250;
+	private static int layoutIterations = 20;
+	
 	
 	public static void main(String[] args) throws Exception {
 		
@@ -81,17 +83,18 @@ public class BuildCSVFromGradoop {
 		}
 		
 		//layout graph
-//		if (operations.contains("layout")) log = new CentroidFRLayouter(5, 2000).execute(log);
-		if (operations.contains("layout")) log = new CentroidFRLayouter(20, 1000).execute(log);
-
-
+		if (operations.contains("layout")) {
+			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
+			log = new CentroidFRLayouter(layoutIterations, numberVertices).execute(log);
+		}
 
 		//sink to gradoop format or GVD format
 		if (formatType.equals("gradoop")) {
 			DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
 			csvDataSink.write(log, true);
 		} else if (formatType.equals("gvd")) {
-			GradoopToCSV.parseGradoopToCSV(log, writePath, gradoopGraphId);
+			GradoopToCSV gradoopToCSV = new GradoopToCSV(zoomLevelCoefficient);
+			gradoopToCSV.parseGradoopToCSV(log, writePath, gradoopGraphId);
 		}
 		env.execute();
 	}

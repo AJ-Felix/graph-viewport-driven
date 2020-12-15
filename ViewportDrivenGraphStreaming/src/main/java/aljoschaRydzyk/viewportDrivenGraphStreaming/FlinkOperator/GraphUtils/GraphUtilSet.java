@@ -7,6 +7,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Ver
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 
 public interface GraphUtilSet extends GraphUtil{
+	DataSet<WrapperGVD> getMaxDegreeSubset(int numberVertices);
 	DataSet<WrapperGVD> zoom(Float top, Float right, Float bottom, Float left);
 	DataSet<WrapperGVD> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,
 			Float bottomOld, Float leftOld);

@@ -77,40 +77,17 @@ public class FlinkResponseHandler extends Thread{
             	}	
             } else {
             	if (layout) {
-	            	if (operation.contains("Append")) {
-	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println("flinkResponseHandler: " + line);
-	    	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
-	    	            }
-	            	} 
-//	            	else if (operation.contains("Retract")) {
-//	            		while((line = in.readLine()) != null)  {
-//	    	            	System.out.println("flinkResponseHandler: " + line);
-//	    	            	if (line.endsWith("true")) {
-//	    		            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
-//	    	            	} else if (line.endsWith("false")) {
-//	    	            		wrapperHandler.removeWrapper(parseWrapperString(line));
-//	    	            	}
-//	    	            }
-//	            	}
+            		while((line = in.readLine()) != null)  {
+    	            	System.out.println("flinkResponseHandler: " + line);
+    	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
+    	            }
 	            	server.sendToAll("fit");
 	                wrapperHandler.clearOperation();
             	} else  {
-            		if (operation.contains("Append")) {
-	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println("flinkResponseHandler: " + line);
-	    	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
-	    	            }
-	            	} else if (operation.contains("Retract")) {
-	            		while((line = in.readLine()) != null)  {
-	    	            	System.out.println("flinkResponseHandler: " + line);
-	    	            	if (line.endsWith("true")) {
-	    		            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
-	    	            	} else if (line.endsWith("false")) {
-	    	            		wrapperHandler.removeWrapper(parseWrapperStringNoCoordinates(line));
-	    	            	}
-	    	            }
-	            	}
+            		while((line = in.readLine()) != null)  {
+    	            	System.out.println("flinkResponseHandler: " + line);
+    	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
+    	            }
             	}	
             }
             in.close();

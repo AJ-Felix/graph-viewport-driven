@@ -16,7 +16,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.CsvReader;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
-import org.apache.flink.api.java.tuple.Tuple15;
 import org.apache.flink.api.java.tuple.Tuple17;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -33,6 +32,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterMaxDegree;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotLayouted;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterNotVisualized;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterZoomLevel;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapIsLayoutedInnerNewNotOldUni;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapIsLayoutedInnerOldNotNewBi;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapIsLayoutedOutsideBi;
@@ -77,7 +77,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		try {
 			this.wrapperMap = this.buildWrapperMap();
 			this.adjMatrix = this.buildAdjacencyMatrix();
-			env.execute();
+//			env.execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -96,7 +96,9 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	
 	@Override
 	public DataStream<Row> getMaxDegreeSubset(int numberVertices) throws IOException{
-		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterMaxDegree(numberVertices));
+		DataStream<Row> vertices = this.vertexStream
+				.filter(new VertexFilterMaxDegree(numberVertices))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
 		Map<String, Row> wrapperMap = this.wrapperMap;
 		
@@ -111,7 +113,9 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	
 	@Override
 	public DataStream<Row> zoom(Float top, Float right, Float bottom, Float left) throws IOException {
-		DataStream<Row> vertexStreamInner = this.vertexStream.filter(new VertexFilterInner(top, right, bottom, left));
+		DataStream<Row> vertexStreamInner = this.vertexStream
+				.filter(new VertexFilterInner(top, right, bottom, left))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
 		Map<String, Row> wrapperMap = this.wrapperMap;
 		
@@ -129,7 +133,11 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	@Override
 	public DataStream<Row> pan(Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld,
 			Float leftOld) {
-		DataStream<Row> vertexStreamInnerNewNotOld = this.vertexStream
+		
+		//zoomLevel
+		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterZoomLevel(zoomLevel));
+		
+		DataStream<Row> vertexStreamInnerNewNotOld = vertices
 			.filter(new VertexFilterInnerNewNotOld(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
 		Map<String, Row> wrapperMap = this.wrapperMap;
@@ -138,7 +146,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		DataStream<Row> wrapperDefNotVis = vertexStreamInnerNewNotOld.flatMap(
 				new VertexFlatMapPanDefNotVis(adjMatrix, wrapperMap, topNew, rightNew, bottomNew, leftNew,
 						topOld, rightOld, bottomOld, leftOld));
-		DataStream<Row> vertexStreamOldInnerNotNewInner = this.vertexStream
+		DataStream<Row> vertexStreamOldInnerNotNewInner = vertices
 				.filter(new VertexFilterInnerOldNotNew(leftNew, rightNew, topNew, bottomNew, leftOld, rightOld, topOld, bottomOld));
 		DataStream<Row> wrapperMaybeVis = vertexStreamOldInnerNotNewInner.flatMap(
 				new VertexFlatMapPanMaybeVis(adjMatrix, wrapperMap, topNew,  rightNew,  bottomNew, leftNew));

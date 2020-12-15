@@ -9,8 +9,9 @@ Galaxy HDFS:	galaxymaster01.sc.uni-leipzig.de:8020
 HDFS Sample Graph
 ID:			5ebe6813a7986cc7bd77f9c2
 Galaxy Path Gradoop:	/user/au130tane/graph-samples
-Local Path Gradoop: 	/one10thousand_sample_2_third_degrees_layout
-Local Path Own:		/sample-graph-OwnCSV/one10thousand_sample_2_third_degrees_layout
+Galaxy Path GVD:	
+Local Path Gradoop: 	/sample-graph
+Local Path GVD:	/gvdGraphs/zoomLevel
 
 
 

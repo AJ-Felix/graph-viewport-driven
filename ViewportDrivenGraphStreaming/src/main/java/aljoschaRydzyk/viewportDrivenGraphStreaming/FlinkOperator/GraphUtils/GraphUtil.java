@@ -2,6 +2,7 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils;
 
 import java.util.Set;
 
+//wrapper format:
 //graphIdGradoop ; 
 //sourceIdGradoop ; sourceIdNumeric ; sourceLabel ; sourceX ; sourceY ; sourceDegree ; sourceZoomLevel ;
 //targetIdGradoop ; targetIdNumeric ; targetLabel ; targetX ; targetY ; targetDegree ; targetZoomLevel ;

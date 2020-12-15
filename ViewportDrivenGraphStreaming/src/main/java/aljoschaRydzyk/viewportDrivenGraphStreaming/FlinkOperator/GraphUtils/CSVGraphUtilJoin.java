@@ -53,7 +53,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	@SuppressWarnings("rawtypes")
 	private TypeInformation[] vertexFormatTypeInfo;
 	private FilterFunction<Row> zoomOutVertexFilter;
-	
 	private int zoomLevel;
 	
 	//Area Definition
