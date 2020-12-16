@@ -233,7 +233,7 @@ public class FlinkCore {
 	}
 	
 	public DataStream<Row> zoomOutLayoutStep1Stream(Map<String, VertexGVD> layoutedVertices){
-		return this.graphUtilStream.zoomOutLayoutFirstStep(layoutedVertices, topNew, rightNew, 
+		return this.graphUtilStream.zoomOutLayoutStep1(layoutedVertices, topNew, rightNew, 
 				bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	

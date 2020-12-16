@@ -412,7 +412,7 @@ public class WrapperHandler implements Serializable {
 							break;
 						}
 					}
-					if (stream) server.getFlinkResponseHandler().closeAndReopen();
+//					if (stream) server.getFlinkResponseHandler().closeAndReopen();
 				} catch (ApiException e) {
 					e.printStackTrace();
 				}
@@ -669,16 +669,17 @@ public class WrapperHandler implements Serializable {
 			if (layout) {
 				System.out.println("channel size of Server: " + server.channels.size());
 				server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + 
-				vertex.getY() + ";" + vertex.getIdNumeric() + ";" + vertex.getDegree());
+				vertex.getY() + ";" + vertex.getIdNumeric() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
 				sentToClientInSubStep = true;
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
 					VertexGVD layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
 					server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
-							+ vertex.getIdNumeric() + ";" + vertex.getDegree());
+							+ vertex.getIdNumeric() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
 					sentToClientInSubStep = true;
 				} else {
-					server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getDegree() + ";" + vertex.getIdNumeric());
+					server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getIdNumeric() + ";" + vertex.getDegree()
+						+ ";" + vertex.getZoomLevel());
 					sentToClientInSubStep = true;
 				}
 			}
@@ -908,8 +909,9 @@ public class WrapperHandler implements Serializable {
     		String vertexId = arrVertexData[0];
     		int x = Math.round(Float.parseFloat(arrVertexData[1]));
     		int y = Math.round(Float.parseFloat(arrVertexData[2]));
-    		System.out.println("wrapperHandler, updateLayoutedVertices: " + vertexId + " " + x + " " + y);
-			VertexGVD vertex = new VertexGVD(vertexId, x, y);
+    		int zoomLevel = Integer.parseInt(arrVertexData[3]);
+    		System.out.println("wrapperHandler, updateLayoutedVertices: " + vertexId + " " + x + " " + y + " " + zoomLevel);
+			VertexGVD vertex = new VertexGVD(vertexId, x, y, zoomLevel);
 			if (layoutedVertices.containsKey(vertexId)) System.out.println("vertex already in layoutedVertices!!!");
 			layoutedVertices.put(vertexId, vertex);
     	}

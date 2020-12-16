@@ -6,7 +6,7 @@ class Client {
 		this.messageProcessing = false;
 		this.layout = true
 		this.graphVisualizer = new GraphVisualizer();
-		this.timeOut = 200;
+		this.timeOut = 5000;
 		this.vertexZoomLevel = 0;
 	}
 
@@ -25,7 +25,8 @@ class Client {
 				let client;
 				switch (dataArray[0]){
 					case 'addVertexServer':
-						this.graphVisualizer.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4], degree: parseInt(dataArray[5])}, position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
+						this.graphVisualizer.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4], degree: parseInt(dataArray[5]), zoomLevel: parseInt(dataArray[6])}, 
+							position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 						this.graphVisualizer.updateVertexSize(dataArray[1])
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[5]));
 						clearTimeout(window.timeOut);
@@ -37,7 +38,7 @@ class Client {
 					case 'addVertexServerToBeLayouted':
 						this.graphVisualizer.addVertexToLayoutBase(dataArray);
 						this.graphVisualizer.updateVertexSize(dataArray[1]);
-						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[2]));
+						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[3]));
 						clearTimeout(window.timeOut);
 						client = this;
 						window.timeOut = setTimeout(function(){
@@ -61,6 +62,13 @@ class Client {
 						this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
 						const pan = this.graphVisualizer.cy.pan();
 						this.ws.send("fitted;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom());
+						break;
+					case 'operationAndStep':
+						this.operation = dataArray[1];
+						this.operationStep = parseInt(dataArray[2]);
+						break;
+					case 'finalOperations':
+						this.finalOperations();
 						break;
 					case 'enableMouse':
 						if (!this.mouseEnabled) this.enableMouseEvents();
@@ -191,19 +199,21 @@ class Client {
 				this.graphVisualizer.layoutBase.forEach(function (vertexId){
 					layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
 				});
-				this.graphVisualizer.cy.layout(cose).run();
-				// this.graphVisualizer.cy.layout(layoutOptions).run();
+				// this.graphVisualizer.cy.layout(cose).run();
+				this.graphVisualizer.cy.layout(layoutOptions).run();
 				console.log("layout performed");
 				layoutBaseCy.forEach(function(node){
 					let pos = node.position();
-					layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y;
+					layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y + "," + node.data('zoomLevel');
 				})
 				this.graphVisualizer.cy.nodes().lock();
 				this.graphVisualizer.layoutBase = new Set();
 			}	
 			this.ws.send("layoutBaseString" + layoutBaseString);
+			if (this.evalOperationAndStep()) this.enableMouseEvents();
+		} else {
+			this.enableMouseEvents();
 		}
-		this.enableMouseEvents();
 	}
 
 	disableMouseEvents(){
@@ -224,6 +234,16 @@ class Client {
 		cyto.addEventListener("mousedown", mouseDown);
 		cyto.addEventListener("wheel", mouseWheel);
 		this.mouseEnabled = true;
+	}
+
+	evalOperationAndStep(){
+		console.log(this.operation);
+		console.log(this.operationStep);
+		const step4Operations = ["zoomIn", "pan"];
+		if (step4Operations.includes(this.operation) && this.operationStep == 4) return true;
+		else if (this.operation == "zoomOut" && this.operationStep == 2) return true;
+		else if (this.operation == "initial") return true;
+		else return false;
 	}
 }
 

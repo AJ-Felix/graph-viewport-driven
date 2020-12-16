@@ -26,7 +26,6 @@ public class VertexFlatMapMaxDegree implements FlatMapFunction<Row,Row>{
 		String firstVertexIdGradoop = (String) value.getField(1);
 		Long firstVertexIdNumeric = (Long) value.getField(2);
 		Map<String,String> map = adjMatrix.get(firstVertexIdGradoop);
-		System.out.println("sourceID: " + firstVertexIdGradoop);
 		for (String wrapperId : map.values()) {
 			Row wrapper = wrapperMap.get(wrapperId);
 			Long secondVertexIdNumeric;

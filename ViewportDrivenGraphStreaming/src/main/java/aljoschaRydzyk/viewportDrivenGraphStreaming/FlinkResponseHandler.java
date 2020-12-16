@@ -93,8 +93,7 @@ public class FlinkResponseHandler extends Thread{
             in.close();
     	    out.close();
     	    echoSocket.close();   
-	    }
-	    catch (IOException e) {
+	    } catch (IOException e) {
 	        e.printStackTrace();
 	    }
 	    this.listen();
@@ -114,18 +113,11 @@ public class FlinkResponseHandler extends Thread{
 	
 	private WrapperGVD parseWrapperStringNoCoordinates(String line) {
 		String[] array = line.split(",");
-		VertexGVD sourceVertex = new VertexGVD(array[1], array[3], Integer.parseInt(array[2]), Long.parseLong(array[4]));
-		VertexGVD targetVertex = new VertexGVD(array[5], array[7], Integer.parseInt(array[6]), Long.parseLong(array[8]));
-		EdgeGVD edge = new EdgeGVD(array[9], array[10], array[1], array[5]);
+		System.out.println(array);
+		VertexGVD sourceVertex = new VertexGVD(array[1], array[3], Integer.parseInt(array[2]), Long.parseLong(array[4]), Integer.parseInt(array[5]));
+		VertexGVD targetVertex = new VertexGVD(array[6], array[8], Integer.parseInt(array[7]), Long.parseLong(array[9]), Integer.parseInt(array[10]));
+		EdgeGVD edge = new EdgeGVD(array[11], array[12], array[1], array[6]);
 		return new WrapperGVD(sourceVertex, targetVertex, edge);
-	}
-
-	public void setOperation(String wrapperHandling) {
-		this.operation = wrapperHandling;
-	}
-	
-	public void setVerticesHaveCoordinates(Boolean have) {
-		this.layout = have;
 	}
 	
 	private WrapperGVD parseWrapperString(String line) {
@@ -138,6 +130,14 @@ public class FlinkResponseHandler extends Thread{
 				Long.parseLong(array[13]), Integer.parseInt(array[14]));
 		EdgeGVD edge = new EdgeGVD(array[15], array[16], array[1], array[8]);
 		return new WrapperGVD(sourceVertex, targetVertex, edge);
+	}
+	
+	public void setOperation(String wrapperHandling) {
+		this.operation = wrapperHandling;
+	}
+	
+	public void setVerticesHaveCoordinates(Boolean have) {
+		this.layout = have;
 	}
 	
 	public String getLine() {

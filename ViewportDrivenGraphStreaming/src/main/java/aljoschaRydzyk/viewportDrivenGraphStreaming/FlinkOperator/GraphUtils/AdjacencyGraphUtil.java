@@ -17,6 +17,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.CsvReader;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
 import org.apache.flink.api.java.tuple.Tuple17;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -39,12 +40,31 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFl
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotLayoutedBi;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotLayoutedUni;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapNotVisualizedButLayoutedInsideUni;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapWrapperBi;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFlatMapWrapperUni;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.Adjacency.VertexFlatMapMaxDegree;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.Adjacency.VertexFlatMapPanDefNotVis;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.Adjacency.VertexFlatMapPanMaybeVis;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.Adjacency.VertexFlatMapZoom;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperDirectionTupleMapWrapper;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedInnerNewNotOldReverse;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedInnerNewNotOldTrue;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedInnerOldNotNewReverse;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedInnerOldNotNewTrue;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedInsideReverse;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedInsideTrue;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedOutsideReverse;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterIsLayoutedOutsideTrue;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterNotLayoutedReverse;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterNotLayoutedTrue;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterNotVisualizedReverse;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterNotVisualizedTrue;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterReverseDirection;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterTrueDirection;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterZoomLevelReverse;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterZoomLevelTrue;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperIDMapWrapper;
 
 public class AdjacencyGraphUtil implements GraphUtilStream{
@@ -81,7 +101,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println("adjMatrix: " + this.adjMatrix);
+//		System.out.println("adjMatrix: " + this.adjMatrix);
 	}
 
 	@Override
@@ -205,7 +225,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 					tuple.f7, tuple.f8, tuple.f9, tuple.f10, tuple.f11, tuple.f12, tuple.f13, tuple.f14, tuple.f15,
 					tuple.f16));
 		}
-		for (Row row : this.wrapperMap.values()) System.out.println("wrapperMap: " + row);
+//		for (Row row : this.wrapperMap.values()) System.out.println("wrapperMap: " + row);
 		return this.wrapperMap;
 	}
 	
@@ -227,15 +247,31 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		Set<String> innerVerticeskeySet = new HashSet<String>(innerVertices.keySet());
 		DataStream<Row> vertices = this.vertexStream
 				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
-				.filter(new VertexFilterNotVisualized(innerVerticeskeySet));
-		DataStream<String> wrapperIds = vertices
-				.flatMap(new VertexFlatMapNotVisualizedButLayoutedInsideUni(adjMatrix, layoutedVertices, innerVerticeskeySet, top, right, 
-						bottom, left));
-		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+				.filter(new VertexFilterNotVisualized(innerVerticeskeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
+		DataStream<Tuple2<Boolean, Row>> wrapper = vertices
+				.flatMap(new VertexFlatMapWrapperUni(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrue = wrapper
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterNotVisualizedTrue(innerVerticeskeySet))
+				.filter(new WrapperFilterIsLayoutedInsideTrue(layoutedVertices, top, right, bottom, left))
+				.filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+		DataStream<Row> wrapperReverse = wrapper
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterNotVisualizedReverse(innerVerticeskeySet))
+				.filter(new WrapperFilterIsLayoutedInsideReverse(layoutedVertices, top, right, bottom, left))
+				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
+//		DataStream<String> wrapperIds = vertices
+//				.flatMap(new VertexFlatMapNotVisualizedButLayoutedInsideUni(adjMatrix, layoutedVertices, innerVerticeskeySet, zoomLevel, top, right, 
+//						bottom, left));
+//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
-		return nonIdentityWrapper.union(identityWrapper);
+		
+		return wrapperTrue.union(wrapperReverse).union(identityWrapper);
 	}
 	
 	@Override
@@ -250,9 +286,22 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		Set<String> unionkeySet = new HashSet<String>(unionMap.keySet());
 		Set<String> layoutedVerticeskeySet = new HashSet<String>(layoutedVertices.keySet());
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionkeySet));
-		DataStream<String> wrapperIds = visualizedVertices.flatMap(new VertexFlatMapNotLayoutedBi(adjMatrix, layoutedVerticeskeySet));
-		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		return nonIdentityWrapper;
+		DataStream<Tuple2<Boolean, Row>> wrapper = visualizedVertices.flatMap(new VertexFlatMapWrapperBi(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrue = wrapper
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterNotLayoutedTrue(layoutedVerticeskeySet))
+				.filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+		DataStream<Row> wrapperReverse = wrapper
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterNotLayoutedReverse(layoutedVerticeskeySet))
+				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
+		
+//		DataStream<String> wrapperIds = visualizedVertices.flatMap(new VertexFlatMapNotLayoutedBi(adjMatrix, layoutedVerticeskeySet));
+//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+		
+		return wrapperTrue.union(wrapperReverse);
 	}
 	
 	@Override
@@ -264,13 +313,29 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		System.out.println("in panZoomInLayoutThirdStep");
 		
 		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
-		DataStream<Row> notLayoutedVertices = this.vertexStream.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
-		DataStream<String> wrapperIds = notLayoutedVertices.flatMap(new VertexFlatMapNotLayoutedUni(adjMatrix, layoutedVerticesKeySet));
-		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+		DataStream<Row> notLayoutedVertices = this.vertexStream
+				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
+		
+		DataStream<Tuple2<Boolean, Row>> wrapper = notLayoutedVertices
+				.flatMap(new VertexFlatMapWrapperUni(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrue = wrapper
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterNotLayoutedTrue(layoutedVerticesKeySet))
+				.filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+		DataStream<Row> wrapperReverse = wrapper
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterNotLayoutedReverse(layoutedVerticesKeySet))
+				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
+//		DataStream<String> wrapperIds = notLayoutedVertices.flatMap(new VertexFlatMapNotLayoutedUni(adjMatrix, layoutedVerticesKeySet));
+//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = notLayoutedVertices.map(new VertexMapIdentityWrapperRow());
-		return nonIdentityWrapper.union(identityWrapper);
+//		return nonIdentityWrapper.union(identityWrapper);
+		return wrapperTrue.union(wrapperReverse.union(identityWrapper));
 	}
 	
 	@Override
@@ -288,13 +353,26 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		unionMap.putAll(newVertices);
 		
 		Set<String> unionkeySet = new HashSet<String>(unionMap.keySet());
-		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(unionkeySet));
-		DataStream<String> wrapperIds = visualizedVerticesStream.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
-				adjMatrix, top, right, bottom, left));
-		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionkeySet));
+		
+		DataStream<Tuple2<Boolean, Row>> wrapper = visualizedVertices.flatMap(new VertexFlatMapWrapperBi(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrue = wrapper
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedOutsideTrue(layoutedVertices, top, right, bottom, left))
+				.filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+		DataStream<Row> wrapperReverse = wrapper
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedOutsideReverse(layoutedVertices, top, right, bottom, left))
+				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
+		
+//		DataStream<String> wrapperIds = visualizedVerticesStream.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
+//				adjMatrix, top, right, bottom, left));
+//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 
 		//filter out already visualized edges in wrapper stream
-		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		DataStream<Row> nonIdentityWrapper = wrapperReverse.union(wrapperTrue).filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
 		return nonIdentityWrapper;
 	}
 	
@@ -312,25 +390,54 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		Set<String> newVerticesKeySet = new HashSet<String>(newVertices.keySet());
 		DataStream<Row> cVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
-		DataStream<String> wrapperIds = cVertices.flatMap(new VertexFlatMapIsLayoutedInnerOldNotNewBi(
-				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
-				bottomOld, leftOld));
+		DataStream<Tuple2<Boolean, Row>> wrapperC = cVertices.flatMap(new VertexFlatMapWrapperBi(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrueC = wrapperC
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedInnerOldNotNewTrue(layoutedVertices, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
+						bottomOld, leftOld));
+		DataStream<Row> wrapperReverseC = wrapperC
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedInnerOldNotNewReverse(layoutedVertices, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
+						bottomOld, leftOld));
+
+//		DataStream<String> wrapperIds = cVertices.flatMap(new VertexFlatMapIsLayoutedInnerOldNotNewBi(
+//				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
+//				bottomOld, leftOld));
 		
 		//produce wrapper stream from A to B+D and vice versa
 		DataStream<Row> aVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices,
 						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
-		DataStream<String> wrapperIds2 = aVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(
-				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew));
+		DataStream<Tuple2<Boolean, Row>> wrapperA = aVertices.flatMap(new VertexFlatMapWrapperBi(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrueA = wrapperA
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedOutsideTrue(layoutedVertices, topNew, rightNew, bottomNew, leftNew));
+		DataStream<Row> wrapperReverseA = wrapperA
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedOutsideReverse(layoutedVertices, topNew, rightNew, bottomNew, leftNew));
 		
-		DataStream<Row> nonIdentityWrapper = wrapperIds.union(wrapperIds2)
-				.map(new WrapperIDMapWrapper(this.wrapperMap));
-		nonIdentityWrapper = nonIdentityWrapper.filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		DataStream<Row> wrapperTrue = wrapperTrueA.union(wrapperTrueC).filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+		DataStream<Row> wrapperReverse = wrapperReverseA.union(wrapperReverseC).filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+
+		
+//		DataStream<String> wrapperIds2 = aVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(
+//				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew));
+//		
+//		DataStream<Row> nonIdentityWrapper = wrapperIds.union(wrapperIds2)
+//				.map(new WrapperIDMapWrapper(this.wrapperMap));
+		
+		DataStream<Row> nonIdentityWrapper = wrapperTrue.union(wrapperReverse).filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
+		for (String wrapperId: this.visualizedWrappers) System.out.println("visualizedWrapper: " + wrapperId);
+		nonIdentityWrapper.print();
 		return nonIdentityWrapper;
 	}
 	
 	@Override
-	public DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, 
+	public DataStream<Row> zoomOutLayoutStep1(Map<String, VertexGVD> layoutedVertices, 
 			Float topNew, Float rightNew, Float bottomNew, Float leftNew, 
 			Float topOld, Float rightOld, Float bottomOld, Float leftOld){
 		/*
@@ -343,13 +450,31 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		
 		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, topNew, rightNew, bottomNew, 
 				leftNew, topOld, rightOld, bottomOld, leftOld);
-		DataStream<Row> vertices = this.vertexStream.filter(zoomOutVertexFilter);
-		DataStream<String> wrapperIds = vertices.flatMap(new VertexFlatMapIsLayoutedInnerNewNotOldUni(adjMatrix, layoutedVertices, 
-				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
-		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+		DataStream<Row> vertices = this.vertexStream
+				.filter(zoomOutVertexFilter)
+				.filter(new VertexFilterZoomLevel(zoomLevel));
+		
+		DataStream<Tuple2<Boolean, Row>> wrapperC = vertices.flatMap(new VertexFlatMapWrapperUni(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrue = wrapperC
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedInnerNewNotOldTrue(layoutedVertices, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
+						bottomOld, leftOld))
+				.filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+		DataStream<Row> wrapperReverse = wrapperC
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedInnerNewNotOldReverse(layoutedVertices, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
+						bottomOld, leftOld))
+				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
+		
+//		DataStream<String> wrapperIds = vertices.flatMap(new VertexFlatMapIsLayoutedInnerNewNotOldUni(adjMatrix, layoutedVertices, 
+//				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+		
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
-		return nonIdentityWrapper.union(identityWrapper);
+		return wrapperTrue.union(wrapperReverse).union(identityWrapper);
 	}
 	
 	@Override
@@ -366,10 +491,23 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		DataStream<Row> newlyVisualizedVertices = this.vertexStream
 				.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(zoomOutVertexFilter);
-		DataStream<String> wrapperIds = newlyVisualizedVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
-				adjMatrix, top, right, bottom, left));
-		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		return nonIdentityWrapper;
+		
+		DataStream<Tuple2<Boolean, Row>> wrapper = newlyVisualizedVertices.flatMap(new VertexFlatMapWrapperBi(adjMatrix, wrapperMap));
+		DataStream<Row> wrapperTrue = wrapper
+				.filter(new WrapperFilterTrueDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedOutsideTrue(layoutedVertices, top, right, bottom, left))
+				.filter(new WrapperFilterZoomLevelTrue(zoomLevel));
+		DataStream<Row> wrapperReverse = wrapper
+				.filter(new WrapperFilterReverseDirection())
+				.map(new WrapperDirectionTupleMapWrapper())
+				.filter(new WrapperFilterIsLayoutedOutsideReverse(layoutedVertices, top, right, bottom, left))
+				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
+		
+//		DataStream<String> wrapperIds = newlyVisualizedVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
+//				adjMatrix, top, right, bottom, left));
+//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
+		return wrapperTrue.union(wrapperReverse);
 	}
 
 	@Override

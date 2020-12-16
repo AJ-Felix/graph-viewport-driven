@@ -174,11 +174,15 @@ TODO: zoomLevelCoefficient is still hard-coded in GradoopGraphUtil
 
 TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut
 
-TODO: aus der jar hbase rausschmeißen
+TODO: zoomLevel für Non-layout-Mode implementieren
 
-TODO: Testen nachdem zoomLevel in allen GraphUtils implementiert ist und HBase rausgeschmissen
+TODO: maxVertices aus initial View an quadratisches Format anpassen, momentan wird noch der gesamte Viewport als Basis für maxVertices genommen und nicht ein quadratischer Ausschnitt. Überlegung, für non-layout mode nicht sowieso nicht-quadratische Modelle zuzulassen.
 
-TODO: Pipeline zur produktion von Präsi-Datensatz testen/ausführen
+TODO: Non-layout mode: Wenn einzelne Schritte zu lange dauern, reicht der Time out oft nicht --> Überlegung doch ein Tracking der operation steps einzuführen
+
+TODO: Adjacency: FlatMaps: Direkt in WrapperObjekt mappen zusammen mit der WrapperMap und in zwei geteilten FlatMapSchritten filtern, je nachdem ob der zweite Knoten target oder source ist. Dann kann entsprechend auf den Wrappern weiter nach Knotenattributen gefiltert werden. BESSER: Nur einen FlatMapSchritt verwenden, damit es weniger Zugriffe auf die WrapperMap gibt und die source/target Info in einem Tuple-Wert speichern und anschließend filtern.!!!!!!!!!!!!
+
+TODO: Bash-script in /etc/rc.local überprüfen, ob es beim start ausgeführt wird.
 
 TODO: Adjacency: WrapperMap wird in JVM Speicher gehalten. Überlegung, das nach Flink auszulagern (weil zu groß) und entsprechend der ID-prefixe zu partitionieren, um einen effizienteren Zugriff zu ermöglichen.
 

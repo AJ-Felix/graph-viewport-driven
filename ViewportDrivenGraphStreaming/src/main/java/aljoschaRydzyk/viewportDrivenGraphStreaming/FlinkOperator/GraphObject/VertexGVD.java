@@ -21,17 +21,19 @@ public class VertexGVD implements Serializable{
 		this.zoomLevel = zoomLevel;
 	}
 	
-	public VertexGVD(String idGradoop, String label, long idNumeric, long degree) {
+	public VertexGVD(String idGradoop, String label, long idNumeric, long degree, int zoomLevel) {
 		this.idGradoop = idGradoop;
 		this.label = label;
 		this.idNumeric = idNumeric;
 		this.degree = degree;
+		this.zoomLevel = zoomLevel;
 	}
 	
-	public VertexGVD(String idGradoop, int x, int y) {
+	public VertexGVD(String idGradoop, int x, int y, int zoomLevel) {
 		this.idGradoop = idGradoop;
 		this.x = x;
 		this.y = y;
+		this.zoomLevel = zoomLevel;
 	}
 	
 	public String getIdGradoop() {

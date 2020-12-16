@@ -117,7 +117,7 @@ class GraphVisualizer {
 	addVertexToLayoutBase(dataArray){
 		const xVertex = this.layoutWindow.x1 + Math.random() * (this.layoutWindow.x2 - this.layoutWindow.x1);
 		const yVertex = this.layoutWindow.y1 + Math.random() * (this.layoutWindow.y2 - this.layoutWindow.y1);
-		this.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[3], degree: dataArray[2]}, position: {x: 0, y: 0}});
+		this.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[2], degree: dataArray[3], zoomLevel: dataArray[4]}, position: {x: 0, y: 0}});
 		this.layoutBase.add(dataArray[1]);
 	}
 

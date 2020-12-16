@@ -1,12 +1,12 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
-public class VertexFilterZoomLevel implements FilterFunction<Row>{
-	private int zoomLevel;
+public class WrapperFilterZoomLevelReverse implements FilterFunction<Row> {
+private int zoomLevel;
 	
-	public VertexFilterZoomLevel(int zoomLevel) {
+	public WrapperFilterZoomLevelReverse(int zoomLevel) {
 		this.zoomLevel = zoomLevel;
 	}
 

@@ -221,6 +221,7 @@ public class Server implements Serializable{
                 	Float leftModel = (float) 0;
                 	setModelPositions(topModel, rightModel, bottomModel, leftModel);
                 	setOperation("initial");
+                	if (!layout) setOperationStep(1);
                 	String[] arrMessageData = messageData.split(";");
                 	System.out.println(arrMessageData[1]);
                 	if (arrMessageData[1].equals("CSV")) {
@@ -349,6 +350,7 @@ public class Server implements Serializable{
 				flinkResponseHandler.setVerticesHaveCoordinates(true);
 				wrapperLine = wrapperStream.map(new WrapperMapLine());
 			} else {
+				System.out.println("no layout build top cSV");
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 			}
@@ -578,13 +580,11 @@ public class Server implements Serializable{
 		}
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
-    		if (wrapperHandler.getSentToClientInSubStep() == false) {
-        		if (wrapperHandler.getCapacity() == 0) {
-        			zoomInLayoutStep4Set();
-        		} else {
-        			zoomInLayoutStep3Set();
-        		}
-        	}
+    		if (wrapperHandler.getCapacity() == 0) {
+    			zoomInLayoutStep4Set();
+    		} else {
+    			zoomInLayoutStep3Set();
+    		}
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
@@ -669,10 +669,14 @@ public class Server implements Serializable{
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
     		wrapperHandler.clearOperation();
+    		sendToAll("finalOperations");
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+        	if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		wrapperHandler.clearOperation();
+        		sendToAll("finalOperations");
+        	}
     	}
     }
     
@@ -689,7 +693,10 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
     	if (flinkResponseHandler.getLine() == "empty" || 
-    			wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+    			wrapperHandler.getSentToClientInSubStep() == false) {
+    		wrapperHandler.clearOperation();
+    		sendToAll("finalOperations");
+    	}
     }
     
     private void zoomOutLayoutStep1Set() {
@@ -708,10 +715,14 @@ public class Server implements Serializable{
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
     		wrapperHandler.clearOperation();
+    		sendToAll("finalOperations");
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false)	wrapperHandler.clearOperation();;
+        	if (wrapperHandler.getSentToClientInSubStep() == false)	{
+        		wrapperHandler.clearOperation();
+        		sendToAll("finalOperations");
+        	}
     	}
     }
     
@@ -729,7 +740,10 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
     	if (flinkResponseHandler.getLine() == "empty" || 
-    			wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+    			wrapperHandler.getSentToClientInSubStep() == false) {
+    		wrapperHandler.clearOperation();
+    		sendToAll("finalOperations");
+    	}
     }
     
     private void zoomOutLayoutStep2Set() {
@@ -747,10 +761,14 @@ public class Server implements Serializable{
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
     		wrapperHandler.clearOperation();
+    		sendToAll("finalOperations");
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+        	if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		wrapperHandler.clearOperation();
+        		sendToAll("finalOperations");
+        	}
     	}
     }
     
@@ -767,7 +785,10 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}
 		if (flinkResponseHandler.getLine() == "empty" || 
-    			wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+    			wrapperHandler.getSentToClientInSubStep() == false) {
+			wrapperHandler.clearOperation();
+    		sendToAll("finalOperations");
+		}
     }
     
     private void panLayoutStep1Set() {
@@ -929,10 +950,14 @@ public class Server implements Serializable{
     	if (wrapperCollection.isEmpty()) {
     		System.out.println("is empty hehe");
     		wrapperHandler.clearOperation();
+    		sendToAll("finalOperations");
     	} else {
     		System.out.println("wrapperCollection size: " + wrapperCollection.size());
         	wrapperHandler.addWrapperCollectionLayout(wrapperCollection);
-        	if (wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();
+        	if (wrapperHandler.getSentToClientInSubStep() == false) {
+        		wrapperHandler.clearOperation();
+        		sendToAll("finalOperations");
+        	}
     	}
     }
     
@@ -949,7 +974,10 @@ public class Server implements Serializable{
 			e.printStackTrace();
 		}		
 		if (flinkResponseHandler.getLine() == "empty" || 
-				wrapperHandler.getSentToClientInSubStep() == false) wrapperHandler.clearOperation();    
+				wrapperHandler.getSentToClientInSubStep() == false) {
+			wrapperHandler.clearOperation();    
+			sendToAll("finalOperations");
+		}
 	}
 
     /**
@@ -970,6 +998,7 @@ public class Server implements Serializable{
 	private void setOperationStep(int step) {
 		wrapperHandler.setOperationStep(step);
 		operationStep = step;
+		sendToAll("operationAndStep;" + operation + ";" + operationStep);
 	}
 	
     private void setLayoutMode(boolean layoutMode) {
@@ -988,9 +1017,9 @@ public class Server implements Serializable{
     	return this.flinkCore;
     }
     
-    public FlinkResponseHandler getFlinkResponseHandler() {
-    	return this.flinkResponseHandler;
-    }
+//    public FlinkResponseHandler getFlinkResponseHandler() {
+//    	return this.flinkResponseHandler;
+//    }
     
     public void setStreamBool(Boolean stream) {
     	this.stream = stream;

@@ -18,7 +18,7 @@ public interface GraphUtilStream extends GraphUtil{
 	DataStream<Row> zoomOutLayoutStep2(Map<String, VertexGVD> layoutedVertices,
 			Map<String, VertexGVD> newVertices, Float top, Float right, Float bottom,
 			Float left);
-	DataStream<Row> zoomOutLayoutFirstStep(Map<String, VertexGVD> layoutedVertices, Float topNew,
+	DataStream<Row> zoomOutLayoutStep1(Map<String, VertexGVD> layoutedVertices, Float topNew,
 			Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld,
 			Float bottomOld, Float leftOld);
 	DataStream<Row> zoomInLayoutStep4(Map<String, VertexGVD> layoutedVertices,

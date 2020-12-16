@@ -27,4 +27,6 @@ git clone graph-viewport-driven project
 
 TODO:graph-sample Dateien von VM holen --> übrigens ScaDs github Passwort vergessen, nach mehrmaligen Versuchen Connection refused
 
-TODO: Expose und Zeitplan transferieren, Literatur transferieren
+
+swap geändert mit:
+echo vm.swappiness=0 | sudo tee -a /etc/sysctl.conf

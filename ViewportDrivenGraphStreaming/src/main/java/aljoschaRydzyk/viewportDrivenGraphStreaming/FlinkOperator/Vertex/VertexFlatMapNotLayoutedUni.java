@@ -21,7 +21,6 @@ public class VertexFlatMapNotLayoutedUni implements FlatMapFunction<Row,String> 
 	@Override
 	public void flatMap(Row value, Collector<String> out) throws Exception {
 		String sourceId = value.getField(1).toString();
-		System.out.println("In VertexFlatMapNotLayouted, sourceId: " + sourceId);
 		for (Map.Entry<String, String> entry : adjMatrix.get(sourceId).entrySet()) {
 			String targetId = entry.getKey();
 			if (!layoutedVertices.contains(targetId) && sourceId.compareTo(targetId) > 0) out.collect(entry.getValue());
