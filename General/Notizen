@@ -170,17 +170,9 @@ Layout: Layout does have to be performed after every suboperation step, because 
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
 
-TODO: zoomLevelCoefficient is still hard-coded in GradoopGraphUtil
-
 TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut
 
-TODO: zoomLevel für Non-layout-Mode implementieren
-
-TODO: maxVertices aus initial View an quadratisches Format anpassen, momentan wird noch der gesamte Viewport als Basis für maxVertices genommen und nicht ein quadratischer Ausschnitt. Überlegung, für non-layout mode nicht sowieso nicht-quadratische Modelle zuzulassen.
-
-TODO: Non-layout mode: Wenn einzelne Schritte zu lange dauern, reicht der Time out oft nicht --> Überlegung doch ein Tracking der operation steps einzuführen
-
-TODO: Adjacency: FlatMaps: Direkt in WrapperObjekt mappen zusammen mit der WrapperMap und in zwei geteilten FlatMapSchritten filtern, je nachdem ob der zweite Knoten target oder source ist. Dann kann entsprechend auf den Wrappern weiter nach Knotenattributen gefiltert werden. BESSER: Nur einen FlatMapSchritt verwenden, damit es weniger Zugriffe auf die WrapperMap gibt und die source/target Info in einem Tuple-Wert speichern und anschließend filtern.!!!!!!!!!!!!
+TODO: für non-layout mode nicht sowieso nicht-quadratische Modelle zuzulassen.
 
 TODO: Bash-script in /etc/rc.local überprüfen, ob es beim start ausgeführt wird.
 
@@ -197,11 +189,7 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 
 TODO: introduce better layout algorithms --> fcose und cose verändern die Knotenposition nicht und andere force-directed algorithms lassen sich nicht per src-tag in plain html einbinden
 
-TODO After präsi: parallelität > 1 ausprobieren, maybe retract sink needs special handling
-
 TODO After präsi: Auf Galaxy Cluster testen
-
-TOOD After präsi: mouse enabling/disabling for non-layout mode
 
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
 	Bei Verkleinerung: 

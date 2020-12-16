@@ -114,6 +114,14 @@ class GraphVisualizer {
 		});
 	}
 
+	setModelBorders(topModelBorder, rightModelBorder, bottomModelBorder, leftModelBorder){
+		this.topModelBorder = topModelBorder;
+		this.rightModelBorder = rightModelBorder;
+		this.bottomModelBorder = bottomModelBorder;
+		this.leftModelBorder = leftModelBorder;
+		this.ayoutWindow = {x1: this.leftModelBorder, y1: this.topModelBorder, x2: this.rightModelBorder, y2: this.bottomModelBorder};
+	}
+
 	addVertexToLayoutBase(dataArray){
 		const xVertex = this.layoutWindow.x1 + Math.random() * (this.layoutWindow.x2 - this.layoutWindow.x1);
 		const yVertex = this.layoutWindow.y1 + Math.random() * (this.layoutWindow.y2 - this.layoutWindow.y1);

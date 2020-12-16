@@ -244,9 +244,9 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		
 		Set<String> innerVerticeskeySet = new HashSet<String>(innerVertices.keySet());
 		DataStream<Row> vertices = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
 				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
-				.filter(new VertexFilterNotVisualized(innerVerticeskeySet));
+				.filter(new VertexFilterNotVisualized(innerVerticeskeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
 				.join(verticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
@@ -267,8 +267,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionKeySet));
 		DataStream<Row> neighbours = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
-				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
+				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table visualizedVerticesTable = fsTableEnv.fromDataStream(visualizedVertices).as(this.vertexFields);
 		Table neighboursTable = fsTableEnv.fromDataStream(neighbours).as(this.vertexFields);
 		DataStream<Row> wrapperStream = 
@@ -291,8 +291,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 */
 		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
 		DataStream<Row> notLayoutedVertices = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
-				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
+				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table notLayoutedVerticesTable = fsTableEnv.fromDataStream(notLayoutedVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
 				.join(notLayoutedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
@@ -317,9 +317,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
 		DataStream<Row> visualizedVerticesStream = this.vertexStream.filter(new VertexFilterIsVisualized(unionKeySet));
 		DataStream<Row> layoutedVerticesStream = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
-				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, 
-						top, right, bottom, left));
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table visualizedVerticesTable = this.fsTableEnv.fromDataStream(visualizedVerticesStream).as(this.vertexFields);
 		Table layoutedVerticesTable = this.fsTableEnv.fromDataStream(layoutedVerticesStream).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
@@ -352,9 +351,9 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> dVertices = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
 				.filter(new VertexFilterIsLayoutedInnerOldNotNew(layoutedVertices,
-						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table cVerticesTable = this.fsTableEnv.fromDataStream(cVertices).as(this.vertexFields);
 		Table dVerticesTable = this.fsTableEnv.fromDataStream(dVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = this.fsTableEnv.toAppendStream(wrapperTable
@@ -370,9 +369,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices,
 						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
 		DataStream<Row> bdVertices = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
-				.filter(new VertexFilterIsLayoutedOutside(
-						layoutedVertices, topNew, rightNew, bottomNew, leftNew));
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, topNew, rightNew, bottomNew, leftNew))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table aVerticesTable = this.fsTableEnv.fromDataStream(aVertices).as(this.vertexFields);
 		Table bdVerticesTable = this.fsTableEnv.fromDataStream(bdVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream2 = this.fsTableEnv.toAppendStream(wrapperTable
@@ -399,8 +397,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, topNew, rightNew, bottomNew, 
 				leftNew, topOld, rightOld, bottomOld, leftOld);
 		DataStream<Row> vertices = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
-				.filter(zoomOutVertexFilter);
+				.filter(zoomOutVertexFilter)
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table verticesTable = fsTableEnv.fromDataStream(vertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
 				.join(verticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
@@ -422,8 +420,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(zoomOutVertexFilter);
 		DataStream<Row> layoutedOutsideVertices = this.vertexStream
-				.filter(new VertexFilterZoomLevel(zoomLevel))
-				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left));
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table newlyVisualizedVerticesTable = this.fsTableEnv.fromDataStream(newlyVisualizedVertices).as(this.vertexFields);
 		Table layoutedOutsideVerticesTable = this.fsTableEnv.fromDataStream(layoutedOutsideVertices).as(this.vertexFields);
 		DataStream<Row> wrapperStream = this.fsTableEnv.toAppendStream(wrapperTable

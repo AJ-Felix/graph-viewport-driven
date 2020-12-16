@@ -12,7 +12,6 @@ import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 import org.gradoop.common.model.impl.id.GradoopId;
-import org.gradoop.flink.algorithms.gelly.vertexdegrees.DistinctVertexDegrees;
 import org.gradoop.flink.io.api.DataSource;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
@@ -36,7 +35,6 @@ public class FlinkCore {
 	  private int clusterEntryPointPort = 8081;
 	  private int zoomLevelCoefficient = 250;
 	  private String hdfsFullPath;
-	  private Boolean degreesCalculated = false;
 	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
 	  private Boolean stream = true;
 	  private GraphUtilStream graphUtilStream;
@@ -55,9 +53,7 @@ public class FlinkCore {
 				+ "targetVertexLabel, targetVertexX, targetVertexY, targetVertexDegree, targetZoomLevel, "
 				+ "edgeIdGradoop, edgeLabel";	  
 	  
-	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId,
-			Boolean degreesCalculated) {
-		this.degreesCalculated = degreesCalculated;
+	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId) {
 		this.hdfsFullPath = hdfsFullPath;
 		this.gradoopGraphID = gradoopGraphId;
 		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, 
@@ -111,7 +107,6 @@ public class FlinkCore {
 		DataSource source = new CSVDataSource(this.hdfsFullPath, this.gradoopFlinkConfig);
 		GradoopId id = GradoopId.fromString(gradoopGraphID);
 		graph = source.getGraphCollection().getGraph(id);
-		if (!degreesCalculated) graph = graph.callForGraph(new DistinctVertexDegrees("degree", "inDegree", "outDegree", true));
 		return graph;
 	}
 	

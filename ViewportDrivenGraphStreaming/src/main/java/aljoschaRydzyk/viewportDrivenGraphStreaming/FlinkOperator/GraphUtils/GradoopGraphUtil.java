@@ -254,8 +254,10 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
 		Set<String> innerVerticeskeySet = new HashSet<String>(innerVertices.keySet());
-		DataSet<Row> verticesLayoutedInsideNotVisualized = vertices.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
-			.filter(new VertexFilterNotVisualized(innerVerticeskeySet));
+		DataSet<Row> verticesLayoutedInsideNotVisualized = vertices
+				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, top, right, bottom, left))
+				.filter(new VertexFilterNotVisualized(innerVerticeskeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<WrapperGVD> wrapperGVDIdentity = verticesLayoutedInsideNotVisualized.map(new VertexMapIdentityWrapperGVD());
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTupleNonIdentity = verticesLayoutedInsideNotVisualized
 				.join(wrapper).where(new VertexIDRowKeySelector())
@@ -272,10 +274,13 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
 		 * other hand.
 		 */
+		
 		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
 		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
 		DataSet<Row> visualizedVertices = vertices.filter(new VertexFilterIsVisualized(unionKeySet));
-		DataSet<Row> neighbours = vertices.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
+		DataSet<Row> neighbours = vertices
+				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = visualizedVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -298,7 +303,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 */
 		System.out.println("layoutedVertices size" + layoutedVertices.size());
 		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
-		DataSet<Row> notLayoutedVertices = vertices.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet));
+		DataSet<Row> notLayoutedVertices = vertices
+				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = notLayoutedVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -324,8 +331,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		
 		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
 		DataSet<Row> visualizedVerticesSet = vertices.filter(new VertexFilterIsVisualized(unionKeySet));
-		DataSet<Row> layoutedVerticesSet = vertices.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, 
-			top, right, bottom, left));
+		DataSet<Row> layoutedVerticesSet = vertices
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = visualizedVerticesSet
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -360,7 +368,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.filter(new VertexFilterIsLayoutedInside(layoutedVertices, topOld, rightOld, bottomOld, leftOld));
 		DataSet<Row> dVertices = vertices
 				.filter(new VertexFilterIsLayoutedInnerOldNotNew(layoutedVertices,
-				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
+				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = cVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -376,8 +385,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		DataSet<Row> aVertices = vertices.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices,
 						topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
-		DataSet<Row> bdVertices = vertices.filter(new VertexFilterIsLayoutedOutside(
-				layoutedVertices, topNew, rightNew, bottomNew, leftNew));
+		DataSet<Row> bdVertices = vertices
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, topNew, rightNew, bottomNew, leftNew))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple2 = aVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -407,7 +417,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		
 		zoomOutVertexFilter = new VertexFilterIsLayoutedInnerNewNotOld(layoutedVertices, topNew, rightNew, bottomNew, 
 				leftNew, topOld, rightOld, bottomOld, leftOld);
-		DataSet<Row> verticesLayoutedInnerNewNotOld = vertices.filter(zoomOutVertexFilter);
+		DataSet<Row> verticesLayoutedInnerNewNotOld = vertices
+				.filter(zoomOutVertexFilter)
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = verticesLayoutedInnerNewNotOld
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
@@ -432,7 +444,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.filter(new VertexFilterIsVisualized(newVerticesKeySet))
 				.filter(zoomOutVertexFilter);
 		DataSet<Row> layoutedOutsideVertices = vertices
-				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left));
+				.filter(new VertexFilterIsLayoutedOutside(layoutedVertices, top, right, bottom, left))
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperTuple = newlyVisualizedVertices
 				.join(wrapper).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())

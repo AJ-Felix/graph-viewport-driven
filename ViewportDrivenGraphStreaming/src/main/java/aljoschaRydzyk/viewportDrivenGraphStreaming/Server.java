@@ -34,9 +34,13 @@ public class Server implements Serializable{
 	private String hdfsEntryPointAddress = "localhost";
 	private int hdfsEntryPointPort = 9000;
 	private String hdfsGraphFilesDirectory;
-	private boolean degreesCalculated = false;
-	private String gradoopGraphId = "5ebe6813a7986cc7bd77f9c2";
+	private String gradoopGraphId;
 	private boolean stream = true;
+	private float topModelBorder = 0;
+	private float rightModelBorder = 4000;
+	private float bottomModelBorder = 4000; 
+	private float leftModelBorder = 0;
+	
 	
 	
 	private List<WrapperGVD> wrapperCollection;
@@ -45,12 +49,12 @@ public class Server implements Serializable{
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
     private String webSocketListenPath = "/graphData";
     private int webSocketListenPort = 8897;    
-    private int maxVertices = 100;
+    private int maxVertices;
     private int vertexCountNormalizationFactor = 10000;
     private boolean layout = true;
     private int operationStep;
-    private Float viewportPixelX = (float) 1000;
-    private Float viewportPixelY = (float) 1000;
+    private Float viewportPixelX;
+    private Float viewportPixelY;
 	private String operation;
 	public boolean sentToClientInSubStep;
     private WrapperHandler wrapperHandler;
@@ -134,44 +138,42 @@ public class Server implements Serializable{
                 	hdfsGraphFilesDirectory = messageData.split(";")[1];
                 } else if (messageData.startsWith("gradoopGraphId")) {
                 	gradoopGraphId = messageData.split(";")[1];
-                } else if (messageData.startsWith("degrees")) {
-                	String calc = messageData.split(";")[1];
-                	if (calc.equals("true")) {
-                		degreesCalculated = true;
-                	} else {
-                		degreesCalculated = false;
-                	}
-                } else if (messageData.startsWith("fitted")) {
-                	String[] arrMessageData = messageData.split(";");
-                	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
-                	Float yRenderPos = Float.parseFloat(arrMessageData[2]);
-                	Float zoomLevel = Float.parseFloat(arrMessageData[3]);
-                	Float topModel = - yRenderPos / zoomLevel;
-                	Float leftModel = - xRenderPos / zoomLevel;
-                	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
-                	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
-                	setModelPositions(topModel, rightModel, bottomModel, leftModel);
+//                } else if (messageData.startsWith("fitted")) {
+//                	String[] arrMessageData = messageData.split(";");
+//                	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
+//                	Float yRenderPos = Float.parseFloat(arrMessageData[2]);
+//                	Float zoomLevel = Float.parseFloat(arrMessageData[3]);
+//                	Float topModel = - yRenderPos / zoomLevel;
+//                	Float leftModel = - xRenderPos / zoomLevel;
+//                	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
+//                	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
+//                	setModelPositions(topModel, rightModel, bottomModel, leftModel);
                 } else if (messageData.startsWith("viewportSize")) {
-                	String[] arrMessageData = messageData.split(";");
+            		String[] arrMessageData = messageData.split(";");
                 	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
                 	Float yRenderPos = Float.parseFloat(arrMessageData[2]);
                 	Float zoomLevel = Float.parseFloat(arrMessageData[3]);
-                	System.out.println("viewportPixelX before: " + viewportPixelX);
-                	System.out.println("viewportPixelY before: " + viewportPixelY);
-                	float viewportPixelXOld = viewportPixelX;
-                	float viewportPixelYOld = viewportPixelY;
-                	viewportPixelX = Float.parseFloat(arrMessageData[4]);
-                	viewportPixelY = Float.parseFloat(arrMessageData[5]);   
-                	System.out.println("viewportPixelX after: " + viewportPixelX);
-                	System.out.println("viewportPixelY after: " + viewportPixelY);
-                	Float topModel = - yRenderPos / zoomLevel;
-                	Float leftModel = - xRenderPos / zoomLevel;
-                	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
-                	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
-                	System.out.println("viewportSize, maxVertices before: " + maxVertices);
-					if (!maxVerticesLock) calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
-        			System.out.println("viewportSize, maxVertices after: " + maxVertices);
+                	float viewportPixelXOld = (float) 0;
+                	float viewportPixelYOld = (float) 0;
                 	if (!wrapperHandler.getGlobalVertices().isEmpty()) {
+                		viewportPixelXOld = viewportPixelX;
+                    	viewportPixelYOld = viewportPixelY;
+                	}
+                	viewportPixelX = Float.parseFloat(arrMessageData[4]);
+                	viewportPixelY = Float.parseFloat(arrMessageData[5]); 
+                	if (wrapperHandler.getGlobalVertices().isEmpty()) {
+                		System.out.println("wefwe");
+                		calculateInitialViewportSettings(topModelBorder, rightModelBorder, bottomModelBorder, leftModelBorder);
+                	} else {
+                		System.out.println("viewportPixelX before: " + viewportPixelXOld);
+                    	System.out.println("viewportPixelY before: " + viewportPixelYOld);
+                    	Float topModel = - yRenderPos / zoomLevel;
+                    	Float leftModel = - xRenderPos / zoomLevel;
+                    	Float bottomModel = - yRenderPos / zoomLevel + viewportPixelY / zoomLevel;
+                    	Float rightModel = -xRenderPos / zoomLevel + viewportPixelX / zoomLevel;
+                    	System.out.println("viewportSize, maxVertices before: " + maxVertices);
+    					if (!maxVerticesLock) calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
+            			System.out.println("viewportSize, maxVertices after: " + maxVertices);
                 		flinkCore.setModelPositionsOld();
             			setModelPositions(topModel, rightModel, bottomModel, leftModel);
             			if (viewportPixelX < viewportPixelXOld || viewportPixelY < viewportPixelYOld) {
@@ -198,6 +200,8 @@ public class Server implements Serializable{
     						}
     					}
                   	} 
+                	System.out.println("viewportPixelX after: " + viewportPixelX);
+                	System.out.println("viewportPixelY after: " + viewportPixelY);
                 } else if (messageData.startsWith("layoutBaseString")) {
                 	String[] arrMessageData = messageData.split(";");
                 	List<String> list = new ArrayList<String>(Arrays.asList(arrMessageData));
@@ -212,20 +216,14 @@ public class Server implements Serializable{
                 } 
                 else if (messageData.startsWith("buildTopView")) {
                 	flinkCore = new FlinkCore(clusterEntryPointAddress, 
-                			"hdfs://" + hdfsEntryPointAddress + ":" + String.valueOf(hdfsEntryPointPort)
-            				+ hdfsGraphFilesDirectory, gradoopGraphId, 
-                			degreesCalculated);
-                  	Float topModel = (float) 0;
-                	Float rightModel = (float) 4000;
-                	Float bottomModel = (float) 4000;
-                	Float leftModel = (float) 0;
-                	setModelPositions(topModel, rightModel, bottomModel, leftModel);
+                			"hdfs://" + hdfsEntryPointAddress + ":" + String.valueOf(hdfsEntryPointPort) + hdfsGraphFilesDirectory, 
+                			gradoopGraphId);
+                	setModelPositions(topModelBorder, rightModelBorder, bottomModelBorder, leftModelBorder);
                 	setOperation("initial");
                 	if (!layout) setOperationStep(1);
                 	String[] arrMessageData = messageData.split(";");
                 	System.out.println(arrMessageData[1]);
                 	if (arrMessageData[1].equals("CSV")) {
-                		System.out.println("appendjoin??!?!?");
                     	setStreamBool(true);
                 		buildTopViewCSV();
         			} else if (arrMessageData[1].equals("adjacency")) {
@@ -245,10 +243,8 @@ public class Server implements Serializable{
                 	if (!stream) {
                     	System.out.println("wrapperCollection size: " + wrapperCollection.size());
                 		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
-//                		if (layout) {
-                			wrapperHandler.clearOperation();
-                			sendToAll("fit");
-//                		}
+            			wrapperHandler.clearOperation();
+//            			sendToAll("fit");
                 	}
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
@@ -350,7 +346,6 @@ public class Server implements Serializable{
 				flinkResponseHandler.setVerticesHaveCoordinates(true);
 				wrapperLine = wrapperStream.map(new WrapperMapLine());
 			} else {
-				System.out.println("no layout build top cSV");
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
 				wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 			}
@@ -450,7 +445,7 @@ public class Server implements Serializable{
     	System.out.println("operationStep: " + operationStep);
     	if (operation.equals("initial")) {
             wrapperHandler.clearOperation();
-            sendToAll("fit");
+//            sendToAll("fit");
     	} else if (operation.startsWith("zoom")) {
     		if (operation.contains("In")) {
     			if (operationStep == 1) {
@@ -519,7 +514,7 @@ public class Server implements Serializable{
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -574,7 +569,7 @@ public class Server implements Serializable{
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -662,7 +657,7 @@ public class Server implements Serializable{
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -799,7 +794,7 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
     		wrapperCollection = wrapperGVD.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -855,7 +850,7 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
     		wrapperCollection = wrapperGVD.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -943,7 +938,7 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
     		wrapperCollection = wrapperGVD.collect();
-			flinkCore.getEnv().execute();
+//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1024,33 +1019,55 @@ public class Server implements Serializable{
     public void setStreamBool(Boolean stream) {
     	this.stream = stream;
     	flinkCore.setStreamBool(stream);
-    	wrapperHandler.setStreamBool(stream);
     }
     
     public int getMaxVertices() {
     	return maxVertices;
     }
     
-    private void calculateMaxVertices(float topModel, float rightModel, float bottomModel, 
-    		float leftModel, float zoomLevel) {
-    	if (wrapperHandler.getGlobalVertices().isEmpty()) {
-    		maxVertices = (int) (viewportPixelY * viewportPixelX) / vertexCountNormalizationFactor;
-    	} else {
-	    	topModel = Math.max(0, topModel);
-			rightModel = Math.min(4000, rightModel);
-			bottomModel = Math.min(4000, bottomModel);
-			leftModel = Math.max(0, leftModel);
-			System.out.println("calculateMaxVertices, top, right, bottom, left: " + 
-					topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
-			float xPixelProportion = (rightModel - leftModel) * zoomLevel;
-			float yPixelProportion = (bottomModel - topModel) * zoomLevel;
-			System.out.println("xPixelProportion: " + xPixelProportion + " of total pixels: " + 
-					viewportPixelX);
-			System.out.println("yPixelProportion: " + yPixelProportion + " of total pixels: " + 
-					viewportPixelY);
-			maxVertices = (int) (viewportPixelY * (yPixelProportion / viewportPixelY) *
-					viewportPixelX * (xPixelProportion / viewportPixelX) / vertexCountNormalizationFactor);
-    	}
+    private void calculateInitialViewportSettings(float topBorder, float rightBorder, float bottomBorder, float leftBorder) {
+    	float yRange = bottomBorder - topBorder;
+    	float xRange = rightBorder - leftBorder;
+		float xRenderPosition;
+		float yRenderPosition;
+		float zoomLevelCalc;
+		if (viewportPixelX / xRange > viewportPixelY / yRange) {
+			//full yRange on viewportPixelY and center xRange
+			yRenderPosition = (float) 0;
+			zoomLevelCalc = viewportPixelY / bottomBorder; 
+			float xModelPixel = viewportPixelX / zoomLevelCalc;
+			float xModelOffset = (xModelPixel - xRange) / 2;
+			xRenderPosition = xModelOffset * zoomLevelCalc;
+			if (!maxVerticesLock) maxVertices = (int) (viewportPixelY * (xRange * zoomLevelCalc) / vertexCountNormalizationFactor);
+		} else {
+			xRenderPosition = (float) 0;
+			zoomLevelCalc = viewportPixelX / rightBorder; 
+			float yModelPixel = viewportPixelY / zoomLevelCalc;
+			float yModelOffset = (yModelPixel - yRange) / 2;
+			yRenderPosition = yModelOffset * zoomLevelCalc;
+			if (!maxVerticesLock) maxVertices = (int) (viewportPixelX * (yRange * zoomLevelCalc) / vertexCountNormalizationFactor);
+		}
+    	System.out.println("viewportSize, maxVertices after: " + maxVertices);
+    	sendToAll("modelBorders;" + topModelBorder + ";" + rightModelBorder + ";" + bottomModelBorder + ";" + leftModelBorder);
+		sendToAll("zoomAndPan;" + zoomLevelCalc + ";" + xRenderPosition + ";" + yRenderPosition);
+		if (!maxVerticesLock) wrapperHandler.setMaxVertices(maxVertices);
+    }
+    
+    private void calculateMaxVertices(float topModel, float rightModel, float bottomModel, float leftModel, float zoomLevel) {
+    	topModel = Math.max(topModelBorder, topModel);
+		rightModel = Math.min(rightModelBorder, rightModel);
+		bottomModel = Math.min(bottomModelBorder, bottomModel);
+		leftModel = Math.max(leftModelBorder, leftModel);
+		System.out.println("calculateMaxVertices, top, right, bottom, left: " + 
+				topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
+		float xPixelProportion = (rightModel - leftModel) * zoomLevel;
+		float yPixelProportion = (bottomModel - topModel) * zoomLevel;
+		System.out.println("xPixelProportion: " + xPixelProportion + " of total pixels: " + 
+				viewportPixelX);
+		System.out.println("yPixelProportion: " + yPixelProportion + " of total pixels: " + 
+				viewportPixelY);
+		maxVertices = (int) (viewportPixelY * (yPixelProportion / viewportPixelY) *
+				viewportPixelX * (xPixelProportion / viewportPixelX) / vertexCountNormalizationFactor);
 		wrapperHandler.setMaxVertices(maxVertices);
     }
 }

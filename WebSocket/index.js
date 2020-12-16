@@ -57,12 +57,18 @@ class Client {
 						if (!this.layout) this.graphVisualizer.layoutBase.delete(dataArray[1]);
 						this.graphVisualizer.cy.remove(this.graphVisualizer.cy.$id(dataArray[1]));
 						break;
-					case 'fit':
-						this.graphVisualizer.cy.fit();
-						this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
-						const pan = this.graphVisualizer.cy.pan();
-						this.ws.send("fitted;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom());
-						break;
+					// case 'fit':
+					// 	this.graphVisualizer.cy.fit();
+					// 	this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
+					// 	const pan = this.graphVisualizer.cy.pan();
+					// 	this.ws.send("fitted;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom());
+					// 	break;
+					case 'zoomAndPan':
+						this.graphVisualizer.zoomLevel = parseFloat(dataArray[1]);
+						this.graphVisualizer.cy.zoom(this.graphVisualizer.zoomLevel);
+						this.graphVisualizer.cy.pan({x: parseFloat(dataArray[2]), y: parseFloat(dataArray[3])});
+					case 'modelBorders':
+						this.graphVisualizer.setModelBorders(parseInt(dataArray[1]), parseInt(dataArray[2]), parseInt(dataArray[3]), parseInt(dataArray[4]));
 					case 'operationAndStep':
 						this.operation = dataArray[1];
 						this.operationStep = parseInt(dataArray[2]);
@@ -108,19 +114,9 @@ class Client {
 		this.ws.send("gradoopGraphId;" + id);
 	}
 
-	sendVerticesHaveDegrees(){
-		const haveDegrees = !document.getElementById('verticesHaveDegrees').checked;
-		this.ws.send("degrees;" + haveDegrees);
-	}
-
 	sendGraphIsLayouted(){
 		this.layout = !document.getElementById('graphIsLayouted').checked;
 		this.ws.send("layoutMode;" + this.layout);
-	}
-
-	sendSignalHBase(){
-		this.buildTopViewOperations();
-		this.ws.send("buildTopView;HBase");
 	}
 
 	sendSignalGradoop(){
@@ -142,9 +138,9 @@ class Client {
 		if (!this.layout) {
 			this.graphVisualizer.layoutBase = new Set();
 		}
-		this.graphVisualizer.layoutWindow = {x1: 0, y1: 0, x2: 4000, y2: 4000};
-		this.graphVisualizer.cy.zoom(1 / (4000 / Math.min(this.cyWidth, this.cyHeight)));
-		this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
+		// this.graphVisualizer.layoutWindow = {x1: this.leftModelBorder, y1: this.topModelBorder, x2: this.rightModelBorder, y2: this.bottomModelBorder};
+		// this.graphVisualizer.cy.zoom(1 / (4000 / Math.min(this.cyWidth, this.cyHeight)));
+		// this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
 		this.disableMouseEvents();
 	}
 
@@ -200,7 +196,7 @@ class Client {
 					layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
 				});
 				// this.graphVisualizer.cy.layout(cose).run();
-				this.graphVisualizer.cy.layout(layoutOptions).run();
+				layoutBaseCy.layout(layoutOptions).run();
 				console.log("layout performed");
 				layoutBaseCy.forEach(function(node){
 					let pos = node.position();

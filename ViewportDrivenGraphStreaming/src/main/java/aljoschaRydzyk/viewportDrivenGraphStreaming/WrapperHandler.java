@@ -40,7 +40,6 @@ public class WrapperHandler implements Serializable {
     private FlinkApi api;
     private int operationStep;
     public boolean sentToClientInSubStep;
-	private boolean stream;
 	private Server server;
 
     public WrapperHandler (Server server) {
@@ -921,10 +920,6 @@ public class WrapperHandler implements Serializable {
 
 	public int getCapacity() {
 		return this.capacity;
-	}
-
-	public void setStreamBool(Boolean stream) {
-		this.stream = stream;
 	}
 	
 	public Map<String,Map<String,Object>> getGlobalVertices(){
