@@ -50,7 +50,7 @@ public class Server implements Serializable{
     private String webSocketListenPath = "/graphData";
     private int webSocketListenPort = 8897;    
     private int maxVertices;
-    private int vertexCountNormalizationFactor = 10000;
+    private int vertexCountNormalizationFactor = 5000;
     private boolean layout = true;
     private int operationStep;
     private Float viewportPixelX;
@@ -1032,7 +1032,6 @@ public class Server implements Serializable{
 		float yRenderPosition;
 		float zoomLevelCalc;
 		if (viewportPixelX / xRange > viewportPixelY / yRange) {
-			//full yRange on viewportPixelY and center xRange
 			yRenderPosition = (float) 0;
 			zoomLevelCalc = viewportPixelY / bottomBorder; 
 			float xModelPixel = viewportPixelX / zoomLevelCalc;

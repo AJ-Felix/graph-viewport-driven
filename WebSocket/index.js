@@ -67,8 +67,14 @@ class Client {
 						this.graphVisualizer.zoomLevel = parseFloat(dataArray[1]);
 						this.graphVisualizer.cy.zoom(this.graphVisualizer.zoomLevel);
 						this.graphVisualizer.cy.pan({x: parseFloat(dataArray[2]), y: parseFloat(dataArray[3])});
+						break;
 					case 'modelBorders':
 						this.graphVisualizer.setModelBorders(parseInt(dataArray[1]), parseInt(dataArray[2]), parseInt(dataArray[3]), parseInt(dataArray[4]));
+						console.log(dataArray[1]);
+						console.log(dataArray[2]);
+						console.log(dataArray[3]);
+						console.log(dataArray[4]);
+						break;
 					case 'operationAndStep':
 						this.operation = dataArray[1];
 						this.operationStep = parseInt(dataArray[2]);

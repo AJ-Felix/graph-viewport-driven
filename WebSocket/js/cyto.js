@@ -119,14 +119,19 @@ class GraphVisualizer {
 		this.rightModelBorder = rightModelBorder;
 		this.bottomModelBorder = bottomModelBorder;
 		this.leftModelBorder = leftModelBorder;
-		this.ayoutWindow = {x1: this.leftModelBorder, y1: this.topModelBorder, x2: this.rightModelBorder, y2: this.bottomModelBorder};
+		this.layoutWindow = {x1: this.leftModelBorder, y1: this.topModelBorder, x2: this.rightModelBorder, y2: this.bottomModelBorder};
 	}
 
 	addVertexToLayoutBase(dataArray){
 		const xVertex = this.layoutWindow.x1 + Math.random() * (this.layoutWindow.x2 - this.layoutWindow.x1);
 		const yVertex = this.layoutWindow.y1 + Math.random() * (this.layoutWindow.y2 - this.layoutWindow.y1);
-		this.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[2], degree: dataArray[3], zoomLevel: dataArray[4]}, position: {x: 0, y: 0}});
+		this.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[2], degree: dataArray[3], zoomLevel: dataArray[4]}, position: {x: xVertex, y: yVertex}});
 		this.layoutBase.add(dataArray[1]);
+		console.log(this.layoutWindow.x1);
+		console.log(this.layoutWindow.x2);
+		console.log(this.layoutWindow.y1);
+		console.log(this.layoutWindow.y2);
+
 	}
 
 	derivelayoutWindow(topModel, rightModel, bottomModel, leftModel){
