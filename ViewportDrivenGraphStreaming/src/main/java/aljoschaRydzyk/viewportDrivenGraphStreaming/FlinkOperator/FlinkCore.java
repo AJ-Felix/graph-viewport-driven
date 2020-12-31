@@ -59,14 +59,14 @@ public class FlinkCore {
 		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, 
 				flinkJobJarPath);
 		
-		this.env.setParallelism(1);
+		this.env.setParallelism(4);
 		
 	    this.gradoopFlinkConfig = GradoopFlinkConfig.createConfig(env);
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
 		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort,
 				flinkJobJarPath); 
 		
-		this.fsEnv.setParallelism(1);
+		this.fsEnv.setParallelism(4);
 		
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		System.out.println("initiated Flink.");

@@ -5,6 +5,7 @@ import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.operators.MapOperator;
+import org.apache.flink.api.java.operators.PartitionOperator;
 import org.apache.flink.api.java.operators.UnionOperator;
 import org.apache.flink.api.java.operators.UnsortedGrouping;
 import org.apache.flink.api.java.tuple.Tuple17;
@@ -66,7 +67,9 @@ public class GradoopToCSV {
 			String, Long, String, Integer, Integer, Long, Integer, 
 			String, String>> wrapperTupled = wrapper
 				.map(new WrapperMapTuple());
-		
+		PartitionOperator<Tuple17<String, String, Long, String, Integer, Integer, Long, Integer, String, Long, String, Integer, Integer, Long, Integer, String, String>> par = wrapperTupled.partitionByHash(16);
+		par.writeAsCsv(outPath + "_par", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
+		par.print();
 		wrapperTupled.writeAsCsv(outPath + "_wrappers", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
 		
 		//adjacency
@@ -88,5 +91,7 @@ public class GradoopToCSV {
 				.map(new ReducedIDsMapString());	
 		
 		idsStringified.writeAsText(outPath + "_adjacency", WriteMode.OVERWRITE).setParallelism(1);
+		
+		//adjacency for partitioning
 	}
 }

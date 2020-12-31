@@ -107,6 +107,9 @@ public class Server implements Serializable{
                 	System.out.println("adress :" + address.getHostAddress().toString());
                 }
             }
+            
+            //debug 
+            localMachinePublicIp4 = "172.22.87.188";
         }
     }
     

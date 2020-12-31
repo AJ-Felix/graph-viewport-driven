@@ -166,6 +166,9 @@ Identity wrapper stream is necessary since some vertices are layouted in the res
 Main.sentToClientInSubStep ist eine Kontrollvariable für den Fall, dass der wrapperStream im SubStep nicht leer ist, aber auch keine Anweisungen an den Client geschickt werden.
 
 Layout: Layout does have to be performed after every suboperation step, because some following suboperation steps might access the layoutedVertices. But 
+
+Partitionierung: Obwohl groupBy auch partitionieren sollte, muss man partitionBy aufrufen, damit auch nach den Keys gegroupt wird wie gewünscht. GroupBy wird benötigt, um
+ein partielles GroupCombine auszuführen (Adjazenzmatrix)
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
@@ -184,6 +187,8 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 TODO: introduce better layout algorithms --> fcose und cose verändern die Knotenposition nicht und andere force-directed algorithms lassen sich nicht per src-tag in plain html einbinden
+
+TODO: Testen, ob partielles GroupCombine auch ohne GroupBy funktioniert (adjacencyGraphUtil)
 
 TODO: Auf Galaxy Cluster testen
 
