@@ -169,6 +169,10 @@ Layout: Layout does have to be performed after every suboperation step, because 
 
 Partitionierung: Obwohl groupBy auch partitionieren sollte, muss man partitionBy aufrufen, damit auch nach den Keys gegroupt wird wie gewünscht. GroupBy wird benötigt, um
 ein partielles GroupCombine auszuführen (Adjazenzmatrix)
+
+Generelles Problem bei der Variante mit Adjazenzmatrix:
+- Indexierung hat in Flink nur mit der Join-Operation ein semantisch-equivalentes Element, d.h. dass man Indexierung nur mit der Join Operation umsetzen kann, wenn komplett flink-intern gearbeitet werden soll.
+- Die Adjazenzmatrix-Variante sieht vor die Adjazenzmatrix partitioniert einzulesen, um die Speicherlast der Taskmanager-JVMs zu verteilen. Die eingelesene Adjazenzmatrix soll dann Argument für folgende Flink Streaming Operationen sein. Dafür muss die Adjazenzmatrix als Java-Objekt eingelesen werden, um dieses Objekt dann der Flink Streaming Operation in Java übergeben zu können. Das wird in Flink durch die Operationen ".collect()" und ".output()" realisiert. Allerdings wirft Flink 1.10.0 bei .output() einen internen Fehler. In der Dokumentation von Flink 1.12.0 wird außerdem darauf hingewiesen, dass .output() nur für lokale Ausführungen gedacht ist. Desweiteren lässt sich in der Formulierung der nachfolgenden Flink Streaming Operationen keine Partition angeben, sodass nicht spezifisch Aktionen für verschiedene Partitionen durchgeführt werden können. .collect() lädt immer das gesamte Objekte über alle Partitionen. Damit scheidet der Weg über das Laden der Adjazenzmatrix über Flink in ein Java-Objekt generell aus (mit DataSet oder DataStream API). Es bleibt die Möglichkeit die Adjazenzmatrix als Flink DataStream einzulesen und wie oben erwähnt einen join durchzuführen, um eine Indexierung zu verwirklichen. Dann jedoch, hat die Variante keine essentiellen Unterschiede zur Direct-Streaming-Variante. Es wird lediglich die Reihenfolge der ansonst gleichen Operationen vertauscht.
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.

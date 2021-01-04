@@ -28,7 +28,9 @@ public class WrapperMapAddPartitionKey implements FlatMapFunction<
 			Collector<Tuple2<BigInteger, Row>> out) throws Exception {
 		BigInteger gradoopSourceIntegerId = new BigInteger(value.f1, 16);
 		BigInteger gradoopTargetIntegerId = new BigInteger(value.f8, 16);
-		out.collect(Tuple2.of(gradoopSourceIntegerId, Row.of(value)));
-		out.collect(Tuple2.of(gradoopTargetIntegerId, Row.of(value)));	
+		out.collect(Tuple2.of(gradoopSourceIntegerId, Row.of(value.f0, value.f1, value.f2, value.f3, value.f4, value.f5, value.f6, value.f7, value.f8, 
+				value.f9, value.f10, value.f11, value.f12, value.f13, value.f14, value.f15, value.f16)));
+		out.collect(Tuple2.of(gradoopTargetIntegerId, Row.of(value.f0, value.f1, value.f2, value.f3, value.f4, value.f5, value.f6, value.f7, value.f8, 
+				value.f9, value.f10, value.f11, value.f12, value.f13, value.f14, value.f15, value.f16)));	
 	}		
 }

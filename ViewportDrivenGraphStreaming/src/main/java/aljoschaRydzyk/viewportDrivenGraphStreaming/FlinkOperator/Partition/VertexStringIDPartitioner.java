@@ -6,7 +6,7 @@ import java.util.Map;
 import org.apache.flink.api.common.functions.Partitioner;
 import org.apache.flink.api.java.tuple.Tuple2;
 
-public class AdjacencyMatrixPartitioner implements Partitioner<String>{
+public class VertexStringIDPartitioner implements Partitioner<String>{
 
 //	@Override
 //	public int partition(Tuple2<String, Map<String, String>> key, int numPartitions) {

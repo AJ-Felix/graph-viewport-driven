@@ -41,7 +41,7 @@ import org.apache.flink.util.Collector;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Partition.StringMapAdjacencyMatrix;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Partition.AdjacencyMatrixPartitioner;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Partition.VertexStringIDPartitioner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Partition.WrapperMapAddPartitionKey;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Partition.WrapperMapPartitioner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
@@ -155,15 +155,44 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	@Override
 	public DataStream<Row> zoom(Float top, Float right, Float bottom, Float left) {
 		DataStream<Row> vertexStreamInner = this.vertexStream
+				.partitionCustom(new VertexStringIDPartitioner(), new KeySelector<Row,String>(){
+
+					@Override
+					public String getKey(Row value) throws Exception {
+						return value.getField(1).toString();
+					}
+					
+				})
+				.keyBy(new KeySelector<Row,Integer>(){
+					@Override
+					public Integer getKey(Row value) throws Exception {
+						 
+						BigInteger vertexBigIntegerId = new BigInteger(value.getField(1).toString(), 16);
+						Integer partition = vertexBigIntegerId.remainder(new BigInteger("4", 10)).intValue();
+						return partition;
+					}
+					
+				})
 				.filter(new VertexFilterInner(top, right, bottom, left))
-				.filter(new VertexFilterZoomLevel(zoomLevel));
-		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
-		Map<String, Row> wrapperMap = this.wrapperMap;
+				.filter(new VertexFilterZoomLevel(zoomLevel))
+		.filter(new FilterFunction<Row>() {
+
+			@Override
+			public boolean filter(Row value) throws Exception {
+				BigInteger vertexIdBigInteger = new BigInteger(value.getField(1).toString(), 16);
+				Integer partition = vertexIdBigInteger.remainder(new BigInteger("4", 10)).intValue();
+				System.out.println("Vertex ID hex string, BigInteger, partition: " + value.getField(1) + ", " + vertexIdBigInteger + ", " + partition);
+				return true;
+			}
+			
+		});
+//		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
+//		Map<String, Row> wrapperMap = this.wrapperMap;
 		
-//		List<Map<String,Map<String,String>>> casedAdjacencyMatrix = null;
 		List<Map<String, Map<String, String>>> casedAdjacencyMatrix = null;
+		DataSet<Map<String,Map<String,String>>> casedAdjacencyMatrixDataSet = null;
 		try {
-			casedAdjacencyMatrix = this.adjMatrixPart.groupBy(new KeySelector<Tuple2<String,Map<String,String>>, Integer>(){
+			casedAdjacencyMatrixDataSet = this.adjMatrixPart.groupBy(new KeySelector<Tuple2<String,Map<String,String>>, Integer>(){
 
 				@Override
 				public Integer getKey(Tuple2<String, Map<String, String>> value) throws Exception {
@@ -185,9 +214,53 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 						Integer partitionKey = gradoopIntegerId.remainder(new BigInteger(String.valueOf(4), 10)).intValue();
 						System.out.println("partitionKey in combine: " + partitionKey);
 					}
+					System.out.println("in adjMatrix combineGroup, adjMatrix size: " + adjacencyMatrix.size());
 					out.collect(adjacencyMatrix);
 				}
-			}).collect();
+			});
+			casedAdjacencyMatrix = casedAdjacencyMatrixDataSet.collect();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		try {
+			env.execute();
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		System.out.println("casedAdjacencyMatrix, length: " + casedAdjacencyMatrix.size());
+		
+		Map<String, Map<String, String>> adjMatrix = casedAdjacencyMatrix.get(0);
+		System.out.println("adjacencyMatrixPart, zoom, size: " + adjMatrix.size());
+		
+		List<Map<String,Row>> casedWrapperMap = null;
+		try {
+			casedWrapperMap = this.wrapperMapPart.groupBy(new KeySelector<Tuple2<BigInteger,Row>, Integer>(){
+
+				@Override
+				public Integer getKey(Tuple2<BigInteger, Row> value) throws Exception {
+					Integer partitionKey = value.f0.remainder(new BigInteger(String.valueOf(4), 10)).intValue();
+					System.out.println("wrapperMap, partitionKey in groupBy: " + partitionKey);
+					return partitionKey;
+				}
+			}).combineGroup(new GroupCombineFunction<Tuple2<BigInteger,Row>, Map<String,Row>>(){
+
+					@Override
+					public void combine(Iterable<Tuple2<BigInteger,Row>> values,
+							Collector<Map<String, Row>> out) throws Exception {
+						Map<String,Row> wrapperMap = new HashMap<String,Row>();
+						for (Tuple2<BigInteger,Row> entry : values) {
+							System.out.println("wrapperMap in combine: " + entry);
+							wrapperMap.put(entry.f1.getField(15).toString(), entry.f1);
+							Integer partitionKey = entry.f0.remainder(new BigInteger(String.valueOf(4), 10)).intValue();
+							System.out.println("wrapperMap, partitionKey in combine: " + partitionKey);
+						}
+						out.collect(wrapperMap);
+					}
+				}).collect();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -198,7 +271,11 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
+		
+		Map<String,Row> wrapperMap = casedWrapperMap.get(0);
 		for (String key : casedAdjacencyMatrix.get(0).keySet()) System.out.println("adjacencyMatrixPart: " + key);
+		for (Row row : casedWrapperMap.get(0).values()) System.out.println("wrapperMapPart: " + row.getField(15));
+
 		//with partitioning
 //		DataSet<Tuple4<Long,String, String, String>> partitioned = this.adjMatrixPart.map(new MapFunction<Tuple3<String,String,String>,
 //				Tuple4<Long,String,String,String>>(){
@@ -386,9 +463,13 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 //		});
 		DataSet<String> stringReader = env.readTextFile(this.inPath + "_adjacency");
 		DataSet<Tuple2<String,Map<String,String>>> adjacencyMatrix = stringReader.map(new StringMapAdjacencyMatrix());
-		this.adjMatrixPart = adjacencyMatrix
-				.partitionCustom(new AdjacencyMatrixPartitioner(), 0)
-				;	
+		this.adjMatrixPart = adjacencyMatrix.partitionCustom(new VertexStringIDPartitioner(), 0);	
+		try {
+			System.out.println("adjMatrix, building, size: " + this.adjMatrixPart.count());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private void buildWrapperMapPart() {
@@ -405,9 +486,17 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				String.class, Long.class, String.class, Integer.class, Integer.class, Long.class, Integer.class,
 				String.class, String.class);
 		DataSet<Tuple2<BigInteger, Row>> wrapperPartitionKeyed = wrapperSource.flatMap(new WrapperMapAddPartitionKey());
-		this.wrapperMapPart = wrapperPartitionKeyed
-				.partitionCustom(new WrapperMapPartitioner(), 0)
-				;
+		this.wrapperMapPart = wrapperPartitionKeyed.partitionCustom(new WrapperMapPartitioner(), 0);
+		
+		//debug
+//		try {
+//			System.out.println("wrapperPartitionedKeyed, size: " + wrapperPartitionKeyed.count());
+//
+//			wrapperPartitionKeyed.print();
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 	
 	@Override
