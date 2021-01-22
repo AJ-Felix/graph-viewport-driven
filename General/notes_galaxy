@@ -13,3 +13,7 @@
 	- in Bash: alle configs von oben, vorher: export HOSTNAME=$(hostname)
 	- slurm session id abfragen: squeue --user=$USER
 	- slurm session beenden: scancel session-id
+	
+	
+	On Flink TaskManager Starting:
+	https://stackoverflow.com/questions/52439318/flink-taskmanagers-do-not-start-until-job-is-submitted-in-yarn-cluster

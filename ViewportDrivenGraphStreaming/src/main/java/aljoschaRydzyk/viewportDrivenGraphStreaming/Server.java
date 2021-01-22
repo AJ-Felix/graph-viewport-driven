@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+
+import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -238,7 +241,10 @@ public class Server implements Serializable{
         			}
                 	setVertexZoomLevel(0);
                 	try {
-                		if (stream)	flinkCore.getFsEnv().execute();
+                		JobExecutionResult jobResult = null;
+						if (stream)	 jobResult = flinkCore.getFsEnv().execute();
+						System.out.println("Job result net Runtime: " + jobResult.getNetRuntime());
+						System.out.println(jobResult);
 //                		else flinkCore.getEnv().execute();
         			} catch (Exception e) {
         				e.printStackTrace();
@@ -342,6 +348,18 @@ public class Server implements Serializable{
     private void buildTopViewCSV() {
     	flinkCore.initializeCSVGraphUtilJoin();
 		DataStream<Row> wrapperStream = flinkCore.buildTopViewCSV(maxVertices);
+			
+//			wrapperStream = wrapperStream.map(new MapFunction<Row,Row>(){
+//
+//				
+//				
+//				@Override
+//				public Row map(Row value) throws Exception {
+//					return value;
+//				}
+//				
+//			});
+		
 			wrapperHandler.initializeGraphRepresentation();
 			flinkResponseHandler.setOperation("initialAppend");
 			DataStream<String> wrapperLine;
