@@ -33,6 +33,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFi
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuter;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterOuterBoth;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterZoomLevel;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexMapIdentityWrapperRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedVerticesIdentity;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperFilterVisualizedWrappers;
 
@@ -98,21 +99,31 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	public void initializeDataSets(){
 		
 		//NOTE: Flink needs seperate instances of RowCsvInputFormat for each data import, although they might be identical		
-		//initialize wrapper stream
-		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "_wrappers"));
-		RowCsvInputFormat wrappersFormatIdentity = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
-		wrappersFormatIdentity.setFieldDelimiter(";");
-		DataStream<Row> wrapperStreamIdentity = this.fsEnv.readFile(wrappersFormatIdentity, this.inPath + "_vertices").setParallelism(1);
-		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
-		wrappersFormat.setFieldDelimiter(";");
-		this.wrapperStream = wrapperStreamIdentity.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "_wrappers").setParallelism(1));
-		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+		
 		
 		//initialize vertex stream
 		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, this.vertexFormatTypeInfo);
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
+		
+		//initialize wrapper identity stream
+		this.wrapperStream = this.wrapperStream.union(this.vertexStream.map(new VertexMapIdentityWrapperRow()));
+		
+		//initialize wrapper stream
+		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "_wrappers"));
+		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
+		wrappersFormat.setFieldDelimiter(";");
+//		RowCsvInputFormat wrappersFormatIdentity = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
+//		wrappersFormatIdentity.setFieldDelimiter(";");
+//		DataStream<Row> wrapperStreamIdentity = this.fsEnv.readFile(wrappersFormatIdentity, this.inPath + "_vertices").setParallelism(1);
+//		this.wrapperStream = wrapperStreamIdentity.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "_wrappers").setParallelism(1));
+		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "_wrappers").setParallelism(1));
+		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);
+		
+		
+		
+		
 	}
 	
 	@Override
