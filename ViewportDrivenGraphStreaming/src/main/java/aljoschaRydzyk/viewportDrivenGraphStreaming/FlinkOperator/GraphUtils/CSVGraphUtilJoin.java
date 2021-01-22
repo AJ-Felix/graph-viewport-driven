@@ -108,7 +108,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
 		
 		//initialize wrapper identity stream
-		this.wrapperStream = this.wrapperStream.union(this.vertexStream.map(new VertexMapIdentityWrapperRow()));
+		this.wrapperStream = this.vertexStream.map(new VertexMapIdentityWrapperRow()).returns(new RowTypeInfo(this.wrapperFormatTypeInfo));
 		
 		//initialize wrapper stream
 		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "_wrappers"));

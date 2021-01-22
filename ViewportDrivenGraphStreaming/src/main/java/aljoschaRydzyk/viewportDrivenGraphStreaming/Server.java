@@ -112,7 +112,7 @@ public class Server implements Serializable{
             }
             
             //debug 
-//            localMachinePublicIp4 = "172.22.87.188";
+            localMachinePublicIp4 = "172.22.87.188";
         }
     }
     
