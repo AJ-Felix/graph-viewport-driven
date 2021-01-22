@@ -34,8 +34,8 @@ import io.undertow.websockets.core.WebSockets;
 public class Server implements Serializable{
 	
 	private String clusterEntryPointAddress = "localhost";
-	private String hdfsEntryPointAddress = "localhost";
-	private int hdfsEntryPointPort = 9000;
+	private String hdfsEntryPointAddress;
+	private int hdfsEntryPointPort;
 	private String hdfsGraphFilesDirectory;
 	private String gradoopGraphId;
 	private boolean stream = true;
@@ -221,9 +221,18 @@ public class Server implements Serializable{
                 	wrapperHandler.setMaxVertices(maxVertices);
                 } 
                 else if (messageData.startsWith("buildTopView")) {
-                	flinkCore = new FlinkCore(clusterEntryPointAddress, 
-                			"hdfs://" + hdfsEntryPointAddress + ":" + String.valueOf(hdfsEntryPointPort) + hdfsGraphFilesDirectory, 
-                			gradoopGraphId);
+                	if (hdfsEntryPointAddress == null) {
+                		flinkCore = new FlinkCore(clusterEntryPointAddress, 
+                    			"file://" +
+                    			hdfsGraphFilesDirectory, 
+                    			gradoopGraphId);
+                	} else {
+                		flinkCore = new FlinkCore(clusterEntryPointAddress, 
+                    			"hdfs://" + hdfsEntryPointAddress + ":" + 
+                				String.valueOf(hdfsEntryPointPort) +
+                    			hdfsGraphFilesDirectory, 
+                    			gradoopGraphId);
+                	}             	
                 	setModelPositions(topModelBorder, rightModelBorder, bottomModelBorder, leftModelBorder);
                 	setOperation("initial");
                 	if (!layout) setOperationStep(1);
