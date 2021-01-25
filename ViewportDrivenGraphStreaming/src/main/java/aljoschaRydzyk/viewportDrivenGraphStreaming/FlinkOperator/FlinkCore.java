@@ -67,7 +67,7 @@ public class FlinkCore {
 				flinkJobJarPath); 
 		
 		this.fsEnv.setParallelism(4);
-		
+				
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		System.out.println("initiated Flink.");
 	}

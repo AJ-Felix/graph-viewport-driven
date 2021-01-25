@@ -177,6 +177,8 @@ Generelles Problem bei der Variante mit Adjazenzmatrix:
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
 
+TODO: Checkout how to synchronize task and API result (watermarks?, timestamps?)
+
 TODO: Deploy gvdGraphs in 8-value vertex format (currently 17 for some graphs)
 
 TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut
