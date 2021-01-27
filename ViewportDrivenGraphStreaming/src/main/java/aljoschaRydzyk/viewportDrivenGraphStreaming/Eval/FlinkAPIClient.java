@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -28,6 +30,8 @@ import org.apache.flink.runtime.dispatcher.StandaloneDispatcher;
 import org.apache.flink.runtime.rest.RestServerEndpointConfiguration;
 import org.apache.flink.runtime.webmonitor.HttpRequestHandler;
 import org.apache.flink.runtime.webmonitor.WebMonitorEndpoint;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class FlinkAPIClient {
 	private static String clusterEntryPointAddress;
@@ -59,20 +63,60 @@ public class FlinkAPIClient {
 //		                     .build();
 		
 		
+//		Request request = new Request.Builder()
+//                .url("http://" + clusterEntryPointAddress + ":8081" + 
+////               		 "/taskmanagers"
+////               		 + "/5a5b1b8449539a1837792e9bcde0363f"
+////               		 + "/thread-dump"
+//						"/jobmanager"
+//               		 + "/metrics"
+////               		 + "?get=Status.Flink.Memory.Managed.Used"
+//               		 )
+//                .build();
+		
 		Request request = new Request.Builder()
                 .url("http://" + clusterEntryPointAddress + ":8081" + 
-               		 "/taskmanagers"
-               		 + "/f62a42bf2284a9bd00fc4380059e18d5/"
-//						"/jobmanager/"
-               		 + "metrics"
-               		 + "?get=Status.JVM.CPU.Load"
+                		"/jobs"
+//                		+ "/60dab247733f55ef9558af32192b8288"
+                		+ "/overview"
+//                		+ "vertices/5820e929907c7e7cf4555451bf2a6cc3"
                		 )
                 .build();
 		
+		
 		while (true) {
+			
+			Response memoryResponse = client.newCall(
+					new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
+							+ "/taskmanagers/9c3715361da688b7bddb942beeeb4e45"
+							+ "/metrics?get=Status.JVM.Memory.Heap.Used").build()).execute();
+			System.out.println(memoryResponse.body().string());
+
+			
 			Response response = doRequest(request);
-			Thread.sleep(50);
-			System.out.println(response.body().string());
+			String jsonResponse = response.body().string();
+			System.out.println(jsonResponse);
+			
+//			List<String> jobIDs = new ArrayList<String>();
+			JSONObject json = new JSONObject(jsonResponse);
+			Iterator<Object> iter = json.getJSONArray("jobs").iterator();
+			while(iter.hasNext()) {
+				JSONObject job = (JSONObject) iter.next();
+				String jobName = (String) job.get("name");
+//				if (jobName.equals("buildTopView")){
+//					Response memoryResponse = client.newCall(
+//							new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
+//									+ "/taskmanagers/12b8768952c2dd68ea252cd354e11db8"
+//									+ "/metrics?get=Status.JVM.Memory.Heap.Used").build()).execute();
+////					String memory = ((JSONObject) new JSONArray(memoryResponse.body().string()).get(0)).getString("value");
+////					System.out.println(jobName + ": " + job.get("state") + ": " + memory);
+//					System.out.println(jobName + ": " + job.get("state") + ": " + memoryResponse.body().string());
+//				
+				System.out.println(jobName + ": " + job.get("state"));
+//				jobIDs.add((String) job.get("jid"));
+			}
+			
+			Thread.sleep(500);
 		}
 		
 		//retrieve job metrics

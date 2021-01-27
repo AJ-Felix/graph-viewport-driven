@@ -1,0 +1,56 @@
+Flink Laufzeit:
+Job Laufzeit:	job.uptime
+Task Laufzeit: 	/jobs/:jobid/vertices/:vertexid/duration
+
+Memory: 
+Man kann Memory-Metriken nur für Task- und JobManager abfragen. Die Abfrage lässt sich nur über Umwege mit den Jobs synchronisieren, z.B.
+über /jobs/:jobid/state. Wenn der Wert "FINISHED" ist, dann ist der Job durchgelaufen. Allerdings muss die JobID über eine vorherige Abfrage erfolgen,
+weil die ID dynamisch vergeben wird.
+
+Möglicherweise lässt sich der Speicherbedarf nicht wirklich messen, weil der beim Start des TaskManagers bereits alloziert wird.. (siehe https://flink.apache.org/news/2015/05/11/Juggling-with-Bits-and-Bytes.html)
+https://stackoverflow.com/questions/35315522/flink-memory-usage
+
+
+Es sind verschiedene Memory-Metriken verfügbar.Interessant sind:
+Momentaner Head Memory Konsum: Status.JVM.Memory.Heap.Used			--> kein Unterschied beobachtet
+Momentaner NonHeap Memory Konsum: Status.JVM.Memory.NonHeap.Used		--> kein Unterschied beobachtet
+				  Status.JVM.Memory.Direct.Used 		--> kein Unterschied beobachtet
+
+Für Network Data Exchange:
+Momentaner Memory Konsum: Status.Shuffle.Netty.UsedMemory
+Memory verfügbar gesamt: Status.Shuffle.Netty.TotalMemory
+
+
+Netzwerk Zeit:
+
+Server-Cluster:
+Zeitstempel im Server einrichten direkt vor Job-Call und Zeitstempel nach letztem Job-Ergebnis (bei Streaming dann jeweils der letzte Wert) --> Gesamtzeit Call-Flink-Result.
+Davon kann man die Job-Zeit die Flink berechnet hat abziehen.
+
+Client-Server:
+Ähnlich oben Zeitstempel vor Call und nach Job-Ergebnis einrichten und die Server-Cluster-Kommunikation abziehen.
+
+
+Layout-Rendering Zeit:
+Zeitstempel vor und nach Layoutberechnung
+
+
+
+
+
+
+
+Variablen:
+	- 3 verschiedene Ansätze
+	- Parallelität über Anzahl der Taskmanager und der Slots regeln
+	- Graph size
+	- pre-layouted und ad-hoc-layouted
+	
+	
+	Hallo Matthias, 
+sorry für die späte Antwort. Danke für deine Rückmeldung, mir passen Donnerstag und Freitag gleichermaßen.
+
+Ich habe mich noch mit dem Messen des Speicherbedarfs bei Flink auseinandergesetzt. Das ist nicht so einfach, wie ich dachte. Es gibt zwar Metriken für JobManager und TaskManager dazu, wie "Heap.Used" oder "NonHeap.Used". aber die Werte ändern sich nicht zeitlich kohärent mit meinen Job-Starts, zumindest für Batch Jobs, aber auch bei Streaming sieht es so aus. Dazu habe ich Folgendes gefunden: 
+https://stackoverflow.com/questions/35315522/flink-memory-usage
+
+Anscheinend kann man für Batch Jobs die Menge an verfügbarem Speicher nur festlegen, aber nicht messen. Wie man "MemoryStateBackEnd" 

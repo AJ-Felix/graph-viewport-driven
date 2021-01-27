@@ -176,6 +176,8 @@ Generelles Problem bei der Variante mit Adjazenzmatrix:
 	
 Serverseitige Graph-Semantik:
 	Das Flink Sink muss parallel hierfür einen Parallelitätsgrad von 1 haben, damit nicht mehrere Anfragen gleichzeitig auf die Objekte zugreifen.
+	
+Upgrade auf Flink 1.12.0: Cryptic error...
 
 TODO: Checkout how to synchronize task and API result (watermarks?, timestamps?)
 

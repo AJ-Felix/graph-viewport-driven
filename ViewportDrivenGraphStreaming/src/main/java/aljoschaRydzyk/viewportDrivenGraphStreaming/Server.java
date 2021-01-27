@@ -168,7 +168,6 @@ public class Server implements Serializable{
                 	viewportPixelX = Float.parseFloat(arrMessageData[4]);
                 	viewportPixelY = Float.parseFloat(arrMessageData[5]); 
                 	if (wrapperHandler.getGlobalVertices().isEmpty()) {
-                		System.out.println("wefwe");
                 		calculateInitialViewportSettings(topModelBorder, rightModelBorder, bottomModelBorder, leftModelBorder);
                 	} else {
                 		System.out.println("viewportPixelX before: " + viewportPixelXOld);
@@ -251,8 +250,10 @@ public class Server implements Serializable{
                 	setVertexZoomLevel(0);
                 	try {
                 		JobExecutionResult jobResult = null;
-						if (stream)	 jobResult = flinkCore.getFsEnv().execute();
-						System.out.println("Job result net Runtime: " + jobResult.getNetRuntime());
+						if (stream)	 {
+							jobResult = flinkCore.getFsEnv().execute("buildTopView");
+							System.out.println("Job result net Runtime: " + jobResult.getNetRuntime());
+						}
 						System.out.println(jobResult);
 //                		else flinkCore.getEnv().execute();
         			} catch (Exception e) {

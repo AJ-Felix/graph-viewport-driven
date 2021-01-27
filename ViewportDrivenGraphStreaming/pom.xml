@@ -31,7 +31,7 @@
   </repositories>
   
  
-  <dependencies>
+  <dependencies>  
 	<dependency>
 	    <groupId>junit</groupId>
 	    <artifactId>junit</artifactId>
@@ -110,11 +110,16 @@
 	</dependency>
 	<!-- https://mvnrepository.com/artifact/org.apache.flink/flink-formats -->
 	
-	<dependency>
+<!-- 	<dependency>
     	<groupId>org.apache.flink</groupId>
 	    <artifactId>flink-runtime_2.11</artifactId>
 	    <version>1.10.0</version>
 	    <scope>compile</scope>
+	</dependency> -->
+	<dependency>
+	    <groupId>org.json</groupId>
+	    <artifactId>json</artifactId>
+	    <version>20201115</version>
 	</dependency>
 	
 	
