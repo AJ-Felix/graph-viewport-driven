@@ -111,11 +111,11 @@ public class FlinkCore {
 		return graph;
 	}
 	
-	public GraphUtilSet initializeGradoopGraphUtil() {
+	public GraphUtilSet initializeGradoopGraphUtil(String gradoopGraphId) {
 		LogicalGraph graph;
 		try {
 			graph = this.getLogicalGraph();	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			this.graphUtilSet = new GradoopGraphUtil(graph, this.zoomLevelCoefficient);
+			this.graphUtilSet = new GradoopGraphUtil(graph, gradoopGraphId, this.zoomLevelCoefficient);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}	

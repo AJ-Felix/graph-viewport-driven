@@ -26,6 +26,7 @@ Netzwerk Zeit:
 Server-Cluster:
 Zeitstempel im Server einrichten direkt vor Job-Call und Zeitstempel nach letztem Job-Ergebnis (bei Streaming dann jeweils der letzte Wert) --> Gesamtzeit Call-Flink-Result.
 Davon kann man die Job-Zeit die Flink berechnet hat abziehen.
+Momentan wird Systemzeit direkt vor und nach Job-Call abgerufen. Returned .execute() wirklich erst nach Abschluss des gesamten Jobs? Testen!!!
 
 Client-Server:
 Ähnlich oben Zeitstempel vor Call und nach Job-Ergebnis einrichten und die Server-Cluster-Kommunikation abziehen.

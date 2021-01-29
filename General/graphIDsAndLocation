@@ -13,7 +13,8 @@ Galaxy Path GVD:
 Local Path Gradoop: 	/sample-graph
 Local Path GVD:	/gvdGraphs/zoomLevel
 
-
+LDBC_1 Sample:
+ID:			5fcf686d23e3ca5349c0ddf3
 
 HDFS LDBC_1
 ID:			5c6ab3de71ff1425aed68b34

@@ -47,6 +47,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.Wrapper
 public class GradoopGraphUtil implements GraphUtilSet{
 	
 	private LogicalGraph graph;
+	private String gradoopGraphId;
 	private Set<String> visualizedWrappers;
 	private Set<String> visualizedVertices;
 	private FilterFunction<Row> zoomOutVertexFilter;
@@ -61,8 +62,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			//C : Inside viewport before and after operation
 			//D : Outside viewport after operation
 	
-	public GradoopGraphUtil (LogicalGraph graph, int zoomLevelCoefficient) {
+	public GradoopGraphUtil (LogicalGraph graph, String gradoopGraphId, int zoomLevelCoefficient) {
 		this.graph = graph;
+		this.gradoopGraphId = gradoopGraphId;
 		this.zoomLevelCoefficient = zoomLevelCoefficient;
 		this.visualizedWrappers = new HashSet<String>();
 		this.visualizedVertices = new HashSet<String>();
@@ -71,20 +73,20 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	
 	@Override
 	public void initializeDataSets() throws Exception{
-		System.out.println(this.graph);
-		System.out.println("graphHeadSize: " + this.graph.getGraphHead().collect().size());
-		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
+//		System.out.println(this.graph);
+//		System.out.println("graphHeadSize: " + this.graph.getGraphHead().collect().size());
+//		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
 		int numberVertices = Integer.parseInt(String.valueOf(this.graph.getVertices().count()));
-		System.out.println("numberVertices: " + numberVertices);
+//		System.out.println("numberVertices: " + numberVertices);
 		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
-		System.out.println("numberZoomLevels: " + numberZoomLevels);
+//		System.out.println("numberZoomLevels: " + numberZoomLevels);
 		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
-		System.out.println("zoomLevelSetSize: " + zoomLevelSetSize);
+//		System.out.println("zoomLevelSetSize: " + zoomLevelSetSize);
 		vertices = DataSetUtils.zipWithIndex((this.graph.getVertices()
 					.map(new VertexEPGMMapTupleDegreeComplex())
 					.sortPartition(1, Order.DESCENDING).setParallelism(1)
 				))
-				.map(new VertexTupleComplexMapRow(graphId, zoomLevelSetSize));
+				.map(new VertexTupleComplexMapRow(gradoopGraphId, zoomLevelSetSize));
 		
 		DataSet<EPGMEdge> edges = this.graph.getEdges();
 		DataSet<Tuple2<Tuple2<Row, EPGMEdge>, Row>> wrapperTuple = 

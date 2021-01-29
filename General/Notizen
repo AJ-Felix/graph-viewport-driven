@@ -179,7 +179,9 @@ Serverseitige Graph-Semantik:
 	
 Upgrade auf Flink 1.12.0: Cryptic error...
 
-TODO: Checkout how to synchronize task and API result (watermarks?, timestamps?)
+TODO: Evaluator-Klasse fertigstellen
+
+TODO: Parameter und Messvariablen gegenüberstellen, Matthias schicken, und dann nach Abgleich implementieren
 
 TODO: Deploy gvdGraphs in 8-value vertex format (currently 17 for some graphs)
 

@@ -3,6 +3,10 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.websocket;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -36,7 +40,7 @@ public class Server implements Serializable{
 	private String clusterEntryPointAddress = "localhost";
 	private String hdfsEntryPointAddress;
 	private int hdfsEntryPointPort;
-	private String hdfsGraphFilesDirectory;
+	private String graphFilesDirectory;
 	private String gradoopGraphId;
 	private boolean stream = true;
 	private float topModelBorder = 0;
@@ -66,9 +70,14 @@ public class Server implements Serializable{
     private int flinkResponsePort = 8898;
 	private int vertexZoomLevel;
 	private boolean maxVerticesLock = false;
+	
+	//evaluation
+	private boolean eval;
+	private Evaluator evaluator;
 
-    public Server () {
+    public Server (boolean eval) {
     	System.out.println("executing server constructor");
+    	if (eval) this.evaluator = new Evaluator();
 	}
     
     public void initializeServerFunctionality() {
@@ -112,7 +121,7 @@ public class Server implements Serializable{
             }
             
             //debug 
-//            localMachinePublicIp4 = "172.22.87.188";
+            localMachinePublicIp4 = "172.22.87.188";
         }
     }
     
@@ -141,7 +150,7 @@ public class Server implements Serializable{
                 } else if (messageData.startsWith("hDFSEntryPointPort")) {
                 	hdfsEntryPointPort = Integer.parseInt(messageData.split(";")[1]);
                 } else if (messageData.startsWith("hDFSGraphFilesDirectory")) {
-                	hdfsGraphFilesDirectory = messageData.split(";")[1];
+                	graphFilesDirectory = messageData.split(";")[1];
                 } else if (messageData.startsWith("gradoopGraphId")) {
                 	gradoopGraphId = messageData.split(";")[1];
 //                } else if (messageData.startsWith("fitted")) {
@@ -223,15 +232,16 @@ public class Server implements Serializable{
                 	if (hdfsEntryPointAddress == null) {
                 		flinkCore = new FlinkCore(clusterEntryPointAddress, 
                     			"file://" +
-                    			hdfsGraphFilesDirectory, 
+                    			graphFilesDirectory, 
                     			gradoopGraphId);
                 	} else {
                 		flinkCore = new FlinkCore(clusterEntryPointAddress, 
                     			"hdfs://" + hdfsEntryPointAddress + ":" + 
                 				String.valueOf(hdfsEntryPointPort) +
-                    			hdfsGraphFilesDirectory, 
+                    			graphFilesDirectory, 
                     			gradoopGraphId);
-                	}             	
+                	}
+                	evaluator.setParameters(flinkCore.getFsEnv());
                 	setModelPositions(topModelBorder, rightModelBorder, bottomModelBorder, leftModelBorder);
                 	setOperation("initial");
                 	if (!layout) setOperationStep(1);
@@ -249,13 +259,23 @@ public class Server implements Serializable{
         			}
                 	setVertexZoomLevel(0);
                 	try {
-                		JobExecutionResult jobResult = null;
-						if (stream)	 {
-							jobResult = flinkCore.getFsEnv().execute("buildTopView");
-							System.out.println("Job result net Runtime: " + jobResult.getNetRuntime());
+						if (stream)	 {	
+							
+		                	//evaluation
+		                	if (eval) {
+		                		Evaluator.executeStreamEvaluation();
+								Long beforeJobCall = System.currentTimeMillis();
+								flinkCore.getFsEnv().execute("buildTopView");
+								Long afterJobCall = System.currentTimeMillis();
+								Long callToResultDuration = beforeJobCall - afterJobCall;
+								PrintWriter writer = new PrintWriter("/home/aljoscha/performance_evluation.log");
+								writer.println("Operation: BuildTopView, call-to-result duration: " + callToResultDuration);
+								writer.close();
+		                	} else {
+								flinkCore.getFsEnv().execute("buildTopView");
+		                	}
+							
 						}
-						System.out.println(jobResult);
-//                		else flinkCore.getEnv().execute();
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
@@ -263,8 +283,7 @@ public class Server implements Serializable{
                     	System.out.println("wrapperCollection size: " + wrapperCollection.size());
                 		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
             			wrapperHandler.clearOperation();
-//            			sendToAll("fit");
-                	}
+                	}	
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
         			Float xRenderPosition = Float.parseFloat(arrMessageData[1]);
@@ -345,11 +364,23 @@ public class Server implements Serializable{
 	}
     
     private void buildTopViewGradoop() {
-    	flinkCore.initializeGradoopGraphUtil();
+    	flinkCore.initializeGradoopGraphUtil(gradoopGraphId);
 		wrapperHandler.initializeGraphRepresentation();
     	DataSet<WrapperGVD> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
     	try {
-			wrapperCollection = wrapperSet.collect();
+    		
+    		//evaluation
+        	if (eval) {
+				Long beforeJobCall = System.currentTimeMillis();
+				wrapperCollection = wrapperSet.collect();
+				Long afterJobCall = System.currentTimeMillis();
+				Long callToResultDuration = beforeJobCall - afterJobCall;
+				PrintWriter writer = new PrintWriter("/home/aljoscha/performance_evluation.log");
+				writer.println("Operation: BuildTopView, call-to-result duration: " + callToResultDuration);
+				writer.close();
+        	} else {
+    			wrapperCollection = wrapperSet.collect();
+        	}
 		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
@@ -358,18 +389,6 @@ public class Server implements Serializable{
     private void buildTopViewCSV() {
     	flinkCore.initializeCSVGraphUtilJoin();
 		DataStream<Row> wrapperStream = flinkCore.buildTopViewCSV(maxVertices);
-			
-//			wrapperStream = wrapperStream.map(new MapFunction<Row,Row>(){
-//
-//				
-//				
-//				@Override
-//				public Row map(Row value) throws Exception {
-//					return value;
-//				}
-//				
-//			});
-		
 			wrapperHandler.initializeGraphRepresentation();
 			flinkResponseHandler.setOperation("initialAppend");
 			DataStream<String> wrapperLine;
@@ -404,8 +423,11 @@ public class Server implements Serializable{
 		System.out.println("executing zoomSet on server class");
 		wrapperHandler.setSentToClientInSubStep(false);
 		try {
-			wrapperCollection = wrapperSet.collect();
-//			flinkCore.getEnv().execute();
+			if (eval) {
+				Evaluator.executeSetEvaluation();
+			} else {
+				wrapperCollection = wrapperSet.collect();
+			}
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -429,7 +451,11 @@ public class Server implements Serializable{
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 		wrapperHandler.setSentToClientInSubStep(false);
     	try {
-			flinkCore.getFsEnv().execute();
+    		if (eval) {
+    			Evaluator.executeStreamEvaluation();
+    		} else {
+    			flinkCore.getFsEnv().execute();
+    		}
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -441,7 +467,6 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
 			wrapperCollection = wrapperSet.collect();
-//			flinkCore.getEnv().execute();
 			System.out.println("executed flink job!");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -476,7 +501,6 @@ public class Server implements Serializable{
     	System.out.println("operationStep: " + operationStep);
     	if (operation.equals("initial")) {
             wrapperHandler.clearOperation();
-//            sendToAll("fit");
     	} else if (operation.startsWith("zoom")) {
     		if (operation.contains("In")) {
     			if (operationStep == 1) {
@@ -545,7 +569,6 @@ public class Server implements Serializable{
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
-//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -600,7 +623,6 @@ public class Server implements Serializable{
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
-//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -688,7 +710,6 @@ public class Server implements Serializable{
     	wrapperCollection = new ArrayList<WrapperGVD>();
     	try {
     		wrapperCollection = wrapperGVD.collect();
-//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -825,7 +846,6 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
     		wrapperCollection = wrapperGVD.collect();
-//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -881,7 +901,6 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
     		wrapperCollection = wrapperGVD.collect();
-//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -969,7 +988,6 @@ public class Server implements Serializable{
     	wrapperHandler.setSentToClientInSubStep(false);
     	try {
     		wrapperCollection = wrapperGVD.collect();
-//			flinkCore.getEnv().execute();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
