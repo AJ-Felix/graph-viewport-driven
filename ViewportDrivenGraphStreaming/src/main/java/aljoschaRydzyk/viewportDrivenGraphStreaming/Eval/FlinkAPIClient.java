@@ -77,8 +77,8 @@ public class FlinkAPIClient {
 		Request request = new Request.Builder()
                 .url("http://" + clusterEntryPointAddress + ":8081" + 
                 		"/jobs"
-//                		+ "/60dab247733f55ef9558af32192b8288"
-                		+ "/overview"
+                		+ "/03fa8f1dcaa1dbfb1fcd91a281342abe"
+                		+ "/metrics"
 //                		+ "vertices/5820e929907c7e7cf4555451bf2a6cc3"
                		 )
                 .build();
@@ -86,11 +86,11 @@ public class FlinkAPIClient {
 		
 		while (true) {
 			
-			Response memoryResponse = client.newCall(
-					new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
-							+ "/taskmanagers/9c3715361da688b7bddb942beeeb4e45"
-							+ "/metrics?get=Status.JVM.Memory.Heap.Used").build()).execute();
-			System.out.println(memoryResponse.body().string());
+//			Response memoryResponse = client.newCall(
+//					new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
+//							+ "/taskmanagers/9c3715361da688b7bddb942beeeb4e45"
+//							+ "/metrics?get=Status.JVM.Memory.Heap.Used").build()).execute();
+//			System.out.println(memoryResponse.body().string());
 
 			
 			Response response = doRequest(request);
@@ -98,11 +98,11 @@ public class FlinkAPIClient {
 			System.out.println(jsonResponse);
 			
 //			List<String> jobIDs = new ArrayList<String>();
-			JSONObject json = new JSONObject(jsonResponse);
-			Iterator<Object> iter = json.getJSONArray("jobs").iterator();
-			while(iter.hasNext()) {
-				JSONObject job = (JSONObject) iter.next();
-				String jobName = (String) job.get("name");
+//			JSONObject json = new JSONObject(jsonResponse);
+//			Iterator<Object> iter = json.getJSONArray("jobs").iterator();
+//			while(iter.hasNext()) {
+//				JSONObject job = (JSONObject) iter.next();
+//				String jobName = (String) job.get("name");
 //				if (jobName.equals("buildTopView")){
 //					Response memoryResponse = client.newCall(
 //							new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
@@ -112,9 +112,9 @@ public class FlinkAPIClient {
 ////					System.out.println(jobName + ": " + job.get("state") + ": " + memory);
 //					System.out.println(jobName + ": " + job.get("state") + ": " + memoryResponse.body().string());
 //				
-				System.out.println(jobName + ": " + job.get("state"));
+//				System.out.println(jobName + ": " + job.get("state"));
 //				jobIDs.add((String) job.get("jid"));
-			}
+//			}
 			
 			Thread.sleep(500);
 		}

@@ -179,6 +179,8 @@ Serverseitige Graph-Semantik:
 	
 Upgrade auf Flink 1.12.0: Cryptic error...
 
+Wenn das Flink-Cluster weniger Task Slots zur Verfügung hat als der Job an Parallelität benötigt, dann hängt der Job im Status "CREATED"!!!
+
 TODO: Evaluator-Klasse fertigstellen
 
 TODO: Parameter und Messvariablen gegenüberstellen, Matthias schicken, und dann nach Abgleich implementieren

@@ -121,7 +121,7 @@ public class Server implements Serializable{
             }
             
             //debug 
-            localMachinePublicIp4 = "172.22.87.188";
+//            localMachinePublicIp4 = "172.22.87.188";
         }
     }
     
@@ -263,14 +263,7 @@ public class Server implements Serializable{
 							
 		                	//evaluation
 		                	if (eval) {
-		                		Evaluator.executeStreamEvaluation();
-								Long beforeJobCall = System.currentTimeMillis();
-								flinkCore.getFsEnv().execute("buildTopView");
-								Long afterJobCall = System.currentTimeMillis();
-								Long callToResultDuration = beforeJobCall - afterJobCall;
-								PrintWriter writer = new PrintWriter("/home/aljoscha/performance_evluation.log");
-								writer.println("Operation: BuildTopView, call-to-result duration: " + callToResultDuration);
-								writer.close();
+		                		evaluator.executeStreamEvaluation(operation);
 		                	} else {
 								flinkCore.getFsEnv().execute("buildTopView");
 		                	}
@@ -371,13 +364,7 @@ public class Server implements Serializable{
     		
     		//evaluation
         	if (eval) {
-				Long beforeJobCall = System.currentTimeMillis();
-				wrapperCollection = wrapperSet.collect();
-				Long afterJobCall = System.currentTimeMillis();
-				Long callToResultDuration = beforeJobCall - afterJobCall;
-				PrintWriter writer = new PrintWriter("/home/aljoscha/performance_evluation.log");
-				writer.println("Operation: BuildTopView, call-to-result duration: " + callToResultDuration);
-				writer.close();
+        		wrapperCollection = evaluator.executeSetEvaluation(operation, wrapperSet);
         	} else {
     			wrapperCollection = wrapperSet.collect();
         	}
@@ -424,7 +411,7 @@ public class Server implements Serializable{
 		wrapperHandler.setSentToClientInSubStep(false);
 		try {
 			if (eval) {
-				Evaluator.executeSetEvaluation();
+				wrapperCollection = evaluator.executeSetEvaluation(operation, wrapperSet);
 			} else {
 				wrapperCollection = wrapperSet.collect();
 			}
@@ -452,7 +439,7 @@ public class Server implements Serializable{
 		wrapperHandler.setSentToClientInSubStep(false);
     	try {
     		if (eval) {
-    			Evaluator.executeStreamEvaluation();
+    			evaluator.executeStreamEvaluation(operation);
     		} else {
     			flinkCore.getFsEnv().execute();
     		}
