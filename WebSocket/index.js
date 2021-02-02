@@ -6,8 +6,10 @@ class Client {
 		this.messageProcessing = false;
 		this.layout = true
 		this.graphVisualizer = new GraphVisualizer();
-		this.timeOut = 5000;
+		this.timeOut = 2000;
 		this.vertexZoomLevel = 0;
+		this.timeBeforeQuery;
+		this.timeAfterQuery;
 	}
 
 	addMessageToQueue(dataArray){
@@ -29,24 +31,27 @@ class Client {
 							position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 						this.graphVisualizer.updateVertexSize(dataArray[1])
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[5]));
+						if (eval) this.updateEndTime();				
 						clearTimeout(window.timeOut);
 						client = this;
 						window.timeOut = setTimeout(function(){
 							client.finalOperations()
-						}, this.timeOut);						
+						}, this.timeOut);		
 						break;
 					case 'addVertexServerToBeLayouted':
 						this.graphVisualizer.addVertexToLayoutBase(dataArray);
 						this.graphVisualizer.updateVertexSize(dataArray[1]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[3]));
+						if (eval) this.updateEndTime();				
 						clearTimeout(window.timeOut);
 						client = this;
 						window.timeOut = setTimeout(function(){
 							client.finalOperations()
-						}, this.timeOut);						
+						}, this.timeOut);	
 						break;
 					case 'addEdgeServer':
 						this.graphVisualizer.cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
+						if (eval) this.updateEndTime();				
 						clearTimeout(window.timeOut);
 						client = this;
 						window.timeOut = setTimeout(function(){
@@ -75,6 +80,9 @@ class Client {
 						console.log(dataArray[3]);
 						console.log(dataArray[4]);
 						break;
+					case 'operation':
+						this.operation = dataArray[1];
+						break;
 					case 'operationAndStep':
 						this.operation = dataArray[1];
 						this.operationStep = parseInt(dataArray[2]);
@@ -97,6 +105,7 @@ class Client {
 
 	sendClusterEntryAddress(){
 		const address = document.getElementById('clusterEntryPointAddress').value;
+
 		this.ws.send("clusterEntryAddress;" + address);
 	}
 
@@ -126,16 +135,19 @@ class Client {
 	}
 
 	sendSignalGradoop(){
+		if (eval) this.timeBeforeQuery = new Date().getTime();
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;gradoop");
 	}
 
 	sendSignalCSV(){
+		if (eval) this.timeBeforeQuery = new Date().getTime()
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;CSV");
 	}
 
 	sendSignalAdjacency(){
+		if (eval) this.timeBeforeQuery = new Date().getTime();
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;adjacency");
 	}
@@ -157,7 +169,7 @@ class Client {
 
 	resetVisualization(){
 		this.graphVisualizer = new GraphVisualizer();
-		ws.send("resetWrapperHandler");
+		this.ws.send("resetWrapperHandler");
 	}
 
 	resize(){
@@ -171,6 +183,7 @@ class Client {
 		this.cyHeightHalf = this.cyHeight / 2;
 		this.cyWidthHalf = this.cyWidth / 2;
 		const pan = this.graphVisualizer.cy.pan();
+		if (eval) this.timeBeforeQuery = new Date().getTime();
 		this.ws.send("viewportSize;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom() + ";" +  this.cyWidth + ";" + this.cyHeight);
 	}
 
@@ -212,8 +225,12 @@ class Client {
 				this.graphVisualizer.layoutBase = new Set();
 			}	
 			this.ws.send("layoutBaseString" + layoutBaseString);
-			if (this.evalOperationAndStep()) this.enableMouseEvents();
+			if (this.evalOperationAndStep()) {
+				if (eval) this.outputQueryTime();
+				this.enableMouseEvents();
+			}
 		} else {
+			if (eval) this.outputQueryTime();
 			this.enableMouseEvents();
 		}
 	}
@@ -247,9 +264,19 @@ class Client {
 		else if (this.operation == "initial") return true;
 		else return false;
 	}
+
+	updateEndTime(){
+		this.timeAfterQuery = new Date().getTime();
+	}
+
+	outputQueryTime(){
+		const timeDiff = this.timeAfterQuery - this.timeBeforeQuery;
+		console.info("Operation: " + this.operation + ", operation step: " + this.operationStep + ", duration: " + timeDiff);
+	}
 }
 
 $(document).ready(function(){
+
 	ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897/graphData");
 	
 	ws.onopen = function() {
@@ -310,6 +337,7 @@ function mouseWheel(e) {
 		const rightModel = leftModel + client.cyWidth / client.graphVisualizer.zoomLevel;
 		console.log("ZoomIn... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
 		client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
+		if (eval) client.timeBeforeQuery = new Date().getTime();
 		client.ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
 	} else {
 		if (client.vertexZoomLevel == 0){
@@ -324,6 +352,7 @@ function mouseWheel(e) {
 			pan = client.graphVisualizer.cy.pan();
 			client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
 			client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
+			if (eval) client.timeBeforeQuery = new Date().getTime();
 			client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
 		}
 	}
@@ -358,6 +387,7 @@ function mouseUp(e){
 	console.log("Pan... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
 	client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
 	client.graphVisualizer.layoutBase = new Set();
+	if (eval) client.timeBeforeQuery = new Date().getTime();
 	client.ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + client.graphVisualizer.zoomLevel);
 }
 

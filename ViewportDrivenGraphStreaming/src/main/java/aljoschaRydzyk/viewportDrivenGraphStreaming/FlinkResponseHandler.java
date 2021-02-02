@@ -38,7 +38,11 @@ public class FlinkResponseHandler extends Thread{
 	@Override
 	public void run() {
 		System.out.println("thread running");
-		this.listen();
+		try {
+			this.listen();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
     
 	public FlinkResponseHandler(Server server, WrapperHandler wrapperHandler) {
@@ -52,50 +56,45 @@ public class FlinkResponseHandler extends Thread{
 		}
 	}
     
-    public void listen() {
-	    try {
-	    	System.out.println("executing listen on flinkResponseHandler");
-			echoSocket = serverSocket.accept();
-	        out = new PrintWriter(echoSocket.getOutputStream(), true);
-	        in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-            System.out.println("connected to socket!!!");
-            line = "empty";
-            if (!(operation.startsWith("initial"))) {
-            	if (layout) {
-            		wrapperHandler.setSentToClientInSubStep(false);
-            		while((line = in.readLine()) != null)  {
-    	            	System.out.println("flinkResponseHandler: " + line);
-    	            	wrapperHandler.addWrapper(parseWrapperString(line));
-    	            }
-            		if (wrapperHandler.getSentToClientInSubStep() == false) server.sendToAll("enableMouse");
-            		else wrapperHandler.clearOperation();
-            	} else {
-            		while((line = in.readLine()) != null)  {
-    	            	System.out.println("flinkResponseHandler: " + line);
-    	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
-    	            }
-            	}	
-            } else {
-            	if (layout) {
-            		while((line = in.readLine()) != null)  {
-    	            	System.out.println("flinkResponseHandler: " + line);
-    	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
-    	            }
-	            	server.sendToAll("fit");
-	                wrapperHandler.clearOperation();
-            	} else  {
-            		while((line = in.readLine()) != null)  {
-    	            	System.out.println("flinkResponseHandler: " + line);
-    	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
-    	            }
-            	}	
-            }
-            in.close();
-    	    out.close();
-    	    echoSocket.close();   
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	    }
+    public void listen() throws IOException {
+    	System.out.println("executing listen on flinkResponseHandler");
+		echoSocket = serverSocket.accept();
+        out = new PrintWriter(echoSocket.getOutputStream(), true);
+        in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+        System.out.println("connected to socket!!!");
+        line = "empty";
+        if (!(operation.startsWith("initial"))) {
+        	if (layout) {
+        		wrapperHandler.setSentToClientInSubStep(false);
+        		while((line = in.readLine()) != null)  {
+	            	System.out.println("flinkResponseHandler: " + line);
+	            	wrapperHandler.addWrapper(parseWrapperString(line));
+	            }
+        		if (wrapperHandler.getSentToClientInSubStep() == false) server.sendToAll("enableMouse");
+        		else wrapperHandler.clearOperation();
+        	} else {
+        		while((line = in.readLine()) != null)  {
+	            	System.out.println("flinkResponseHandler: " + line);
+	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
+	            }
+        	}	
+        } else {
+        	if (layout) {
+        		while((line = in.readLine()) != null)  {
+	            	System.out.println("flinkResponseHandler: " + line);
+	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
+	            }
+                wrapperHandler.clearOperation();
+        	} else  {
+        		while((line = in.readLine()) != null)  {
+	            	System.out.println("flinkResponseHandler: " + line);
+	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
+	            }
+        	}	
+        }
+    	in.close();
+	    out.close();
+	    echoSocket.close();   
 	    this.listen();
     }
     
