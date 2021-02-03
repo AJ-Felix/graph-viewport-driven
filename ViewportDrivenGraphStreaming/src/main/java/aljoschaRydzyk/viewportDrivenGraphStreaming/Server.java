@@ -19,6 +19,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.Eval.Evaluator;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;

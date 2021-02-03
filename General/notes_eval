@@ -38,6 +38,12 @@ Zeitstempel vor und nach Layoutberechnung
 
 
 
+Implementierte Metriken:
+    Zeit zwischen Flink Job Call vom Server und Job Ergebnis auf dem Server
+    Zeit zwischen Visual Operation Call vom Client und visuelles Ergebnis auf dem Client
+    Zeit des Flink Jobs
+    Zeit zwischen erstem und letztem Call vom Server an den Client
+
 
 
 

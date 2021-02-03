@@ -183,10 +183,6 @@ Darauf achten, dass der Server mit Java 8 ausgeführt wird, sonst gibt es eine W
 
 Wenn das Flink-Cluster weniger Task Slots zur Verfügung hat als der Job an Parallelität benötigt, dann hängt der Job im Status "CREATED"!!!
 
-TODO: Evaluator-Klasse fertigstellen
-
-TODO: Parameter und Messvariablen gegenüberstellen, Matthias schicken, und dann nach Abgleich implementieren
-
 TODO: Deploy gvdGraphs in 8-value vertex format (currently 17 for some graphs)
 
 TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut
@@ -206,8 +202,6 @@ TODO: introduce better layout algorithms --> fcose und cose verändern die Knote
 
 TODO: Testen, ob partielles GroupCombine auch ohne GroupBy funktioniert (adjacencyGraphUtil)
 
-TODO: Auf Galaxy Cluster testen
-
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
 	Bei Verkleinerung: 
 		Anschließend werden Knoten außerhalb der neuen Modellkoordinaten, welche vorher drin waren (also in innerVertices/newVertices), gelöscht, falls sie keine Nachbarn innerhalb der Modellkoordinaten mehr haben.
@@ -219,11 +213,8 @@ Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten i
 		Anschließend müssen Knoten entsprechend der Kapazität nachgeladen werden.
 		Dies entspricht einem ZoomOut.
 		
-late-TODO: Server ausführung über java -jar command line funktioniert nicht, BlinkExecutorFactory-class fehlt, obwohl in der Jar vorhanden
 late-TODO: sometimes frontend error when zooming in from initial view, but only rarely --> extensive debugging!
-late-TODO: buildTopViewRetract verursacht manchmal NullPointer bei Execution mit Fat-jar....
 late-TODO: implement parser for different ports given by command-line arguments
-late-TODO: auf neue Flink-Version upgraden (HBase connector sieht dann anders aus...)
 
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 

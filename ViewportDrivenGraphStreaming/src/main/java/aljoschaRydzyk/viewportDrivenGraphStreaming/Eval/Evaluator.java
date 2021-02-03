@@ -1,4 +1,4 @@
-package aljoschaRydzyk.viewportDrivenGraphStreaming;
+package aljoschaRydzyk.viewportDrivenGraphStreaming.Eval;
 
 import java.io.FileWriter;
 import java.io.IOException;

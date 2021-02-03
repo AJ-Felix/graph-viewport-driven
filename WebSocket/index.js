@@ -9,7 +9,7 @@ class Client {
 		this.timeOut = 2000;
 		this.vertexZoomLevel = 0;
 		this.timeBeforeQuery;
-		this.timeAfterQuery;
+		this.timeLastResponse;
 	}
 
 	addMessageToQueue(dataArray){
@@ -31,7 +31,7 @@ class Client {
 							position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
 						this.graphVisualizer.updateVertexSize(dataArray[1])
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[5]));
-						if (eval) this.updateEndTime();				
+						if (eval) this.updateResponseTimes();				
 						clearTimeout(window.timeOut);
 						client = this;
 						window.timeOut = setTimeout(function(){
@@ -42,7 +42,7 @@ class Client {
 						this.graphVisualizer.addVertexToLayoutBase(dataArray);
 						this.graphVisualizer.updateVertexSize(dataArray[1]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[3]));
-						if (eval) this.updateEndTime();				
+						if (eval) this.updateResponseTimes();				
 						clearTimeout(window.timeOut);
 						client = this;
 						window.timeOut = setTimeout(function(){
@@ -51,7 +51,7 @@ class Client {
 						break;
 					case 'addEdgeServer':
 						this.graphVisualizer.cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
-						if (eval) this.updateEndTime();				
+						if (eval) this.updateResponseTimes();				
 						clearTimeout(window.timeOut);
 						client = this;
 						window.timeOut = setTimeout(function(){
@@ -135,19 +135,19 @@ class Client {
 	}
 
 	sendSignalGradoop(){
-		if (eval) this.timeBeforeQuery = new Date().getTime();
+		if (eval) this.initiateEvaluation();
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;gradoop");
 	}
 
 	sendSignalCSV(){
-		if (eval) this.timeBeforeQuery = new Date().getTime()
+		if (eval) this.initiateEvaluation();
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;CSV");
 	}
 
 	sendSignalAdjacency(){
-		if (eval) this.timeBeforeQuery = new Date().getTime();
+		if (eval) this.initiateEvaluation();
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;adjacency");
 	}
@@ -183,7 +183,7 @@ class Client {
 		this.cyHeightHalf = this.cyHeight / 2;
 		this.cyWidthHalf = this.cyWidth / 2;
 		const pan = this.graphVisualizer.cy.pan();
-		if (eval) this.timeBeforeQuery = new Date().getTime();
+		if (eval) this.initiateEvaluation();
 		this.ws.send("viewportSize;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom() + ";" +  this.cyWidth + ";" + this.cyHeight);
 	}
 
@@ -265,13 +265,23 @@ class Client {
 		else return false;
 	}
 
-	updateEndTime(){
-		this.timeAfterQuery = new Date().getTime();
+	initiateEvaluation(){
+		this.timeBeforeQuery = new Date().getTime();
+		this.firstResponse = null;
+	}
+
+	updateResponseTimes(){
+		this.timeLastResponse = new Date().getTime();
+		if (this.firstResponse == null) this.firstResponse = this.timeLastResponse;
 	}
 
 	outputQueryTime(){
-		const timeDiff = this.timeAfterQuery - this.timeBeforeQuery;
-		console.info("Operation: " + this.operation + ", operation step: " + this.operationStep + ", duration: " + timeDiff);
+		const fullQueryDuration = this.timeLastResponse - this.timeBeforeQuery;
+		const firstToLastDuration = this.timeLastResponse - this.firstResponse; 
+		const output = "Operation: " + this.operation + ", operation step: " + this.operationStep + ", full-query-duration: " + fullQueryDuration + 
+			", first-to-last-Response-duration: " + firstToLastDuration;
+		console.info(output);
+		download(output, "client_evaluation", "string");
 	}
 }
 
@@ -313,6 +323,24 @@ $(document).ready(function(){
 	client.enableMouseEvents();
 });
 
+function download(data, filename, type) {
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
+
 function mouseWheel(e) {
 	client.disableMouseEvents();
 	e.preventDefault();
@@ -337,7 +365,7 @@ function mouseWheel(e) {
 		const rightModel = leftModel + client.cyWidth / client.graphVisualizer.zoomLevel;
 		console.log("ZoomIn... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
 		client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
-		if (eval) client.timeBeforeQuery = new Date().getTime();
+		if (eval) client.initiateEvaluation();
 		client.ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
 	} else {
 		if (client.vertexZoomLevel == 0){
@@ -352,7 +380,7 @@ function mouseWheel(e) {
 			pan = client.graphVisualizer.cy.pan();
 			client.graphVisualizer.zoomLevel = client.graphVisualizer.cy.zoom();
 			client.graphVisualizer.zoomLevel = client.graphVisualizer.zoomLevel;
-			if (eval) client.timeBeforeQuery = new Date().getTime();
+			if (eval) client.initiateEvaluation();
 			client.ws.send("zoomOut;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
 		}
 	}
@@ -387,7 +415,7 @@ function mouseUp(e){
 	console.log("Pan... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
 	client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
 	client.graphVisualizer.layoutBase = new Set();
-	if (eval) client.timeBeforeQuery = new Date().getTime();
+	if (eval) client.initiateEvaluation();
 	client.ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + client.graphVisualizer.zoomLevel);
 }
 

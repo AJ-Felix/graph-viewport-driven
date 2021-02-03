@@ -10,6 +10,7 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
@@ -35,7 +36,7 @@ import org.json.JSONObject;
 
 public class FlinkAPIClient {
 	private static String clusterEntryPointAddress;
-	private static String jobID;
+//	private static String jobID;
 	private static OkHttpClient client;
 	
 	public static void main(final String[] args) throws Exception {
@@ -76,16 +77,16 @@ public class FlinkAPIClient {
 		
 		Request request = new Request.Builder()
                 .url("http://" + clusterEntryPointAddress + ":8081" + 
-                		"/jobs"
-                		+ "/03fa8f1dcaa1dbfb1fcd91a281342abe"
-                		+ "/metrics"
+                		"/jobs/overview"
+//                		+ "/49d09bfb08cea1c9535d11d4fed32110"
+//                		+ "/metrics"
 //                		+ "vertices/5820e929907c7e7cf4555451bf2a6cc3"
                		 )
                 .build();
 		
 		
-		while (true) {
-			
+//		while (true) {
+//			
 //			Response memoryResponse = client.newCall(
 //					new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
 //							+ "/taskmanagers/9c3715361da688b7bddb942beeeb4e45"
@@ -95,14 +96,21 @@ public class FlinkAPIClient {
 			
 			Response response = doRequest(request);
 			String jsonResponse = response.body().string();
-			System.out.println(jsonResponse);
+//			System.out.println(jsonResponse);
 			
-//			List<String> jobIDs = new ArrayList<String>();
-//			JSONObject json = new JSONObject(jsonResponse);
-//			Iterator<Object> iter = json.getJSONArray("jobs").iterator();
-//			while(iter.hasNext()) {
-//				JSONObject job = (JSONObject) iter.next();
-//				String jobName = (String) job.get("name");
+			List<String> jobIDs = new ArrayList<String>();
+			JSONObject json = new JSONObject(jsonResponse);
+			Iterator<Object> iter = json.getJSONArray("jobs").iterator();
+			while(iter.hasNext()) {
+				JSONObject job = (JSONObject) iter.next();
+				String jobName = (String) job.get("name");
+				String jobId = (String) job.get("jid");
+				Integer duration = (Integer) job.get("duration");
+				System.out.println("Jobname: " + jobName + ", jobID: " + jobId + ", duration: " + duration);
+//				Response durationResponse = client.newCall(
+//						new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
+//								+ "/jobs/" + 
+//								+ "/metrics?get=Status.JVM.Memory.Heap.Used").build()).execute();
 //				if (jobName.equals("buildTopView")){
 //					Response memoryResponse = client.newCall(
 //							new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
@@ -114,10 +122,10 @@ public class FlinkAPIClient {
 //				
 //				System.out.println(jobName + ": " + job.get("state"));
 //				jobIDs.add((String) job.get("jid"));
-//			}
-			
-			Thread.sleep(500);
-		}
+			}
+//			
+//			Thread.sleep(500);
+//		}
 		
 		//retrieve job metrics
 //		try {
@@ -136,14 +144,16 @@ public class FlinkAPIClient {
 //		}
 	}
 	
-	private static void parseInput(String[] args) throws ParseException {
+	private static void parseInput(String[] args) throws Exception {
 		Options options = new Options();
 		options.addOption("c", true, "Address of flink cluster entrypoint");
-		options.addOption("j", true, "JobID");
+//		options.addOption("j", false, "JobID");
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmd = parser.parse(options, args);
 		clusterEntryPointAddress = cmd.getOptionValue("c");
-		jobID = cmd.getOptionValue("j");
+		if (clusterEntryPointAddress == null) throw new NullPointerException("Please provide cluster entry point at command line with -c!");
+		System.out.println("Cluster is located on: " + clusterEntryPointAddress);
+//		jobID = cmd.getOptionValue("j");
 	}
 	
 	private static Response doRequest(Request request) throws IOException {
