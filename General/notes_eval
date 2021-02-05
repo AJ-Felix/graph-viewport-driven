@@ -61,3 +61,18 @@ Ich habe mich noch mit dem Messen des Speicherbedarfs bei Flink auseinandergeset
 https://stackoverflow.com/questions/35315522/flink-memory-usage
 
 Anscheinend kann man für Batch Jobs die Menge an verfügbarem Speicher nur festlegen, aber nicht messen. Wie man "MemoryStateBackEnd" 
+
+
+
+
+Für GradoopGraphUtil muss SortPartition im ersten Schritt den Paralleliätsgrad 1 haben, damit eine (Halb)Ordnung erstellt werden kann.
+Bei CSVGraphUtil und AdjacencyGraphUtil muss das Einlesen des Streams mit Parallelitätsgrad 1 erfolgen, damit die vorher erstellte (Halb)Ordnung bestehen bleibt.
+
+
+Parallelität:
+Config		Environment 		Task		Cluster 	Result
+4		4			Some on 1	4		4 (Some on 1)
+4		2			Some on 1	4		2 (Some on 1)
+
+Durch setzen der Parallelität werden alle Tasks, welche keine Parallelität spezifiert haben auf entsprechende Werte gesetzt.
+

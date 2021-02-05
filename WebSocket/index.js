@@ -62,12 +62,6 @@ class Client {
 						if (!this.layout) this.graphVisualizer.layoutBase.delete(dataArray[1]);
 						this.graphVisualizer.cy.remove(this.graphVisualizer.cy.$id(dataArray[1]));
 						break;
-					// case 'fit':
-					// 	this.graphVisualizer.cy.fit();
-					// 	this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
-					// 	const pan = this.graphVisualizer.cy.pan();
-					// 	this.ws.send("fitted;" + pan.x + ";" + pan.y + ";" + this.graphVisualizer.cy.zoom());
-					// 	break;
 					case 'zoomAndPan':
 						this.graphVisualizer.zoomLevel = parseFloat(dataArray[1]);
 						this.graphVisualizer.cy.zoom(this.graphVisualizer.zoomLevel);
@@ -132,6 +126,10 @@ class Client {
 	sendGraphIsLayouted(){
 		this.layout = !document.getElementById('graphIsLayouted').checked;
 		this.ws.send("layoutMode;" + this.layout);
+	}
+
+	sendParallelism(){
+		this.ws.send("parallelism;" + document.getElementById('parallelism').value);
 	}
 
 	sendSignalGradoop(){

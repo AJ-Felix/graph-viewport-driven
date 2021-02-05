@@ -202,6 +202,14 @@ TODO: introduce better layout algorithms --> fcose und cose verändern die Knote
 
 TODO: Testen, ob partielles GroupCombine auch ohne GroupBy funktioniert (adjacencyGraphUtil)
 
+TODO: Beurteilen ob Einlesen aus dem HDFS oder aus NFS schneller ist (für große Graphen wahrscheinlich sowieso HDFS notwendig)
+
+TODO: Für alle Graphen die Knotengrade mit Gradoop vorher berechnen lassen
+
+TODO: Funktionen kommentieren
+
+TODO: Masterarbeitsentwurf: Kommentare einarbeiten
+
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
 	Bei Verkleinerung: 
 		Anschließend werden Knoten außerhalb der neuen Modellkoordinaten, welche vorher drin waren (also in innerVertices/newVertices), gelöscht, falls sie keine Nachbarn innerhalb der Modellkoordinaten mehr haben.

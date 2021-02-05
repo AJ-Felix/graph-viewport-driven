@@ -54,21 +54,17 @@ public class FlinkCore {
 				+ "targetVertexLabel, targetVertexX, targetVertexY, targetVertexDegree, targetZoomLevel, "
 				+ "edgeIdGradoop, edgeLabel";	  
 	  
-	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId) {
+	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId, int parallelism) {
 		this.hdfsFullPath = hdfsFullPath;
 		this.gradoopGraphID = gradoopGraphId;
 		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, 
 				flinkJobJarPath);
-		
-		this.env.setParallelism(4);
-		
+		this.env.setParallelism(parallelism);
 	    this.gradoopFlinkConfig = GradoopFlinkConfig.createConfig(env);
 		this.fsSettings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build();
 		this.fsEnv = StreamExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort,
 				flinkJobJarPath); 
-		
-		this.fsEnv.setParallelism(4);
-				
+		this.fsEnv.setParallelism(parallelism);	
 		this.fsTableEnv = StreamTableEnvironment.create(fsEnv, fsSettings);
 		System.out.println("initiated Flink.");
 	}

@@ -65,6 +65,7 @@ public class Server implements Serializable{
     private int flinkResponsePort = 8898;
 	private int vertexZoomLevel;
 	private boolean maxVerticesLock = false;
+	private int parallelism = 4;
 	
 	//evaluation
 	private boolean eval;
@@ -152,6 +153,8 @@ public class Server implements Serializable{
                 	graphFilesDirectory = messageData.split(";")[1];
                 } else if (messageData.startsWith("gradoopGraphId")) {
                 	gradoopGraphId = messageData.split(";")[1];
+                } else if (messageData.startsWith("parallelism")) {	
+                	parallelism = Integer.parseInt(messageData.split(";")[1]);
                 } else if (messageData.startsWith("viewportSize")) {
             		String[] arrMessageData = messageData.split(";");
                 	Float xRenderPos = Float.parseFloat(arrMessageData[1]);
@@ -221,13 +224,15 @@ public class Server implements Serializable{
                 		flinkCore = new FlinkCore(clusterEntryPointAddress, 
                     			"file://" +
                     			graphFilesDirectory, 
-                    			gradoopGraphId);
+                    			gradoopGraphId,
+                    			parallelism);
                 	} else {
                 		flinkCore = new FlinkCore(clusterEntryPointAddress, 
                     			"hdfs://" + hdfsEntryPointAddress + ":" + 
                 				String.valueOf(hdfsEntryPointPort) +
                     			graphFilesDirectory, 
-                    			gradoopGraphId);
+                    			gradoopGraphId,
+                    			parallelism);
                 	}
                 	evaluator.setParameters(flinkCore.getFsEnv());
                 	setModelPositions(topModelBorder, rightModelBorder, bottomModelBorder, leftModelBorder);

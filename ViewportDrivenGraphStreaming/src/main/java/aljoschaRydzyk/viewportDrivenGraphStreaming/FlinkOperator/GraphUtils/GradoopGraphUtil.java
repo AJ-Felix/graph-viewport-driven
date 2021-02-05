@@ -84,7 +84,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 //		System.out.println("zoomLevelSetSize: " + zoomLevelSetSize);
 		vertices = DataSetUtils.zipWithIndex((this.graph.getVertices()
 					.map(new VertexEPGMMapTupleDegreeComplex())
-					.sortPartition(1, Order.DESCENDING).setParallelism(1)
+					.sortPartition(1, Order.DESCENDING)
+					.setParallelism(1)
 				))
 				.map(new VertexTupleComplexMapRow(gradoopGraphId, zoomLevelSetSize));
 		
