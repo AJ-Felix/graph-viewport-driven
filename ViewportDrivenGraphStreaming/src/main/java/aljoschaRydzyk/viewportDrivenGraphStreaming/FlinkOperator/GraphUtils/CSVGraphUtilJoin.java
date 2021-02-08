@@ -99,8 +99,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	public void initializeDataSets(){
 		
 		//NOTE: Flink needs seperate instances of RowCsvInputFormat for each data import, although they might be identical		
-		
-		
 		//initialize vertex stream
 		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, this.vertexFormatTypeInfo);
@@ -114,10 +112,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "_wrappers"));
 		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
 		wrappersFormat.setFieldDelimiter(";");
-//		RowCsvInputFormat wrappersFormatIdentity = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
-//		wrappersFormatIdentity.setFieldDelimiter(";");
-//		DataStream<Row> wrapperStreamIdentity = this.fsEnv.readFile(wrappersFormatIdentity, this.inPath + "_vertices").setParallelism(1);
-//		this.wrapperStream = wrapperStreamIdentity.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "_wrappers").setParallelism(1));
 		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "_wrappers").setParallelism(1));
 		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);	
 	}
@@ -144,13 +138,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * Zoom function for graphs with layout
 		 */
 		
-		System.out.println("Zoom, in csv zoom function ... top, right, bottom, left:" + top + " " + right + " "+ bottom + " " + left);
-
-		System.out.println("zoomLevel in graphUtil: " + zoomLevel);
-		
 		//zoomLevel
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterZoomLevel(zoomLevel));
-		vertices.print();
 		
 		//vertex stream filter for in-view and out-view area and conversion to Flink Tables
 		DataStream<Row> vertexStreamInner = vertices.filter(new VertexFilterInner(top, right, bottom, left));
@@ -219,7 +208,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.join(vertexTableInnerNew).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields);
 			//filter out redundant identity edges
 			DataStream<Row> wrapperStreamInIn = fsTableEnv.toAppendStream(wrapperTableInIn, wrapperRowTypeInfo);
-		wrapperStreamInIn.print();	
 		
 		//produce wrapperStream from A+C to D and vice versa
 		Table wrapperTableOldInNewInInOut = wrapperTable

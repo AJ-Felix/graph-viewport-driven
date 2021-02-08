@@ -183,8 +183,6 @@ Darauf achten, dass der Server mit Java 8 ausgeführt wird, sonst gibt es eine W
 
 Wenn das Flink-Cluster weniger Task Slots zur Verfügung hat als der Job an Parallelität benötigt, dann hängt der Job im Status "CREATED"!!!
 
-TODO: Deploy gvdGraphs in 8-value vertex format (currently 17 for some graphs)
-
 TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut
 
 TODO: Adjacency: WrapperMap wird in JVM Speicher gehalten. Überlegung, das nach Flink auszulagern (weil zu groß) und entsprechend der ID-prefixe zu partitionieren, um einen effizienteren Zugriff zu ermöglichen.

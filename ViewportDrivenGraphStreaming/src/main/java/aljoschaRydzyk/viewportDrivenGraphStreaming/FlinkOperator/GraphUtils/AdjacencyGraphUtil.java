@@ -2,7 +2,6 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,11 +72,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	private FilterFunction<Row> zoomOutVertexFilter;
 	private int zoomLevel;
 	
-	//DEPRECATED
-//	private DataSet<Tuple2<BigInteger, Row>> wrapperMapPart;
-//	private DataSet<Tuple2<String, Map<String, String>>> adjMatrixPart;
-
-	
 	public AdjacencyGraphUtil(StreamExecutionEnvironment fsEnv, ExecutionEnvironment env, String inPath) {
 		this.fsEnv = fsEnv;
 		this.inPath = inPath;
@@ -95,11 +89,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		try {
 			this.wrapperMap = this.buildWrapperMap();
 			this.adjMatrix = this.buildAdjacencyMatrix();
-			
-			//partition (DEPRECATED)
-//			this.buildWrapperMapPart();
-//			this.buildAdjacencyMatrixPart();
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -135,131 +124,10 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	@Override
 	public DataStream<Row> zoom(Float top, Float right, Float bottom, Float left) {
 		DataStream<Row> vertexStreamInner = this.vertexStream
-				
-				//PARTIONING APPROACH NOT APPLICABLE
-				
-//				.partitionCustom(new VertexStringIDPartitioner(), new KeySelector<Row,String>(){
-//
-//					@Override
-//					public String getKey(Row value) throws Exception {
-//						return value.getField(1).toString();
-//					}
-//					
-//				})
-//				.keyBy(new KeySelector<Row,Integer>(){
-//					@Override
-//					public Integer getKey(Row value) throws Exception {
-//						 
-//						BigInteger vertexBigIntegerId = new BigInteger(value.getField(1).toString(), 16);
-//						Integer partition = vertexBigIntegerId.remainder(new BigInteger("4", 10)).intValue();
-//						return partition;
-//					}
-//					
-//				})
-				
 				.filter(new VertexFilterInner(top, right, bottom, left))
-				.filter(new VertexFilterZoomLevel(zoomLevel))
-		.filter(new FilterFunction<Row>() {
-
-			@Override
-			public boolean filter(Row value) throws Exception {
-				BigInteger vertexIdBigInteger = new BigInteger(value.getField(1).toString(), 16);
-				Integer partition = vertexIdBigInteger.remainder(new BigInteger("4", 10)).intValue();
-				System.out.println("Vertex ID hex string, BigInteger, partition: " + value.getField(1) + ", " + vertexIdBigInteger + ", " + partition);
-				return true;
-			}
-			
-		});
+				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Map<String, Map<String, String>> adjMatrix = this.adjMatrix;
 		Map<String, Row> wrapperMap = this.wrapperMap;
-		
-		//PARTIONING APPROACH NOT APPLICABLE
-		
-//		List<Map<String, Map<String, String>>> casedAdjacencyMatrix = null;
-//		DataSet<Map<String,Map<String,String>>> casedAdjacencyMatrixDataSet = null;
-//		try {
-//			casedAdjacencyMatrixDataSet = this.adjMatrixPart.groupBy(new KeySelector<Tuple2<String,Map<String,String>>, Integer>(){
-//
-//				@Override
-//				public Integer getKey(Tuple2<String, Map<String, String>> value) throws Exception {
-//					BigInteger gradoopIntegerId = new BigInteger(value.f0, 16);
-//					Integer partitionKey = gradoopIntegerId.remainder(new BigInteger(String.valueOf(4), 10)).intValue();
-//					System.out.println("partitionKey in groupBy: " + partitionKey);
-//					return partitionKey;
-//				}
-//			}).combineGroup(new GroupCombineFunction<Tuple2<String,Map<String,String>>, Map<String,Map<String,String>>>(){
-//
-//				@Override
-//				public void combine(Iterable<Tuple2<String, Map<String, String>>> values,
-//						Collector<Map<String, Map<String, String>>> out) throws Exception {
-//					Map<String,Map<String,String>> adjacencyMatrix = new HashMap<String,Map<String,String>>();
-//					for (Tuple2<String,Map<String,String>> entry : values) {
-//						adjacencyMatrix.put(entry.f0, entry.f1);
-//						System.out.println("adjEntry in combine: " + entry);
-//						BigInteger gradoopIntegerId = new BigInteger(entry.f0, 16);
-//						Integer partitionKey = gradoopIntegerId.remainder(new BigInteger(String.valueOf(4), 10)).intValue();
-//						System.out.println("partitionKey in combine: " + partitionKey);
-//					}
-//					System.out.println("in adjMatrix combineGroup, adjMatrix size: " + adjacencyMatrix.size());
-//					out.collect(adjacencyMatrix);
-//				}
-//			});
-//			casedAdjacencyMatrix = casedAdjacencyMatrixDataSet.collect();
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		try {
-//			env.execute();
-//		} catch (Exception e1) {
-//			e1.printStackTrace();
-//		}
-//		
-//		System.out.println("casedAdjacencyMatrix, length: " + casedAdjacencyMatrix.size());
-//		
-//		Map<String, Map<String, String>> adjMatrix = casedAdjacencyMatrix.get(0);
-//		System.out.println("adjacencyMatrixPart, zoom, size: " + adjMatrix.size());
-//		
-//		List<Map<String,Row>> casedWrapperMap = null;
-//		try {
-//			casedWrapperMap = this.wrapperMapPart.groupBy(new KeySelector<Tuple2<BigInteger,Row>, Integer>(){
-//
-//				@Override
-//				public Integer getKey(Tuple2<BigInteger, Row> value) throws Exception {
-//					Integer partitionKey = value.f0.remainder(new BigInteger(String.valueOf(4), 10)).intValue();
-//					System.out.println("wrapperMap, partitionKey in groupBy: " + partitionKey);
-//					return partitionKey;
-//				}
-//			}).combineGroup(new GroupCombineFunction<Tuple2<BigInteger,Row>, Map<String,Row>>(){
-//
-//					@Override
-//					public void combine(Iterable<Tuple2<BigInteger,Row>> values,
-//							Collector<Map<String, Row>> out) throws Exception {
-//						Map<String,Row> wrapperMap = new HashMap<String,Row>();
-//						for (Tuple2<BigInteger,Row> entry : values) {
-//							System.out.println("wrapperMap in combine: " + entry);
-//							wrapperMap.put(entry.f1.getField(15).toString(), entry.f1);
-//							Integer partitionKey = entry.f0.remainder(new BigInteger(String.valueOf(4), 10)).intValue();
-//							System.out.println("wrapperMap, partitionKey in combine: " + partitionKey);
-//						}
-//						out.collect(wrapperMap);
-//					}
-//				}).collect();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		
-//		try {
-//			env.execute();
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		Map<String,Row> wrapperMap = casedWrapperMap.get(0);
-//		for (String key : casedAdjacencyMatrix.get(0).keySet()) System.out.println("adjacencyMatrixPart: " + key);
-//		for (Row row : casedWrapperMap.get(0).values()) System.out.println("wrapperMapPart: " + row.getField(15));
 		
 		//produce NonIdentity Wrapper Stream
 		DataStream<Row> nonIdentityWrapper = vertexStreamInner.flatMap(new VertexFlatMapZoom(
@@ -350,45 +218,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		return this.wrapperMap;
 	}
 	
-	/*
-	 * General workflow for this GraphUtil:
-	 * 		-	produce a vertex stream
-	 * 		- 	flatMap and produce a stream of all relevant wrapperIDs using adjacency matrix
-	 * 		- 	map wrapperIDstream to wrapperStream
-	 */
-	
-	//THIS FUNCTION IS DEPRECATED SINCE THE APPROACH DID NOT WORK
-
-//	private void buildAdjacencyMatrixPart() {
-//		DataSet<String> stringReader = env.readTextFile(this.inPath + "_adjacency");
-//		DataSet<Tuple2<String,Map<String,String>>> adjacencyMatrix = stringReader.map(new StringMapAdjacencyMatrix());
-//		this.adjMatrixPart = adjacencyMatrix.partitionCustom(new VertexStringIDPartitioner(), 0);	
-//		try {
-//			System.out.println("adjMatrix, building, size: " + this.adjMatrixPart.count());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//	}
-	
-	//THIS FUNCTION IS DEPRECATED SINCE THE APPROACH DID NOT WORK
-
-//	private void buildWrapperMapPart() {
-//		CsvReader reader = env.readCsvFile(this.inPath + "_wrappers");
-//		reader.fieldDelimiter(";");
-//		DataSet<Tuple17<
-//			String,
-//			String,Long,String,Integer,Integer,Long,Integer,
-//			String,Long,String,Integer,Integer,Long,Integer,
-//			String,String>> 
-//		wrapperSource = reader.types(
-//				String.class, 
-//				String.class, Long.class, String.class, Integer.class, Integer.class, Long.class, Integer.class,
-//				String.class, Long.class, String.class, Integer.class, Integer.class, Long.class, Integer.class,
-//				String.class, String.class);
-//		DataSet<Tuple2<BigInteger, Row>> wrapperPartitionKeyed = wrapperSource.flatMap(new WrapperMapAddPartitionKey());
-//		this.wrapperMapPart = wrapperPartitionKeyed.partitionCustom(new WrapperMapPartitioner(), 0);
-//	}
-	
 	@Override
 	public DataStream<Row> panZoomInLayoutStep1(Map<String,VertexGVD> layoutedVertices, Map<String,VertexGVD> innerVertices,
 			Float top, Float right, Float bottom, Float left) {
@@ -416,10 +245,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				.filter(new WrapperFilterNotVisualizedReverse(innerVerticeskeySet))
 				.filter(new WrapperFilterIsLayoutedInsideReverse(layoutedVertices, top, right, bottom, left))
 				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
-//		DataStream<String> wrapperIds = vertices
-//				.flatMap(new VertexFlatMapNotVisualizedButLayoutedInsideUni(adjMatrix, layoutedVertices, innerVerticeskeySet, zoomLevel, top, right, 
-//						bottom, left));
-//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
@@ -450,10 +275,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				.map(new WrapperDirectionTupleMapWrapper())
 				.filter(new WrapperFilterNotLayoutedReverse(layoutedVerticeskeySet))
 				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
-		
-//		DataStream<String> wrapperIds = visualizedVertices.flatMap(new VertexFlatMapNotLayoutedBi(adjMatrix, layoutedVerticeskeySet));
-//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		
 		return wrapperTrue.union(wrapperReverse);
 	}
 	
@@ -482,12 +303,9 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				.map(new WrapperDirectionTupleMapWrapper())
 				.filter(new WrapperFilterNotLayoutedReverse(layoutedVerticesKeySet))
 				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
-//		DataStream<String> wrapperIds = notLayoutedVertices.flatMap(new VertexFlatMapNotLayoutedUni(adjMatrix, layoutedVerticesKeySet));
-//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		
+
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = notLayoutedVertices.map(new VertexMapIdentityWrapperRow());
-//		return nonIdentityWrapper.union(identityWrapper);
 		return wrapperTrue.union(wrapperReverse.union(identityWrapper));
 	}
 	
@@ -519,10 +337,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				.map(new WrapperDirectionTupleMapWrapper())
 				.filter(new WrapperFilterIsLayoutedOutsideReverse(layoutedVertices, top, right, bottom, left))
 				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
-		
-//		DataStream<String> wrapperIds = visualizedVerticesStream.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
-//				adjMatrix, top, right, bottom, left));
-//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 
 		//filter out already visualized edges in wrapper stream
 		DataStream<Row> nonIdentityWrapper = wrapperReverse.union(wrapperTrue).filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
@@ -554,10 +368,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				.map(new WrapperDirectionTupleMapWrapper())
 				.filter(new WrapperFilterIsLayoutedInnerOldNotNewReverse(layoutedVertices, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
 						bottomOld, leftOld));
-
-//		DataStream<String> wrapperIds = cVertices.flatMap(new VertexFlatMapIsLayoutedInnerOldNotNewBi(
-//				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew, topOld, rightOld, 
-//				bottomOld, leftOld));
 		
 		//produce wrapper stream from A to B+D and vice versa
 		DataStream<Row> aVertices = this.vertexStream.filter(new VertexFilterIsVisualized(newVerticesKeySet))
@@ -575,17 +385,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 		
 		DataStream<Row> wrapperTrue = wrapperTrueA.union(wrapperTrueC).filter(new WrapperFilterZoomLevelTrue(zoomLevel));
 		DataStream<Row> wrapperReverse = wrapperReverseA.union(wrapperReverseC).filter(new WrapperFilterZoomLevelTrue(zoomLevel));
-
-		
-//		DataStream<String> wrapperIds2 = aVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(
-//				layoutedVertices, adjMatrix, topNew, rightNew, bottomNew, leftNew));
-//		
-//		DataStream<Row> nonIdentityWrapper = wrapperIds.union(wrapperIds2)
-//				.map(new WrapperIDMapWrapper(this.wrapperMap));
-		
 		DataStream<Row> nonIdentityWrapper = wrapperTrue.union(wrapperReverse).filter(new WrapperFilterVisualizedWrappers(this.visualizedWrappers));
-		for (String wrapperId: this.visualizedWrappers) System.out.println("visualizedWrapper: " + wrapperId);
-		nonIdentityWrapper.print();
 		return nonIdentityWrapper;
 	}
 	
@@ -621,10 +421,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 						bottomOld, leftOld))
 				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
 		
-//		DataStream<String> wrapperIds = vertices.flatMap(new VertexFlatMapIsLayoutedInnerNewNotOldUni(adjMatrix, layoutedVertices, 
-//				topNew, rightNew, bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld));
-//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
-		
 		//produce Identity Wrapper Stream
 		DataStream<Row> identityWrapper = vertices.map(new VertexMapIdentityWrapperRow());
 		return wrapperTrue.union(wrapperReverse).union(identityWrapper);
@@ -656,10 +452,6 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 				.map(new WrapperDirectionTupleMapWrapper())
 				.filter(new WrapperFilterIsLayoutedOutsideReverse(layoutedVertices, top, right, bottom, left))
 				.filter(new WrapperFilterZoomLevelReverse(zoomLevel));
-		
-//		DataStream<String> wrapperIds = newlyVisualizedVertices.flatMap(new VertexFlatMapIsLayoutedOutsideBi(layoutedVertices,
-//				adjMatrix, top, right, bottom, left));
-//		DataStream<Row> nonIdentityWrapper = wrapperIds.map(new WrapperIDMapWrapper(this.wrapperMap));
 		return wrapperTrue.union(wrapperReverse);
 	}
 

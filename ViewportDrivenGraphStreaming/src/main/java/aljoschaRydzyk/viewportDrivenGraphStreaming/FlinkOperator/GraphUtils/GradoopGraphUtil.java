@@ -73,15 +73,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	
 	@Override
 	public void initializeDataSets() throws Exception{
-//		System.out.println(this.graph);
-//		System.out.println("graphHeadSize: " + this.graph.getGraphHead().collect().size());
-//		String graphId = this.graph.getGraphHead().collect().get(0).getId().toString();
 		int numberVertices = Integer.parseInt(String.valueOf(this.graph.getVertices().count()));
-//		System.out.println("numberVertices: " + numberVertices);
 		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
-//		System.out.println("numberZoomLevels: " + numberZoomLevels);
 		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
-//		System.out.println("zoomLevelSetSize: " + zoomLevelSetSize);
 		vertices = DataSetUtils.zipWithIndex((this.graph.getVertices()
 					.map(new VertexEPGMMapTupleDegreeComplex())
 					.sortPartition(1, Order.DESCENDING)

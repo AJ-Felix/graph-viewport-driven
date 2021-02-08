@@ -10,7 +10,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.BasicConfigurator;
 
 
 public class Main {
@@ -19,7 +18,6 @@ public class Main {
 	
     public static void main(final String[] args) {
     	
-//    	BasicConfigurator.configure();
     	PrintStream fileOut = null;
 		try {
 			fileOut = new PrintStream("/home/aljoscha/out.txt");
