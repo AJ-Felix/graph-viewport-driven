@@ -298,7 +298,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		 * Third substep for pan/zoom-in operation on graphs without layout. Returns a DataSet of wrappers including vertices that are 
 		 * not yet layouted starting with highest degree.
 		 */
-		System.out.println("layoutedVertices size" + layoutedVertices.size());
 		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
 		DataSet<Row> notLayoutedVertices = vertices
 				.filter(new VertexFilterNotLayouted(layoutedVerticesKeySet))

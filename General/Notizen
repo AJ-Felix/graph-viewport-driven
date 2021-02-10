@@ -181,6 +181,8 @@ Upgrade auf Flink 1.12.0: Cryptic error...
 
 Darauf achten, dass der Server mit Java 8 ausgeführt wird, sonst gibt es eine Warnung (illegal reflective access)
 
+in flink-config web.timeout auf 1000000 milliseconds gestellt für Graphformattransformation!!!
+
 Wenn das Flink-Cluster weniger Task Slots zur Verfügung hat als der Job an Parallelität benötigt, dann hängt der Job im Status "CREATED"!!!
 
 TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut

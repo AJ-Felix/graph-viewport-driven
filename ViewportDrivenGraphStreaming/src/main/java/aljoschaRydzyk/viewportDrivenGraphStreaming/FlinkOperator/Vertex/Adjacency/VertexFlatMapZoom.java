@@ -35,9 +35,6 @@ public class VertexFlatMapZoom implements FlatMapFunction<Row,Row>{
 	public void flatMap(Row value, Collector<Row> out) throws Exception {
 		String firstVertexId = (String) value.getField(1);
 		Map<String,String> map = adjMatrix.get(firstVertexId);
-		System.out.println("VertexFlatMapZoom, adjMatrix size: " + adjMatrix.size());
-		for (Map.Entry<String, Map<String,String>> entry : adjMatrix.entrySet()) System.out.println("adjMatrix, key, value: " + entry.getKey() 
-			+ ", " + entry.getValue());
 		for (String wrapperId : map.values()) {
 			Row wrapper = wrapperMap.get(wrapperId);
 			String secondVertexId;

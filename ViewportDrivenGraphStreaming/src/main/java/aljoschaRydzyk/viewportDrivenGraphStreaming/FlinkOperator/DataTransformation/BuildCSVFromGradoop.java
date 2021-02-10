@@ -25,6 +25,7 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
 			3 gradoop graphID
 			4 one of 'gradoop' or 'gvd' to determine result graph format
 			5 jar files necessary for flink job execution (ExecutionEnvironment.createRemoteEnvironment())
+			6 cluster entry point address (default: 'loclahost')
 			optional:
 				one of 'sample', 'degree', 'layout' or a combination (up to 8 arguments then)
  * 
@@ -46,10 +47,11 @@ public class BuildCSVFromGradoop {
 		String gradoopGraphId = args[2];
 		String formatType = args[3];
 		String flinkJobJarPath = args[4];
+		clusterEntryPointAddress = args[5];
 		List<String> operations = new ArrayList<String>();
-		if (args.length >= 6) operations.add(args[5]);
 		if (args.length >= 7) operations.add(args[6]);
-		if (args.length == 8) operations.add(args[7]);
+		if (args.length >= 8) operations.add(args[7]);
+		if (args.length == 9) operations.add(args[8]);
 		
 		
 		
@@ -58,10 +60,6 @@ public class BuildCSVFromGradoop {
 				.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, flinkJobJarPath);
 		env.setParallelism(4);
 		GradoopFlinkConfig gra_flink_cfg = GradoopFlinkConfig.createConfig(env);
-		
-		//create Flink Stream Configuration
-		StreamExecutionEnvironment fsEnv = StreamExecutionEnvironment.getExecutionEnvironment();
-		fsEnv.setParallelism(4);
 		
 		//load graph
 		DataSource source = new CSVDataSource(sourcePath, gra_flink_cfg);
@@ -93,9 +91,13 @@ public class BuildCSVFromGradoop {
 			DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
 			csvDataSink.write(log, true);
 		} else if (formatType.equals("gvd")) {
+			if (!operations.contains("degree")) 
+				System.out.println("Warning: GVD Format assumes that vertex degrees are already calculated!");
+			if (!operations.contains("layout"))
+				System.out.println("Warning: GVD Format requires layout coordinates for all vertices!");
 			GradoopToCSV gradoopToCSV = new GradoopToCSV(zoomLevelCoefficient);
 			gradoopToCSV.parseGradoopToCSV(log, writePath, gradoopGraphId);
 		}
-		env.execute();
+		env.execute("Parse to GVD Format");
 	}
 }

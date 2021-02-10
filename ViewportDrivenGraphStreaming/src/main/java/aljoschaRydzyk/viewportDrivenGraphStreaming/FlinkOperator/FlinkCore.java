@@ -284,8 +284,6 @@ public class FlinkCore {
 	public DataSet<WrapperGVD> panSet(){
 		DataSet<WrapperGVD> set = this.graphUtilSet.pan(topNew, rightNew, bottomNew, leftNew, 
 				topOld, rightOld, bottomOld, leftOld);
-		System.out.println("FlinkCore, panSet... " + topNew + " " + rightNew + " " + bottomNew + " " + 
-				leftNew + " " +  topOld + " " + rightOld +" " + bottomOld + " " + leftOld);
 		return set;
 	}
 	

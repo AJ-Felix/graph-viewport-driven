@@ -28,7 +28,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTu
 
 
 public class GradoopToCSV {
-	private int zoomLevelCoefficient = 250;
+	private int zoomLevelCoefficient;
 	
 	public GradoopToCSV(int zoomLevelCoefficient) {
 		this.zoomLevelCoefficient = zoomLevelCoefficient;
@@ -43,7 +43,8 @@ public class GradoopToCSV {
 		//vertices
 		DataSet<Row> vertices = DataSetUtils.zipWithIndex((graph.getVertices()
 				.map(new VertexEPGMMapTupleDegreeComplex())
-				.sortPartition(1, Order.DESCENDING).setParallelism(1)
+				.sortPartition(1, Order.DESCENDING)
+				.setParallelism(1)
 			))
 			.map(new VertexTupleComplexMapRow(graphId, zoomLevelSetSize));
 		
@@ -67,9 +68,8 @@ public class GradoopToCSV {
 			String, Long, String, Integer, Integer, Long, Integer, 
 			String, String>> wrapperTupled = wrapper
 				.map(new WrapperMapTuple());
-		PartitionOperator<Tuple17<String, String, Long, String, Integer, Integer, Long, Integer, String, Long, String, Integer, Integer, Long, Integer, String, String>> par = wrapperTupled.partitionByHash(16);
-		par.writeAsCsv(outPath + "_par", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
-		par.print();
+//		PartitionOperator<Tuple17<String, String, Long, String, Integer, Integer, Long, Integer, String, Long, String, Integer, Integer, Long, Integer, String, String>> par = wrapperTupled.partitionByHash(16);
+//		par.writeAsCsv(outPath + "_par", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
 		wrapperTupled.writeAsCsv(outPath + "_wrappers", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
 		
 		//adjacency
