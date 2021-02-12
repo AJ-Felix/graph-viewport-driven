@@ -5,7 +5,6 @@ import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.operators.MapOperator;
-import org.apache.flink.api.java.operators.PartitionOperator;
 import org.apache.flink.api.java.operators.UnionOperator;
 import org.apache.flink.api.java.operators.UnsortedGrouping;
 import org.apache.flink.api.java.tuple.Tuple17;
@@ -51,7 +50,7 @@ public class GradoopToCSV {
 		MapOperator<Row, Tuple8<String, String, Long, String, Integer, Integer, Long, Integer>> verticesTupled = 
 				vertices.map(new VerticesMapTuple());
 		
-		verticesTupled.writeAsCsv(outPath + "_vertices", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
+		verticesTupled.writeAsCsv(outPath + "/vertices", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
 		
 		//wrappers
 		DataSet<EPGMEdge> edges = graph.getEdges();
@@ -68,9 +67,7 @@ public class GradoopToCSV {
 			String, Long, String, Integer, Integer, Long, Integer, 
 			String, String>> wrapperTupled = wrapper
 				.map(new WrapperMapTuple());
-//		PartitionOperator<Tuple17<String, String, Long, String, Integer, Integer, Long, Integer, String, Long, String, Integer, Integer, Long, Integer, String, String>> par = wrapperTupled.partitionByHash(16);
-//		par.writeAsCsv(outPath + "_par", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
-		wrapperTupled.writeAsCsv(outPath + "_wrappers", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
+		wrapperTupled.writeAsCsv(outPath + "/wrappers", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
 		
 		//adjacency
 		MapOperator<Row, Tuple3<String, String, String>> idsSourceTargetWrapper = 
@@ -90,7 +87,7 @@ public class GradoopToCSV {
 		MapOperator<Tuple2<String, List<Tuple2<String, String>>>, String> idsStringified = idsReduced
 				.map(new ReducedIDsMapString());	
 		
-		idsStringified.writeAsText(outPath + "_adjacency", WriteMode.OVERWRITE).setParallelism(1);
+		idsStringified.writeAsText(outPath + "/adjacency", WriteMode.OVERWRITE).setParallelism(1);
 		
 		//adjacency for partitioning
 	}

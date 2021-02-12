@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.algorithms.gelly.vertexdegrees.DistinctVertexDegrees;
 import org.gradoop.flink.io.api.DataSink;
@@ -12,7 +11,6 @@ import org.gradoop.flink.io.api.DataSource;
 import org.gradoop.flink.io.impl.csv.CSVDataSink;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
-import org.gradoop.flink.model.impl.operators.layouting.CentroidFRLayouter;
 import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodSampling;
 import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.util.GradoopFlinkConfig;
@@ -36,7 +34,7 @@ public class BuildCSVFromGradoop {
 	private static int clusterEntryPointPort = 8081;
 	private static String clusterEntryPointAddress = "localhost";
 	private static int zoomLevelCoefficient = 250;
-	private static int layoutIterations = 20;
+//	private static int layoutIterations = 1000;
 	
 	
 	public static void main(String[] args) throws Exception {
@@ -58,7 +56,7 @@ public class BuildCSVFromGradoop {
 		//create gradoop Flink configuration
 		ExecutionEnvironment env = ExecutionEnvironment
 				.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, flinkJobJarPath);
-		env.setParallelism(4);
+		env.setParallelism(16);
 		GradoopFlinkConfig gra_flink_cfg = GradoopFlinkConfig.createConfig(env);
 		
 		//load graph
@@ -81,9 +79,14 @@ public class BuildCSVFromGradoop {
 		}
 		
 		//layout graph
+//		if (operations.contains("layout")) {
+//			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
+//			log = new CentroidFRLayouter(1000, numberVertices).execute(log);
+//		}
+//		
+		//random layouter
 		if (operations.contains("layout")) {
-			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
-			log = new CentroidFRLayouter(layoutIterations, numberVertices).execute(log);
+			log = log.transformVertices(new RandomLayouter());
 		}
 
 		//sink to gradoop format or GVD format
