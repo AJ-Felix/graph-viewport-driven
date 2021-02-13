@@ -56,7 +56,7 @@ public class BuildCSVFromGradoop {
 		//create gradoop Flink configuration
 		ExecutionEnvironment env = ExecutionEnvironment
 				.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, flinkJobJarPath);
-		env.setParallelism(16);
+		env.setParallelism(8);
 		GradoopFlinkConfig gra_flink_cfg = GradoopFlinkConfig.createConfig(env);
 		
 		//load graph
