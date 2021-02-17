@@ -57,7 +57,39 @@ public class FlinkAPIClient {
 		}	
 		
 		client = new OkHttpClient();
+		
+		List<Request> requests = new ArrayList<Request>();
+		
+		Request jobmanagerHeapRequest = new Request.Builder()
+                .url("http://" + clusterEntryPointAddress + ":8081" 
+		          		+ "/jobmanager"
+                		+ "/metrics"
+                		+ "?get=Status.JVM.Memory.Heap.Used"
+               		 )
+                .build();
+		requests.add(jobmanagerHeapRequest);
+		
+		Request taskmanagerHeapRequest = new Request.Builder()
+                .url("http://" + clusterEntryPointAddress + ":8081" 
+		          		+ "/taskmanagers"
+                		+ "/metrics"
+                		+ "?get=Status.JVM.Memory.Heap.Used"
+               		 )
+                .build();
+		requests.add(taskmanagerHeapRequest);
 
+		while(true) {
+			for (Request request: requests) {
+				Response response = doRequest(request);
+				String jsonResponse = response.body().string();
+				System.out.println("Request: " + request);
+				System.out.println("Response: " + jsonResponse);
+			}	
+			System.out.println(System.currentTimeMillis());
+			Thread.sleep(60000);
+		}
+	}
+		
 //		Request request = new Request.Builder()
 //		                     .url("http://" + clusterEntryPointAddress + ":8081" + 
 //		                    		 "/taskmanagers/f62a42bf2284a9bd00fc4380059e18d5/metrics")
@@ -75,15 +107,15 @@ public class FlinkAPIClient {
 //               		 )
 //                .build();
 		
-		Request request = new Request.Builder()
-                .url("http://" + clusterEntryPointAddress + ":8081" + 
-                		"/jobs/overview"
-//                		+ "/49d09bfb08cea1c9535d11d4fed32110"
-//                		+ "/metrics"
-//                		+ "vertices/5820e929907c7e7cf4555451bf2a6cc3"
-               		 )
-                .build();
-		
+//		Request request = new Request.Builder()
+//                .url("http://" + clusterEntryPointAddress + ":8081" + 
+//                		"/jobs/overview"
+////                		+ "/49d09bfb08cea1c9535d11d4fed32110"
+////                		+ "/metrics"
+////                		+ "vertices/5820e929907c7e7cf4555451bf2a6cc3"
+//               		 )
+//                .build();
+//		
 		
 //		while (true) {
 //			
@@ -94,19 +126,19 @@ public class FlinkAPIClient {
 //			System.out.println(memoryResponse.body().string());
 
 			
-			Response response = doRequest(request);
-			String jsonResponse = response.body().string();
-//			System.out.println(jsonResponse);
-			
-			List<String> jobIDs = new ArrayList<String>();
-			JSONObject json = new JSONObject(jsonResponse);
-			Iterator<Object> iter = json.getJSONArray("jobs").iterator();
-			while(iter.hasNext()) {
-				JSONObject job = (JSONObject) iter.next();
-				String jobName = (String) job.get("name");
-				String jobId = (String) job.get("jid");
-				Integer duration = (Integer) job.get("duration");
-				System.out.println("Jobname: " + jobName + ", jobID: " + jobId + ", duration: " + duration);
+//			Response response = doRequest(request);
+//			String jsonResponse = response.body().string();
+////			System.out.println(jsonResponse);
+//			
+//			List<String> jobIDs = new ArrayList<String>();
+//			JSONObject json = new JSONObject(jsonResponse);
+//			Iterator<Object> iter = json.getJSONArray("jobs").iterator();
+//			while(iter.hasNext()) {
+//				JSONObject job = (JSONObject) iter.next();
+//				String jobName = (String) job.get("name");
+//				String jobId = (String) job.get("jid");
+//				Integer duration = (Integer) job.get("duration");
+//				System.out.println("Jobname: " + jobName + ", jobID: " + jobId + ", duration: " + duration);
 //				Response durationResponse = client.newCall(
 //						new Request.Builder().url("http://" + clusterEntryPointAddress + ":8081"
 //								+ "/jobs/" + 
@@ -122,7 +154,7 @@ public class FlinkAPIClient {
 //				
 //				System.out.println(jobName + ": " + job.get("state"));
 //				jobIDs.add((String) job.get("jid"));
-			}
+//			}
 //			
 //			Thread.sleep(500);
 //		}
@@ -142,7 +174,7 @@ public class FlinkAPIClient {
 //		} catch (ApiException e) {
 //			e.printStackTrace();
 //		}
-	}
+//	}
 	
 	private static void parseInput(String[] args) throws Exception {
 		Options options = new Options();

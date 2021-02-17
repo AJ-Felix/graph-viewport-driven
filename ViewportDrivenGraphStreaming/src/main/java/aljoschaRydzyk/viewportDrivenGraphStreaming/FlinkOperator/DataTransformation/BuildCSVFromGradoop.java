@@ -11,6 +11,7 @@ import org.gradoop.flink.io.api.DataSource;
 import org.gradoop.flink.io.impl.csv.CSVDataSink;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
+import org.gradoop.flink.model.impl.operators.layouting.CentroidFRLayouter;
 import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodSampling;
 import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.util.GradoopFlinkConfig;
@@ -83,7 +84,7 @@ public class BuildCSVFromGradoop {
 //			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
 //			log = new CentroidFRLayouter(1000, numberVertices).execute(log);
 //		}
-//		
+		
 		//random layouter
 		if (operations.contains("layout")) {
 			log = log.transformVertices(new RandomLayouter());
