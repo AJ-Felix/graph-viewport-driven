@@ -4,35 +4,17 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.nextbreakpoint.flinkclient.api.ApiClient;
-import com.nextbreakpoint.flinkclient.api.ApiException;
-import com.nextbreakpoint.flinkclient.api.ApiResponse;
-import com.nextbreakpoint.flinkclient.api.FlinkApi;
-import com.nextbreakpoint.flinkclient.api.Pair;
-import com.nextbreakpoint.flinkclient.model.JobDetailsInfo;
-import com.squareup.okhttp.Call;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.*;
-import org.apache.flink.runtime.dispatcher.StandaloneDispatcher;
-import org.apache.flink.runtime.rest.RestServerEndpointConfiguration;
-import org.apache.flink.runtime.webmonitor.HttpRequestHandler;
-import org.apache.flink.runtime.webmonitor.WebMonitorEndpoint;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class FlinkAPIClient {
 	private static String clusterEntryPointAddress;
@@ -77,6 +59,14 @@ public class FlinkAPIClient {
                		 )
                 .build();
 		requests.add(taskmanagerHeapRequest);
+		
+		Request jobOverviewRequest = new Request.Builder()
+                .url("http://" + clusterEntryPointAddress + ":8081" 
+		          		+ "/jobs"
+                		+ "/overview"
+               		 )
+                .build();
+		requests.add(jobOverviewRequest);
 
 		while(true) {
 			for (Request request: requests) {

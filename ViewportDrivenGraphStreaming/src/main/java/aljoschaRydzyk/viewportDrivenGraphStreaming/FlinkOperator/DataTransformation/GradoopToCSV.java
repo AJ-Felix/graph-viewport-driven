@@ -1,10 +1,13 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.DataTransformation;
 
 import java.util.List;
+import java.util.Map;
+
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.operators.MapOperator;
+import org.apache.flink.api.java.operators.ReduceOperator;
 import org.apache.flink.api.java.operators.UnionOperator;
 import org.apache.flink.api.java.operators.UnsortedGrouping;
 import org.apache.flink.api.java.tuple.Tuple17;
@@ -77,18 +80,25 @@ public class GradoopToCSV {
 		
 		UnionOperator<Tuple3<String, String, String>> idsUnited = idsSourceTargetWrapper
 				.union(idsTargetSourceWrapper);
+		
+		MapOperator<Tuple3<String, String, String>, AdjacencyRow> 
+		adjaRow = idsUnited.map(new IDsMapAdjacencyRow());
+				
+		UnsortedGrouping<AdjacencyRow> adjaRowGrouped = adjaRow.groupBy(new AdjacencyRowGroup());
+		
+		ReduceOperator<AdjacencyRow> adjaRowReduced = adjaRowGrouped.reduce(new AdjacencyRowReduce());
+		
+		MapOperator<AdjacencyRow, String> idsStringified = adjaRowReduced.map(new AdjacencyRowMapString());
 		 
-		UnsortedGrouping<Tuple3<String, String, String>> idsGrouped = idsUnited
-				.groupBy(new UnitedIDsGroup());
+//		UnsortedGrouping<Tuple3<String, String, String>> idsGrouped = idsUnited
+//				.groupBy(new UnitedIDsGroup());
 		
-		GroupReduceOperator<Tuple3<String, String, String>, Tuple2<String, List<Tuple2<String, String>>>> 
-		idsReduced = idsGrouped.reduceGroup(new IDsGroupedReduce());
+//		GroupReduceOperator<Tuple3<String, String, String>, Tuple2<String, List<Tuple2<String, String>>>> 
+//		idsReduced = idsGrouped.reduceGroup(new IDsGroupedReduce());
 		
-		MapOperator<Tuple2<String, List<Tuple2<String, String>>>, String> idsStringified = idsReduced
-				.map(new ReducedIDsMapString());	
+//		MapOperator<Tuple2<String, List<Tuple2<String, String>>>, String> idsStringified = idsReduced
+//				.map(new ReducedIDsMapString());	
 		
 		idsStringified.writeAsText(outPath + "/adjacency", WriteMode.OVERWRITE).setParallelism(1);
-		
-		//adjacency for partitioning
 	}
 }
