@@ -100,19 +100,19 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		
 		//NOTE: Flink needs seperate instances of RowCsvInputFormat for each data import, although they might be identical		
 		//initialize vertex stream
-		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
+		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "/vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, this.vertexFormatTypeInfo);
 		verticesFormat.setFieldDelimiter(";");
-		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
+		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "/vertices").setParallelism(1);
 		
 		//initialize wrapper identity stream
 		this.wrapperStream = this.vertexStream.map(new VertexMapIdentityWrapperRow()).returns(new RowTypeInfo(this.wrapperFormatTypeInfo));
 		
 		//initialize wrapper stream
-		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "_wrappers"));
+		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "/wrappers"));
 		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
 		wrappersFormat.setFieldDelimiter(";");
-		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "_wrappers").setParallelism(1));
+		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "/wrappers").setParallelism(1));
 		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);	
 	}
 	

@@ -42,7 +42,7 @@ public class Server implements Serializable{
 	private float rightModelBorder = 4000;
 	private float bottomModelBorder = 4000; 
 	private float leftModelBorder = 0;
-	
+	private int edgeCount = 100;
 	
 	
 	private List<WrapperGVD> wrapperCollection;
@@ -96,7 +96,7 @@ public class Server implements Serializable{
     
     public void initializeHandlers() {
     	wrapperHandler = new WrapperHandler(this);
-  		wrapperHandler.initializeGraphRepresentation();
+  		wrapperHandler.initializeGraphRepresentation(edgeCount);
   		wrapperHandler.initializeAPI(localMachinePublicIp4);
   		
   		//initialize FlinkResponseHandler
@@ -144,7 +144,7 @@ public class Server implements Serializable{
                     	wrapperHandler.resetLayoutedVertices();
                 	}
                 } else if (messageData.equals("resetWrapperHandler")) {
-                	wrapperHandler.initializeGraphRepresentation();
+                	wrapperHandler.initializeGraphRepresentation(edgeCount);
                 } else if (messageData.startsWith("clusterEntryAddress")) {
                 	clusterEntryPointAddress = messageData.split(";")[1];
                 } else if (messageData.startsWith("hDFSEntryAddress")) {
@@ -353,7 +353,7 @@ public class Server implements Serializable{
     
     private void buildTopViewGradoop() {
     	flinkCore.initializeGradoopGraphUtil(gradoopGraphId);
-		wrapperHandler.initializeGraphRepresentation();
+		wrapperHandler.initializeGraphRepresentation(edgeCount);
     	DataSet<WrapperGVD> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
     	try {
     		
@@ -374,7 +374,7 @@ public class Server implements Serializable{
     private void buildTopViewCSV() {
     	flinkCore.initializeCSVGraphUtilJoin();
 		DataStream<Row> wrapperStream = flinkCore.buildTopViewCSV(maxVertices);
-		wrapperHandler.initializeGraphRepresentation();
+		wrapperHandler.initializeGraphRepresentation(edgeCount);
 		flinkResponseHandler.setOperation("initialAppend");
 		DataStream<String> wrapperLine;
 		if (layout) {
@@ -401,7 +401,7 @@ public class Server implements Serializable{
     
     private void buildTopViewAdjacency() {
     	flinkCore.initializeAdjacencyGraphUtil();
-		wrapperHandler.initializeGraphRepresentation();
+		wrapperHandler.initializeGraphRepresentation(edgeCount);
 		flinkResponseHandler.setOperation("initialAppend");
 		DataStream<Row> wrapperStream = flinkCore.buildTopViewAdjacency(maxVertices);
 		DataStream<String> wrapperLine;

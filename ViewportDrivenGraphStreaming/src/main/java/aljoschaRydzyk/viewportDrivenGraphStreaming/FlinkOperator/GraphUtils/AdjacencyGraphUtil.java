@@ -80,12 +80,12 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 
 	@Override
 	public void initializeDataSets() {
-		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "_vertices"));
+		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "/vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, new TypeInformation[] {
 				Types.STRING, Types.STRING, Types.LONG, Types.STRING, 
 				Types.INT, Types.INT, Types.LONG, Types.INT});
 		verticesFormat.setFieldDelimiter(";");
-		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "_vertices").setParallelism(1);
+		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "/vertices").setParallelism(1);
 		try {
 			this.wrapperMap = this.buildWrapperMap();
 			this.adjMatrix = this.buildAdjacencyMatrix();
@@ -169,7 +169,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	
 	public Map<String,Map<String,String>> buildAdjacencyMatrix() throws Exception {
 		this.adjMatrix = new HashMap<String, Map<String,String>>();
-		DataSet<String> lineSet = env.readTextFile(this.inPath + "_adjacency");
+		DataSet<String> lineSet = env.readTextFile(this.inPath + "/adjacency");
 		List<String> lineList = null;
 		lineList = lineSet.collect();
 		for (int i = 0; i < lineList.toArray().length; i++ ) {
@@ -189,7 +189,7 @@ public class AdjacencyGraphUtil implements GraphUtilStream{
 	
 	public Map<String,Row> buildWrapperMap() throws Exception {
 		this.wrapperMap = new HashMap<String,Row>();
-		CsvReader reader = env.readCsvFile(this.inPath + "_wrappers");
+		CsvReader reader = env.readCsvFile(this.inPath + "/wrappers");
 		reader.fieldDelimiter(";");
 		DataSet<Tuple17<
 			String,

@@ -37,6 +37,7 @@ public class WrapperHandler implements Serializable {
 	private VertexGVD minDegreeVertex;    
     private boolean layout = true;
     private int maxVertices = 100;
+    private int edgeCount;
     private FlinkApi api;
     private int operationStep;
     public boolean sentToClientInSubStep;
@@ -52,13 +53,14 @@ public class WrapperHandler implements Serializable {
         api.getApiClient().setBasePath("http://" + localMachinePublicIp4 + ":8081");  
 	}
 	
-	public void initializeGraphRepresentation() {
+	public void initializeGraphRepresentation(int edgeCount) {
 	  	System.out.println("initializing graph representation");
 	  	operation = "initial";
 		globalVertices = new HashMap<String,Map<String,Object>>();
 		innerVertices = new HashMap<String,VertexGVD>();
 		newVertices = new HashMap<String,VertexGVD>();
 		edges = new HashMap<String,WrapperGVD>();
+		this.edgeCount = edgeCount;
 	}
 	  
 	public void prepareOperation(){
@@ -680,9 +682,11 @@ public class WrapperHandler implements Serializable {
 	}
 	  
 	private void addEdge(WrapperGVD wrapper) {
-		edges.put(wrapper.getEdgeIdGradoop(), wrapper);
-		server.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + wrapper.getTargetIdGradoop());
-		sentToClientInSubStep = true;
+		if (edges.size() <= edgeCount) {
+			edges.put(wrapper.getEdgeIdGradoop(), wrapper);
+			server.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + wrapper.getTargetIdGradoop());
+			sentToClientInSubStep = true;
+		}
 	}
 	
 	private void updateMinDegreeVertex(VertexGVD vertex) {
