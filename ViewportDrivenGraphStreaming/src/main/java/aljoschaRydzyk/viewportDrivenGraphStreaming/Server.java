@@ -42,11 +42,8 @@ public class Server implements Serializable{
 	private float rightModelBorder = 4000;
 	private float bottomModelBorder = 4000; 
 	private float leftModelBorder = 0;
-	private int edgeCount = 100;
-	
-	
+	private int edgeCount = 200;
 	private List<WrapperGVD> wrapperCollection;
-	
 	private FlinkCore flinkCore;
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
     private String webSocketListenPath = "/graphData";
@@ -121,7 +118,7 @@ public class Server implements Serializable{
             }
             
             //debug 
-//            localMachinePublicIp4 = "172.22.87.188";
+            localMachinePublicIp4 = "172.22.87.188";
             
             if (localMachinePublicIp4.equals("localhost")) System.out.println("Server address set to 'localhost' (default).");
         }
@@ -151,7 +148,7 @@ public class Server implements Serializable{
                 	hdfsEntryPointAddress = messageData.split(";")[1];
                 } else if (messageData.startsWith("hDFSEntryPointPort")) {
                 	hdfsEntryPointPort = Integer.parseInt(messageData.split(";")[1]);
-                } else if (messageData.startsWith("hDFSGraphFilesDirectory")) {
+                } else if (messageData.startsWith("graphFolderDirectory")) {
                 	graphFilesDirectory = messageData.split(";")[1];
                 } else if (messageData.startsWith("gradoopGraphId")) {
                 	gradoopGraphId = messageData.split(";")[1];
@@ -216,11 +213,17 @@ public class Server implements Serializable{
                 	list.remove(0);
                 	wrapperHandler.updateLayoutedVertices(list);
                 	nextSubStep();
-                } else if (messageData.startsWith("maxVertices")) {
-                	maxVerticesLock = true;
+                } else if (messageData.startsWith("fit")) {
                 	String[] arrMessageData = messageData.split(";");
-                	maxVertices = Integer.parseInt(arrMessageData[1]);
-                	wrapperHandler.setMaxVertices(maxVertices);
+                	Float xRenderPosition = Float.parseFloat(arrMessageData[1]);
+        			Float yRenderPosition = Float.parseFloat(arrMessageData[2]);
+        			Float zoomLevel = Float.parseFloat(arrMessageData[3]);
+        			Float topModel = (- yRenderPosition / zoomLevel);
+        			Float leftModel = (- xRenderPosition /zoomLevel);
+        			Float bottomModel = (topModel + viewportPixelY / zoomLevel);
+        			Float rightModel = (leftModel + viewportPixelX / zoomLevel);
+        			flinkCore.setModelPositionsOld();
+        			setModelPositions(topModel, rightModel, bottomModel, leftModel);
                 } else if (messageData.startsWith("buildTopView")) {
                 	if (hdfsEntryPointAddress == null) {
                 		flinkCore = new FlinkCore(clusterEntryPointAddress, 

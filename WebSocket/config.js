@@ -5,6 +5,13 @@ the machine where the java server application is being executed
 */
 
 var jsonObject = {
-	"ServerIp4": "172.26.44.31"
+	"ServerIp4": "172.22.87.188"
+};
+
+var colorMapping = {
+	"comment" : "red",
+	"country" : "blue",
+	"post" : "yellow",
+	"forum" : "green"
 };
 

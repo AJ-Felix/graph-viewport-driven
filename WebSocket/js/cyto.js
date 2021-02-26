@@ -5,7 +5,8 @@ class GraphVisualizer {
 		this.maxNodeWidth = 80;
 		this.minNodeHeight = 20;
 		this.maxNodeHeight = 80;
-		this.nodeLabelFontSize = 32;
+		this.nodeLabelFontSize = 56;
+		this.edgeLabelFontSize = 50;
 		this.edgeWidth = 5;
 		this.edgeArrowSize = 2;
 		this.currentMaxDegree;
@@ -44,6 +45,8 @@ class GraphVisualizer {
 				selector: 'edge',
 				style: {
 					'width': this.edgeWidth,
+					'label': 'data(label)',
+					'font-size': this.edgeLabelFontSize,
 					'line-color': '#ccc',
 					'target-arrow-color': '#ccc',
 					'target-arrow-shape': 'triangle',
@@ -89,6 +92,10 @@ class GraphVisualizer {
 			};
 		this.cy = cytoscape(this.cytoConfig);
 	}
+
+	colorVertex(id, label){
+		if (colorMapping.hasOwnProperty(label)) this.cy.$id(id).style({'background-color': colorMapping[label]});
+	}
 		
 	styleOnZoom(direction){
 		let zFactor;
@@ -97,13 +104,25 @@ class GraphVisualizer {
 		} else {
 			zFactor = this.zFactor;
 		}
+		this.style(zFactor);
+	}
+
+	styleOnFit(zoomBefore){
+		const relativeDiff = this.cy.zoom() / zoomBefore;
+		const zFactor = 1 / relativeDiff;
+		this.style(zFactor);
+	}
+
+	style(zFactor){
 		this.nodeLabelFontSize = this.nodeLabelFontSize * zFactor;
+		this.edgeLabelFontSize = this.edgeLabelFontSize * zFactor;
 		this.edgeWidth = this.edgeWidth * zFactor;
 		this.edgeArrowSize = this.edgeArrowSize * zFactor;
 		this.cy.style().selector('node').style({
 			'font-size': this.nodeLabelFontSize
 		}).update();
 		this.cy.style().selector('edge').style({
+			'font-size': this.edgeLabelFontSize,
 			'width': this.edgeWidth,
 			'arrow-scale': this.edgeArrowSize
 		}).update();
@@ -173,7 +192,6 @@ class GraphVisualizer {
 		const maxNodeWidthThisZoom = this.maxNodeWidth / zoomScale;
 		const minNodeWidthThisZoom = this.minNodeWidth / zoomScale;
 		const nodeWidthDiff = maxNodeWidthThisZoom - minNodeWidthThisZoom;
-		const nodeLabelFontSizeThisZoom = this.nodeLabelFontSize / zoomScale;
 		const degreeRange = this.currentMaxDegree - this.currentMinDegree;
 		const currentMinDegree = this.currentMinDegree;
 		this.cy.nodes().forEach(function(node){

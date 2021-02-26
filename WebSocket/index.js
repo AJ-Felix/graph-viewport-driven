@@ -29,7 +29,8 @@ class Client {
 					case 'addVertexServer':
 						this.graphVisualizer.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[4], degree: parseInt(dataArray[5]), zoomLevel: parseInt(dataArray[6])}, 
 							position: {x: parseInt(dataArray[2]) , y: parseInt(dataArray[3])}});
-						this.graphVisualizer.updateVertexSize(dataArray[1])
+						this.graphVisualizer.updateVertexSize(dataArray[1]);
+						this.graphVisualizer.colorVertex(dataArray[1], dataArray[4]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[5]));
 						if (eval) this.updateResponseTimes();				
 						clearTimeout(window.timeOut);
@@ -50,7 +51,8 @@ class Client {
 						}, this.timeOut);	
 						break;
 					case 'addEdgeServer':
-						this.graphVisualizer.cy.add({group : 'edges', data: {id: dataArray[1], source: dataArray[2], target: dataArray[3]}});
+						this.graphVisualizer.cy.add({group : 'edges', data: {id: dataArray[1], label: dataArray[4], source: dataArray[2], target: dataArray[3]}});
+						console.log("label: " + dataArray[4]);
 						if (eval) this.updateResponseTimes();				
 						clearTimeout(window.timeOut);
 						client = this;
@@ -113,9 +115,9 @@ class Client {
 		this.ws.send("hDFSEntryPointPort;" + port);
 	}
 
-	sendHDFSGraphFilesDirectory(){
-		const directory = document.getElementById('hDFSgraphFileDirectory').value
-		this.ws.send("hDFSGraphFilesDirectory;" + directory);
+	sendGraphFolderDirectory(){
+		const directory = document.getElementById('graphFolderDirectory').value
+		this.ws.send("graphFolderDirectory;" + directory);
 	}
 
 	sendGradoopGraphId(){
@@ -158,11 +160,6 @@ class Client {
 		// this.graphVisualizer.cy.zoom(1 / (4000 / Math.min(this.cyWidth, this.cyHeight)));
 		// this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
 		this.disableMouseEvents();
-	}
-
-	sendMaxVertices(){
-		this.maxNumberVertices = document.getElementById('maxVerticesInput').value;
-		this.ws.send("maxVertices;" + maxVertices);
 	}
 
 	resetVisualization(){
@@ -229,6 +226,7 @@ class Client {
 			}
 		} else {
 			if (eval) this.outputQueryTime();
+			if (this.operation == "initial") this.fitTopView();
 			this.enableMouseEvents();
 		}
 	}
@@ -259,8 +257,20 @@ class Client {
 		const step4Operations = ["zoomIn", "pan"];
 		if (step4Operations.includes(this.operation) && this.operationStep == 4) return true;
 		else if (this.operation == "zoomOut" && this.operationStep == 2) return true;
-		else if (this.operation == "initial") return true;
+		else if (this.operation == "initial") {
+			this.fitTopView();
+			return true;
+		}
 		else return false;
+	}
+
+	fitTopView(){
+		const cy = this.graphVisualizer.cy;
+		const zoomBefore = cy.zoom();
+		cy.fit();
+		this.graphVisualizer.styleOnFit(zoomBefore);
+		const pan = cy.pan();
+		this.ws.send("fit;" + cy.zoom() + ";" + pan.x + ";" + pan.y);
 	}
 
 	initiateEvaluation(){
@@ -284,6 +294,12 @@ class Client {
 }
 
 $(document).ready(function(){
+
+	//colorMapping
+	for (let [key, value] of Object.entries(colorMapping)) {
+		console.log(key);
+		createColorMapElement(key, value);
+	}
 
 	ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897/graphData");
 	
@@ -313,13 +329,36 @@ $(document).ready(function(){
 	let resizedTimeOut;
 	window.onresize = function(){
 		client.disableMouseEvents();
-		// console.log($('#myContainer'));
 		clearTimeout(resizedTimeOut);
 		resizedTimeOut = setTimeout(function(){client.resize();}, 500);
 	};
 
 	client.enableMouseEvents();
 });
+
+function createColorMapElement(label, color){
+	let colorMappingRep = document.getElementById('colorMappingRepresentation');
+	let row = document.createElement('div');
+	row.class = "row";
+	let colColor = document.createElement('div');
+	colColor.style.background = "orange";
+	colColor.class = "col-6";
+	let colDiv = document.createElement('div');
+	colDiv.style.width = "10px";
+	colDiv.style.height = "10px";
+	colDiv.style.background = color;
+	colDiv.style.borderRadius = "5px";
+	colColor.appendChild(colDiv);
+	let colLabel = document.createElement('div');
+	colLabel.style.background = "turquoise";
+	colLabel.class = "col-6";
+	let p = document.createElement('p');
+	p.innerHTML = label;
+	colLabel.appendChild(p);
+	row.appendChild(colColor);
+	row.appendChild(colLabel);
+	colorMappingRep.appendChild(row);
+}
 
 function download(data, filename, type) {
     var file = new Blob([data], {type: type});

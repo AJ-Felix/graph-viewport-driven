@@ -15,9 +15,21 @@
 <body>	
 	<div class="container-fluid vh-100 d-flex flex-column" id="myContainer">
 		<div class="row p-2" id="topRow">
-			<div class="col-lg-12">
+			<div class="col-md-6">
 				<h1>VDrive Graph Visualization</h1>
 				<p>by Aljoscha Rydzyk</p>
+			</div>
+			<div class="col-md-6" id="colorMappingRepresentation">
+				<div class="row p-1">
+					<div class="col">
+						<p id="output"></p>
+					</div>
+				</div>
+				<div class="row p-1">
+					<div class="col">
+						<p id="output2"></p>
+					</div>
+				</div>
 			</div>
 		</div>
 		<div class="row flex-fill" id="cyCol">
@@ -53,20 +65,6 @@
 									</div>
 								</div>
 							</div>
-						</form>
-					</div>
-					<div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-12">
-						<form>
-							<div class="form-group">
-								<div class="row">
-									<div class="col-xl-5 d-flex justify-content-center">
-										<input class="input-small form-control" id="maxVerticesInput" type="number"/>
-									</div>
-									<div class="col-xl-7 d-flex justify-content-center">
-										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendMaxVertices(client)">Max. Vertices</button>
-									</div>
-								</div>
-							</div>		
 						</form>
 					</div>
 					<div class="col-6 col-sm-4 col-md-3 col-lg-3 col-xl-12">
@@ -130,10 +128,10 @@
 							<div class="form-group">
 								<div class="row">
 									<div class="col-xl-5 d-flex justify-content-center">
-										<input class="input-small form-control form-control-small" id="hDFSgraphFileDirectory" type="text"/>
+										<input class="input-small form-control form-control-small" id="graphFolderDirectory" type="text"/>
 									</div>
 									<div class="col-xl-7 d-flex justify-content-center">
-										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendHDFSGraphFilesDirectory(client)">Data Dir</button>
+										<button type="button" class="form-control btn btn-outline-dark" onclick="client.sendGraphFolderDirectory(client)">Data Dir</button>
 									</div>
 								</div>
 							</div>

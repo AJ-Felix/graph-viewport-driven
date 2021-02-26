@@ -1,6 +1,5 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,15 +19,15 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Wra
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
 import com.nextbreakpoint.flinkclient.model.JobIdsWithStatusOverview;
 
-public class WrapperHandler implements Serializable {
-	
+public class WrapperHandler{
 	private Map<String,Map<String,Object>> globalVertices;
 	private Map<String,VertexGVD> innerVertices;
 	private Map<String,VertexGVD> newVertices;
 	private Map<String,WrapperGVD> edges;
 	private Map<String,VertexGVD> layoutedVertices;
 	private String operation;
-	private int capacity;
+	private int vertexCapacity;
+	private int edgeCapacity;
 	private Float top;
 	private Float right;
 	private Float bottom;
@@ -37,7 +36,6 @@ public class WrapperHandler implements Serializable {
 	private VertexGVD minDegreeVertex;    
     private boolean layout = true;
     private int maxVertices = 100;
-    private int edgeCount;
     private FlinkApi api;
     private int operationStep;
     public boolean sentToClientInSubStep;
@@ -60,7 +58,7 @@ public class WrapperHandler implements Serializable {
 		innerVertices = new HashMap<String,VertexGVD>();
 		newVertices = new HashMap<String,VertexGVD>();
 		edges = new HashMap<String,WrapperGVD>();
-		this.edgeCount = edgeCount;
+		this.edgeCapacity = edgeCount;
 	}
 	  
 	public void prepareOperation(){
@@ -105,58 +103,49 @@ public class WrapperHandler implements Serializable {
 			System.out.println("innerVertices size after removing in prepareOPeration: " + innerVertices.size());
 			
 		}
-		capacity = maxVertices - innerVertices.size();
+		vertexCapacity = maxVertices - innerVertices.size();
 		if (operation.equals("pan") || operation.equals("zoomOut")) {
 			newVertices = innerVertices;
-			if (capacity < 0) {
+			if (vertexCapacity < 0) {
 				List<VertexGVD> list = new ArrayList<VertexGVD>(newVertices.values());
 				list.sort(new VertexGVDNumericIdComparator().reversed());
-//				System.out.println("wrapperHandler, list sorted, idNumeric: " + list.get(0).getIdNumeric());
-//				System.out.println("wrapperHandler, list size: " + list.size());	
-				while (capacity < 0) {
+				while (vertexCapacity < 0) {
 					list.remove(list.size() - 1);
-					capacity += 1;
+					vertexCapacity += 1;
 				}
-//				System.out.println("wrapperHandler, list size after remove: " + list.size());
 				newVertices = new HashMap<String,VertexGVD>();
-				for (VertexGVD vertex : list) {
-					newVertices.put(vertex.getIdGradoop(), vertex);
-				}
+				for (VertexGVD vertex : list) newVertices.put(vertex.getIdGradoop(), vertex);
 			}
-//			for (String vId : newVertices.keySet()) System.out.println("prepareOperation, newVertices key: " + vId);
 			innerVertices = new HashMap<String,VertexGVD>();
-//			System.out.println(newVertices.size());
+				
 			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
 			if (newVertices.size() > 1) {
 				updateMinDegreeVertices(newVertices);
 			} else if (newVertices.size() == 1) {
 				minDegreeVertex = newVertices.values().iterator().next();
 			}
-			System.out.println("Capacity after prepareOperation: " + capacity);
+			System.out.println("Capacity after prepareOperation: " + vertexCapacity);
 		} else {
-			if (capacity < 0) {
+			if (vertexCapacity < 0) {
 				List<VertexGVD> list = new ArrayList<VertexGVD>(innerVertices.values());
 				list.sort(new VertexGVDNumericIdComparator().reversed());
-//				System.out.println("wrapperHandler, list sorted, idNumeric: " + list.get(0).getIdNumeric());
-//				for (VertexGVD vertex : list) System.out.println(vertex.getIdNumeric());
-//				System.out.println("wrapperHandler, list size: " + list.size());	
-				while (capacity < 0) {
+				while (vertexCapacity < 0) {
 					list.remove(list.size() - 1);
-					capacity += 1;
+					vertexCapacity += 1;
 				}
-//				System.out.println("wrapperHandler, list size after rremove: " + list.size());
 				innerVertices = new HashMap<String,VertexGVD>();
 				for (VertexGVD vertex : list) {
 					innerVertices.put(vertex.getIdGradoop(), vertex);
 				}
 			}
+			
 			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
 			if (innerVertices.size() > 1) {
 				updateMinDegreeVertices(innerVertices);
 			} else if (innerVertices.size() == 1) {
 				minDegreeVertex = innerVertices.values().iterator().next();
 			}
-			System.out.println("Capacity after prepareOperation: " + capacity);
+			System.out.println("Capacity after prepareOperation: " + vertexCapacity);
 			newVertices = new HashMap<String,VertexGVD>();
 		}
 		
@@ -224,18 +213,17 @@ public class WrapperHandler implements Serializable {
 	private void addWrapperIdentity(VertexGVD vertex) {
 		String vertexId = vertex.getIdGradoop();
 		boolean vertexIsRegisteredInside = newVertices.containsKey(vertexId) || innerVertices.containsKey(vertexId);
-		if (capacity > 0) {
+		if (vertexCapacity > 0) {
 			addVertex(vertex);
 			if (!vertexIsRegisteredInside) {
 				newVertices.put(vertex.getIdGradoop(), vertex);
 				updateMinDegreeVertex(vertex);
-				capacity -= 1;
+				vertexCapacity -= 1;
 			}
 		} else {
 			if (vertex.getDegree() > minDegreeVertex.getDegree()) {
 				addVertex(vertex);
 				if (!vertexIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					registerInside(vertex);
 				}
@@ -250,25 +238,43 @@ public class WrapperHandler implements Serializable {
 		String targetId = targetVertex.getIdGradoop();
 		boolean sourceIsRegisteredInside = newVertices.containsKey(sourceId) || innerVertices.containsKey(sourceId);
 		boolean targetIsRegisteredInside = newVertices.containsKey(targetId) || innerVertices.containsKey(targetId);
-		if (capacity > 1) {
-			addVertex(sourceVertex);
-			if ((sourceVertex.getX() >= left) && (right >= sourceVertex.getX()) && (sourceVertex.getY() >= top) && 
-					(bottom >= sourceVertex.getY()) && !sourceIsRegisteredInside){
-				updateMinDegreeVertex(sourceVertex);
-				newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-				capacity -= 1;
+		boolean sourceIn = sourceVertex.getX() >= left && right >= sourceVertex.getX() && sourceVertex.getY() >= top && 
+				bottom >= sourceVertex.getY();
+		boolean targetIn = targetVertex.getX() >= left && right >= targetVertex.getX() && targetVertex.getY() >= top 
+				&& bottom >= targetVertex.getY();
+		if (vertexCapacity > 1) {
+			if (sourceIn && targetIn) {
+				addVertex(sourceVertex);
+				if (!sourceIsRegisteredInside) {
+					updateMinDegreeVertex(sourceVertex);
+					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+					vertexCapacity -= 1;
+				}
+				addVertex(targetVertex);
+				if (!targetIsRegisteredInside) {
+					updateMinDegreeVertex(targetVertex);
+					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+					vertexCapacity -= 1;
+				}
+				addEdge(wrapper);
+			} else {
+				if (edgeCapacity > 0) {
+					addVertex(sourceVertex);
+					if (!sourceIsRegisteredInside) {
+						updateMinDegreeVertex(sourceVertex);
+						newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
+						vertexCapacity -= 1;
+					}
+					addVertex(targetVertex);
+					if (!targetIsRegisteredInside) {
+						updateMinDegreeVertex(targetVertex);
+						newVertices.put(targetVertex.getIdGradoop(), targetVertex);
+						vertexCapacity -= 1;
+					}
+					addEdge(wrapper);
+				}
 			}
-			addVertex(targetVertex);
-			if ((targetVertex.getX() >= left) && (right >= targetVertex.getX()) && (targetVertex.getY() >= top) 
-					&& (bottom >= targetVertex.getY()) && !targetIsRegisteredInside){
-				updateMinDegreeVertex(targetVertex);
-				newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-				capacity -= 1;
-			}
-			addEdge(wrapper);
-		} else if (capacity == 1){
-			boolean sourceIn = true;
-			boolean targetIn = true;
+		} else if (vertexCapacity == 1){
 			if ((sourceVertex.getX() < left) || (right < sourceVertex.getX()) || (sourceVertex.getY() < top) || 
 					(bottom < sourceVertex.getY())){
 				sourceIn = false;
@@ -298,7 +304,6 @@ public class WrapperHandler implements Serializable {
 					}
 				}
 				if (!sourceIsRegisteredInside && sourceAdmission && !targetIsRegisteredInside && targetAdmission) {
-					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
@@ -308,27 +313,25 @@ public class WrapperHandler implements Serializable {
 				} else if (!targetIsRegisteredInside && targetAdmission) {
 					registerInside(targetVertex);
 				}
-				capacity -= 1 ;
-			} else if (sourceIn) {
+				vertexCapacity -= 1 ;
+			} else if (sourceIn && edgeCapacity > 0) {
 				addVertex(sourceVertex);
 				addVertex(targetVertex);
 				addEdge(wrapper);
 				if (!sourceIsRegisteredInside) {
-					capacity -= 1 ;
+					vertexCapacity -= 1 ;
 					registerInside(sourceVertex);
 				}
-			} else if (targetIn) {
+			} else if (targetIn && edgeCapacity > 0) {
 				addVertex(targetVertex);
 				addVertex(sourceVertex);
 				addEdge(wrapper);
 				if (!targetIsRegisteredInside) {
-					capacity -= 1 ;
+					vertexCapacity -= 1 ;
 					registerInside(targetVertex);
 				}
 			}
 		} else {
-			boolean sourceIn = true;
-			boolean targetIn = true;
 			if ((sourceVertex.getX() < left) || (right < sourceVertex.getX()) || (sourceVertex.getY() < top) || 
 					(bottom < sourceVertex.getY())){
 				sourceIn = false;
@@ -343,37 +346,33 @@ public class WrapperHandler implements Serializable {
 				addVertex(targetVertex);
 				addEdge(wrapper);
 				if (!sourceIsRegisteredInside && !targetIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
-					reduceNeighborIncidence(secondMinDegreeVertex);
 					removeVertex(secondMinDegreeVertex);
 					removeVertex(minDegreeVertex);
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 					updateMinDegreeVertices(newVertices);
 				} else if (!sourceIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					registerInside(sourceVertex);
 				} else if (!targetIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					registerInside(targetVertex);
 				}
-			} else if (sourceIn && !(targetIn) && (sourceVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside)) {
+			} else if (sourceIn && !(targetIn) && edgeCapacity > 0 &&
+					(sourceVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside)) {
 				addVertex(sourceVertex);
 				addVertex(targetVertex);
 				addEdge(wrapper);
 				if (!sourceIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					registerInside(sourceVertex);
 				}
-			} else if (targetIn && !(sourceIn) && (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside)) {
+			} else if (targetIn && !(sourceIn) && edgeCapacity > 0 && 
+					(targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside)) {
 				addVertex(sourceVertex);
 				addVertex(targetVertex);
 				addEdge(wrapper);
 				if (!targetIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					registerInside(targetVertex);
 				}
@@ -390,7 +389,7 @@ public class WrapperHandler implements Serializable {
 		//if in zoomIn3 or pan3: cancel flinkjob if still running, close socket and reopen for next step and move to next step!
 		System.out.println("wrapperHandler, operationStep: " + operationStep);
 		if (operationStep == 3 && (operation == "zoomIn" || operation == "pan")) {
-			if (capacity == 0) {
+			if (vertexCapacity == 0) {
 				try {
 					JobIdsWithStatusOverview jobs = api.getJobs();
 					List<JobIdWithStatus> list = jobs.getJobs();
@@ -404,7 +403,6 @@ public class WrapperHandler implements Serializable {
 							break;
 						}
 					}
-//					if (stream) server.getFlinkResponseHandler().closeAndReopen();
 				} catch (ApiException e) {
 					e.printStackTrace();
 				}
@@ -424,31 +422,9 @@ public class WrapperHandler implements Serializable {
 //				" " + secondMinDegreeVertex.getIdGradoop());
 //		System.out.println("Capacity: " + capacity);
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
-			addWrapperIdentityLayout(wrapper.getSourceVertex());
+			addWrapperIdentity(wrapper.getSourceVertex());
 		} else {
 			addNonIdentityWrapperLayout(wrapper);
-		}
-	}
-	
-	private void addWrapperIdentityLayout(VertexGVD vertex) {
-		String vertexId = vertex.getIdGradoop();
-		boolean vertexIsRegisteredInside = newVertices.containsKey(vertexId) || innerVertices.containsKey(vertexId);
-		if (capacity > 0) {
-			addVertex(vertex);
-			if (!vertexIsRegisteredInside) {
-				newVertices.put(vertex.getIdGradoop(), vertex);
-				updateMinDegreeVertex(vertex);
-				capacity -= 1;
-			}
-		} else {
-			if (vertex.getDegree() > minDegreeVertex.getDegree()) {
-				addVertex(vertex);
-				if (!vertexIsRegisteredInside) {
-					reduceNeighborIncidence(minDegreeVertex);
-					removeVertex(minDegreeVertex);
-					registerInside(vertex);
-				}
-			}
 		}
 	}
 	
@@ -475,32 +451,30 @@ public class WrapperHandler implements Serializable {
 		
 		//Only one node has coordinates, then this node is necessarily already visualized and the other node necessarily needs to be layouted inside
 		else if (sourceLayouted != null) {
-			if (capacity > 0) {
+			if (vertexCapacity > 0) {
 				addVertex(targetVertex);
 				if (!targetIsRegisteredInside) {
 					updateMinDegreeVertex(targetVertex);
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-					capacity -= 1;
+					vertexCapacity -= 1;
 				}
 				addEdge(wrapper);
-			} else {
-				if (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
-					addVertex(targetVertex);
-					addEdge(wrapper);
-					if (!targetIsRegisteredInside) {
-						reduceNeighborIncidence(minDegreeVertex);
-						removeVertex(minDegreeVertex);
-						registerInside(targetVertex);
-					}
+			} else if (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
+				addVertex(targetVertex);
+				addEdge(wrapper);
+				if (!targetIsRegisteredInside) {
+					removeVertex(minDegreeVertex);
+					registerInside(targetVertex);
 				}
 			}
+
 		} else if (targetLayouted != null) {
-			if (capacity > 0) {
+			if (vertexCapacity > 0) {
 				addVertex(sourceVertex);
 				if (!sourceIsRegisteredInside) {
 					updateMinDegreeVertex(sourceVertex);
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					capacity -= 1;
+					vertexCapacity -= 1;
 				}
 				addEdge(wrapper);
 			} else {
@@ -508,7 +482,6 @@ public class WrapperHandler implements Serializable {
 					addVertex(sourceVertex);
 					addEdge(wrapper);
 					if (!sourceIsRegisteredInside) {
-						reduceNeighborIncidence(minDegreeVertex);
 						removeVertex(minDegreeVertex);
 						registerInside(sourceVertex);
 					}
@@ -518,21 +491,21 @@ public class WrapperHandler implements Serializable {
 		
 		//Both nodes do not have coordinates. Then both nodes necessarily need to be layouted inside
 		else {
-			if (capacity > 1) {
+			if (vertexCapacity > 1) {
 				addVertex(sourceVertex);
 				if (!sourceIsRegisteredInside){
 					updateMinDegreeVertex(sourceVertex);
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
-					capacity -= 1;
+					vertexCapacity -= 1;
 				}
 				addVertex(targetVertex);
 				if (!targetIsRegisteredInside){
 					updateMinDegreeVertex(targetVertex);
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
-					capacity -= 1;
+					vertexCapacity -= 1;
 				}
 				addEdge(wrapper);
-			} else if (capacity == 1) {
+			} else if (vertexCapacity == 1) {
 				boolean sourceAdmission = false;
 				boolean targetAdmission = false;
 				if (sourceVertex.getDegree() > targetVertex.getDegree()) {
@@ -553,7 +526,6 @@ public class WrapperHandler implements Serializable {
 					}
 				}
 				if (!sourceIsRegisteredInside && sourceAdmission && !targetIsRegisteredInside && targetAdmission) {
-					reduceNeighborIncidence(minDegreeVertex);
 					removeVertex(minDegreeVertex);
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
@@ -563,7 +535,7 @@ public class WrapperHandler implements Serializable {
 				} else if (!targetIsRegisteredInside && targetAdmission) {
 					registerInside(targetVertex);
 				}
-				capacity -= 1 ;
+				vertexCapacity -= 1 ;
 			} else {
 				if ((sourceVertex.getDegree() > secondMinDegreeVertex.getDegree()) && 
 						(targetVertex.getDegree() > secondMinDegreeVertex.getDegree())) {
@@ -571,65 +543,33 @@ public class WrapperHandler implements Serializable {
 					addVertex(targetVertex);
 					addEdge(wrapper);
 					if (!sourceIsRegisteredInside && !targetIsRegisteredInside) {
-						reduceNeighborIncidence(minDegreeVertex);
-						reduceNeighborIncidence(secondMinDegreeVertex);
 						removeVertex(secondMinDegreeVertex);
 						removeVertex(minDegreeVertex);
 						newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 						newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 						updateMinDegreeVertices(newVertices);
 					} else if (!sourceIsRegisteredInside) {
-						reduceNeighborIncidence(minDegreeVertex);
 						removeVertex(minDegreeVertex);
 						registerInside(sourceVertex);
 					} else if (!targetIsRegisteredInside) {
-						reduceNeighborIncidence(minDegreeVertex);
 						removeVertex(minDegreeVertex);
 						registerInside(targetVertex);
 					}
 				} else if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
 					addVertex(sourceVertex);
 					if (!sourceIsRegisteredInside) {
-						reduceNeighborIncidence(minDegreeVertex);
 						removeVertex(minDegreeVertex);
 						registerInside(sourceVertex);
 					}
 				} else if (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
 					addVertex(targetVertex);
 					if (!targetIsRegisteredInside) {
-						reduceNeighborIncidence(minDegreeVertex);
 						removeVertex(minDegreeVertex);
 						registerInside(targetVertex);
 					}
 				}
 			}
 		}
-	}
-	  
-	public void removeWrapper(WrapperGVD wrapper) {
-		if (wrapper.getEdgeIdGradoop() != "identityEdge") {
-			String targetId = wrapper.getTargetIdGradoop();
-			int targetIncidence = (int) globalVertices.get(targetId).get("incidence");
-			if (targetIncidence == 1) {
-				globalVertices.remove(targetId);
-				if (innerVertices.containsKey(targetId)) innerVertices.remove(targetId);
-				if (newVertices.containsKey(targetId)) newVertices.remove(targetId);
-				server.sendToAll("removeObjectServer;" + wrapper.getTargetIdGradoop());
-			} else {
-				globalVertices.get(targetId).put("incidence", targetIncidence - 1);
-			}
-		}
-		String sourceId = wrapper.getSourceIdGradoop();
-		int sourceIncidence = (int) globalVertices.get(sourceId).get("incidence");
-		if (sourceIncidence == 1) {
-			globalVertices.remove(sourceId);
-			if (innerVertices.containsKey(sourceId)) innerVertices.remove(sourceId);
-			if (newVertices.containsKey(sourceId)) newVertices.remove(sourceId);
-			server.sendToAll("removeObjectServer;" + wrapper.getSourceIdGradoop());
-		} else {
-			globalVertices.get(sourceId).put("incidence", sourceIncidence - 1);
-		}
-		edges.remove(wrapper.getEdgeIdGradoop());
 	}
 	  
 	private boolean addVertex(VertexGVD vertex) {
@@ -641,16 +581,16 @@ public class WrapperHandler implements Serializable {
 			globalVertices.put(sourceId, map);
 			if (layout) {
 				server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + 
-				vertex.getY() + ";" + vertex.getIdNumeric() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
+				vertex.getY() + ";" + vertex.getLabel() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
 				sentToClientInSubStep = true;
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
 					VertexGVD layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
 					server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
-							+ vertex.getIdNumeric() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
+							+ vertex.getLabel() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
 					sentToClientInSubStep = true;
 				} else {
-					server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getIdNumeric() + ";" + vertex.getDegree()
+					server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getLabel() + ";" + vertex.getDegree()
 						+ ";" + vertex.getZoomLevel());
 					sentToClientInSubStep = true;
 				}
@@ -676,17 +616,20 @@ public class WrapperHandler implements Serializable {
 				String sourceId = wrapper.getSourceIdGradoop();
 				String targetId = wrapper.getTargetIdGradoop();
 				String vertexId = vertex.getIdGradoop();
-				if (sourceId.equals(vertexId) || targetId.equals(vertexId)) iter.remove();
+				if (sourceId.equals(vertexId) || targetId.equals(vertexId)) {
+					edgeCapacity += 1;
+					iter.remove();
+				}
 			}
 		}
 	}
 	  
 	private void addEdge(WrapperGVD wrapper) {
-		if (edges.size() <= edgeCount) {
-			edges.put(wrapper.getEdgeIdGradoop(), wrapper);
-			server.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + wrapper.getTargetIdGradoop());
-			sentToClientInSubStep = true;
-		}
+		edges.put(wrapper.getEdgeIdGradoop(), wrapper);
+		edgeCapacity -= 1;
+		server.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + 
+				wrapper.getTargetIdGradoop() + ";" + wrapper.getEdgeLabel());
+		sentToClientInSubStep = true;
 	}
 	
 	private void updateMinDegreeVertex(VertexGVD vertex) {
@@ -726,16 +669,6 @@ public class WrapperHandler implements Serializable {
 		} else {
 			minDegreeVertex = vertex;
 		}
-	}
-	
-	private void reduceNeighborIncidence(VertexGVD vertex) {
-//		Set<String> neighborIds = getNeighborhood(vertex);
-//		for (String neighbor : neighborIds) {
-//			if (globalVertices.containsKey(neighbor)) {
-//				Map<String,Object> map = globalVertices.get(neighbor);
-//				map.put("incidence", (int) map.get("incidence") - 1); 
-//			}
-//		}
 	}
 	
 	private boolean hasVisualizedNeighborsInside(VertexGVD vertex) {
@@ -779,7 +712,10 @@ public class WrapperHandler implements Serializable {
 						WrapperGVD wrapper = edgesIterator.next();
 						String sourceId = wrapper.getSourceIdGradoop();
 						String targetId = wrapper.getTargetIdGradoop();
-						if (sourceId.equals(vertexId) || targetId.equals(vertexId)) edgesIterator.remove();
+						if (sourceId.equals(vertexId) || targetId.equals(vertexId)) {
+							edgeCapacity += 1;
+							edgesIterator.remove();
+						}
 					}
 					iter.remove();
 				} 
@@ -876,7 +812,7 @@ public class WrapperHandler implements Serializable {
 	}
 
 	public int getCapacity() {
-		return this.capacity;
+		return this.vertexCapacity;
 	}
 	
 	public Map<String,Map<String,Object>> getGlobalVertices(){
