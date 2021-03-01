@@ -295,12 +295,18 @@ class Client {
 
 $(document).ready(function(){
 
-	//colorMapping
-	for (let [key, value] of Object.entries(colorMapping)) {
-		console.log(key);
-		createColorMapElement(key, value);
+	//color mapping
+	if (typeof colorMapping != "undefined"){
+		if (!$.isEmptyObject(colorMapping)){
+			createColorMapHeading()
+			for (let [key, value] of Object.entries(colorMapping)) {
+				console.log(key);
+				createColorMapElement(key, value);
+			}
+		}
 	}
 
+	//web socket
 	ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897/graphData");
 	
 	ws.onopen = function() {
@@ -336,28 +342,51 @@ $(document).ready(function(){
 	client.enableMouseEvents();
 });
 
+function createColorMapHeading(){
+	let colorMapCol = document.getElementById('colorMapCol');
+	let headingRow = document.createElement('div');
+	colorMapCol.insertBefore(headingRow, colorMapCol.firstChild);
+	let headingCol = document.createElement('div');
+	headingRow.appendChild(headingCol);
+	headingCol.innerHTML = "Color Mapping";
+	headingCol.classList.add("text-center");
+	headingCol.style.fontSize = "20px";
+	headingCol.style.textDecoration = "underline";
+}
+
 function createColorMapElement(label, color){
-	let colorMappingRep = document.getElementById('colorMappingRepresentation');
-	let row = document.createElement('div');
-	row.class = "row";
+	let row = document.getElementById("colorMapRow");
+
+	let col = document.createElement('div');
+	row.appendChild(col);
+	col.classList.add("col-xl-3");
+	col.classList.add("col-lg-4");
+	col.classList.add("col-md-6");
+	col.classList.add("col-sm-4");
+
+	let colRow = document.createElement('div');
+	colRow.classList.add("row");
+	col.appendChild(colRow);
+
+
 	let colColor = document.createElement('div');
-	colColor.style.background = "orange";
-	colColor.class = "col-6";
+	colRow.appendChild(colColor);
+	colColor.classList.add("col-xs-1");
+	colColor.classList.add("my-auto");
+	colColor.classList.add("p-1");
+
 	let colDiv = document.createElement('div');
+	colColor.appendChild(colDiv);
 	colDiv.style.width = "10px";
 	colDiv.style.height = "10px";
 	colDiv.style.background = color;
 	colDiv.style.borderRadius = "5px";
-	colColor.appendChild(colDiv);
+
 	let colLabel = document.createElement('div');
-	colLabel.style.background = "turquoise";
-	colLabel.class = "col-6";
-	let p = document.createElement('p');
-	p.innerHTML = label;
-	colLabel.appendChild(p);
-	row.appendChild(colColor);
-	row.appendChild(colLabel);
-	colorMappingRep.appendChild(row);
+	colRow.appendChild(colLabel);
+	colLabel.classList.add("col-xs-11");
+	colLabel.classList.add("p-1");
+	colLabel.innerHTML = label;
 }
 
 function download(data, filename, type) {
