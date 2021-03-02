@@ -76,3 +76,7 @@ Config		Environment 		Task		Cluster 	Result
 
 Durch setzen der Parallelität werden alle Tasks, welche keine Parallelität spezifiert haben auf entsprechende Werte gesetzt.
 
+
+Notizen zu den Messdaten:
+Pan unter Direct-Variante und ldbc_1 terminiert nach 2 Std. nicht, weil Source Operation hängt (Parallelität 1). Parallelität der Source Operation wird für alle Visual Operations außer 'initial' auf default gesetzt
+.

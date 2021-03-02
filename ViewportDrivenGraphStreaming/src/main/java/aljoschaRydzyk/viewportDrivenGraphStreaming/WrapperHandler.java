@@ -181,7 +181,7 @@ public class WrapperHandler{
 		if (addedSource) innerVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 		boolean addedTarget = addVertex(targetVertex);
 		if (addedTarget) innerVertices.put(targetVertex.getIdGradoop(), targetVertex);
-		addEdge(wrapper);
+		if (edgeCapacity > 0) addEdge(wrapper);
 	}
 	
 	public void addWrapperCollection(List<WrapperGVD> wrapperCollection) {
@@ -256,7 +256,7 @@ public class WrapperHandler{
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 					vertexCapacity -= 1;
 				}
-				addEdge(wrapper);
+				if (edgeCapacity > 0) addEdge(wrapper);
 			} else {
 				if (edgeCapacity > 0) {
 					addVertex(sourceVertex);
@@ -292,7 +292,7 @@ public class WrapperHandler{
 					if (targetVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
 						addVertex(targetVertex);
 						targetAdmission = true;
-						addEdge(wrapper);
+						if (edgeCapacity > 0) addEdge(wrapper);
 					}
 				} else {
 					addVertex(targetVertex);
@@ -300,7 +300,7 @@ public class WrapperHandler{
 					if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
 						addVertex(sourceVertex);
 						sourceAdmission = true;
-						addEdge(wrapper);
+						if (edgeCapacity > 0) addEdge(wrapper);
 					}
 				}
 				if (!sourceIsRegisteredInside && sourceAdmission && !targetIsRegisteredInside && targetAdmission) {
@@ -344,7 +344,7 @@ public class WrapperHandler{
 					(targetVertex.getDegree() > secondMinDegreeVertex.getDegree())) {
 				addVertex(sourceVertex);
 				addVertex(targetVertex);
-				addEdge(wrapper);
+				if (edgeCapacity > 0) addEdge(wrapper);
 				if (!sourceIsRegisteredInside && !targetIsRegisteredInside) {
 					removeVertex(secondMinDegreeVertex);
 					removeVertex(minDegreeVertex);
@@ -458,10 +458,10 @@ public class WrapperHandler{
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 					vertexCapacity -= 1;
 				}
-				addEdge(wrapper);
+				if (edgeCapacity > 0) addEdge(wrapper);
 			} else if (targetVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
 				addVertex(targetVertex);
-				addEdge(wrapper);
+				if (edgeCapacity > 0) addEdge(wrapper);
 				if (!targetIsRegisteredInside) {
 					removeVertex(minDegreeVertex);
 					registerInside(targetVertex);
@@ -476,11 +476,11 @@ public class WrapperHandler{
 					newVertices.put(sourceVertex.getIdGradoop(), sourceVertex);
 					vertexCapacity -= 1;
 				}
-				addEdge(wrapper);
+				if (edgeCapacity > 0) addEdge(wrapper);
 			} else {
 				if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
 					addVertex(sourceVertex);
-					addEdge(wrapper);
+					if (edgeCapacity > 0) addEdge(wrapper);
 					if (!sourceIsRegisteredInside) {
 						removeVertex(minDegreeVertex);
 						registerInside(sourceVertex);
@@ -504,7 +504,7 @@ public class WrapperHandler{
 					newVertices.put(targetVertex.getIdGradoop(), targetVertex);
 					vertexCapacity -= 1;
 				}
-				addEdge(wrapper);
+				if (edgeCapacity > 0) addEdge(wrapper);
 			} else if (vertexCapacity == 1) {
 				boolean sourceAdmission = false;
 				boolean targetAdmission = false;
@@ -514,7 +514,7 @@ public class WrapperHandler{
 					if (targetVertex.getDegree() > minDegreeVertex.getDegree() || sourceIsRegisteredInside) {
 						addVertex(targetVertex);
 						targetAdmission = true;
-						addEdge(wrapper);
+						if (edgeCapacity > 0) addEdge(wrapper);
 					}
 				} else {
 					addVertex(targetVertex);
@@ -522,7 +522,7 @@ public class WrapperHandler{
 					if (sourceVertex.getDegree() > minDegreeVertex.getDegree() || targetIsRegisteredInside) {
 						addVertex(sourceVertex);
 						sourceAdmission = true;
-						addEdge(wrapper);
+						if (edgeCapacity > 0) addEdge(wrapper);
 					}
 				}
 				if (!sourceIsRegisteredInside && sourceAdmission && !targetIsRegisteredInside && targetAdmission) {
@@ -541,7 +541,7 @@ public class WrapperHandler{
 						(targetVertex.getDegree() > secondMinDegreeVertex.getDegree())) {
 					addVertex(sourceVertex);
 					addVertex(targetVertex);
-					addEdge(wrapper);
+					if (edgeCapacity > 0) addEdge(wrapper);
 					if (!sourceIsRegisteredInside && !targetIsRegisteredInside) {
 						removeVertex(secondMinDegreeVertex);
 						removeVertex(minDegreeVertex);

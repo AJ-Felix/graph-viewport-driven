@@ -118,7 +118,7 @@ public class Server implements Serializable{
             }
             
             //debug 
-            localMachinePublicIp4 = "172.22.87.188";
+//            localMachinePublicIp4 = "172.22.87.188";
             
             if (localMachinePublicIp4.equals("localhost")) System.out.println("Server address set to 'localhost' (default).");
         }
@@ -256,25 +256,6 @@ public class Server implements Serializable{
         				buildTopViewGradoop();
         			}
                 	setVertexZoomLevel(0);
-//                	try {
-//						if (stream)	 {	
-//							
-//		                	//evaluation
-//		                	if (eval) {
-//		                		evaluator.executeStreamEvaluation(operation);
-//		                	} else {
-//								flinkCore.getFsEnv().execute("buildTopView");
-//		                	}
-//							
-//						}
-//        			} catch (Exception e) {
-//        				e.printStackTrace();
-//        			}
-//                	if (!stream) {
-//                    	System.out.println("wrapperCollection size: " + wrapperCollection.size());
-//                		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
-//                		wrapperHandler.clearOperation();
-//                	}	
                 } else if (messageData.startsWith("zoom")) {
         			String[] arrMessageData = messageData.split(";");
         			Float xRenderPosition = Float.parseFloat(arrMessageData[1]);

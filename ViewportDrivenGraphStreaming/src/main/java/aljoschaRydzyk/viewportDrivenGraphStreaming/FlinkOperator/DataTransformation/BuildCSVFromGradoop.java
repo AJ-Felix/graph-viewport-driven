@@ -80,6 +80,9 @@ public class BuildCSVFromGradoop {
 					propertyKeyOutDegree, includeZeroDegreeVertices));
 		}
 		
+		//add numeric ID and layout level
+//		log.transformVertices(vertexTransformationFunction)
+		
 		//layout graph
 		if (operations.contains("layout")) {
 			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));

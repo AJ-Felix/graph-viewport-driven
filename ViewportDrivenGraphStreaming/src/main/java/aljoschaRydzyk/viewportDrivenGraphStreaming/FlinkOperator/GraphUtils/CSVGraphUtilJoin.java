@@ -55,6 +55,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	private TypeInformation[] vertexFormatTypeInfo;
 	private FilterFunction<Row> zoomOutVertexFilter;
 	private int zoomLevel;
+	private boolean initializedNonSortDataSets;
 	
 	//Area Definition
 		//A	: Inside viewport after operation
@@ -99,6 +100,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	public void initializeDataSets(){
 		
 		//NOTE: Flink needs seperate instances of RowCsvInputFormat for each data import, although they might be identical		
+		
+		initializedNonSortDataSets = false;
 		//initialize vertex stream
 		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "/vertices"));
 		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, this.vertexFormatTypeInfo);
@@ -113,6 +116,24 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
 		wrappersFormat.setFieldDelimiter(";");
 		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "/wrappers").setParallelism(1));
+		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);	
+	}
+	
+	public void initializeNonSortedDataSets() {
+		initializedNonSortDataSets = true;
+		Path verticesFilePath = Path.fromLocalFile(new File(this.inPath + "/vertices"));
+		RowCsvInputFormat verticesFormat = new RowCsvInputFormat(verticesFilePath, this.vertexFormatTypeInfo);
+		verticesFormat.setFieldDelimiter(";");
+		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "/vertices");
+		
+		//initialize wrapper identity stream
+		this.wrapperStream = this.vertexStream.map(new VertexMapIdentityWrapperRow()).returns(new RowTypeInfo(this.wrapperFormatTypeInfo));
+		
+		//initialize wrapper stream
+		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "/wrappers"));
+		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
+		wrappersFormat.setFieldDelimiter(";");
+		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "/wrappers"));
 		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);	
 	}
 	
@@ -137,6 +158,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		/*
 		 * Zoom function for graphs with layout
 		 */
+		
+		if (!initializedNonSortDataSets) this.initializeNonSortedDataSets();
 		
 		//zoomLevel
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterZoomLevel(zoomLevel));
@@ -179,6 +202,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		/*
 		 * Pan function for graphs with layout
 		 */
+		
+		if (!initializedNonSortDataSets) this.initializeNonSortedDataSets();
 		
 		//zoomLevel
 		DataStream<Row> vertices = this.vertexStream.filter(new VertexFilterZoomLevel(zoomLevel));
@@ -236,6 +261,8 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * First substep for pan/zoom-in operation on graphs without layout. Returns a stream of wrappers including vertices that were
 		 * layouted before and have their coordinates in the current model window but are not visualized yet.
 		 */
+		
+		if (!initializedNonSortDataSets) this.initializeNonSortedDataSets();
 		
 		Set<String> innerVerticeskeySet = new HashSet<String>(innerVertices.keySet());
 		DataStream<Row> vertices = this.vertexStream
