@@ -22,12 +22,17 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
  * execute with at least 5 arguments in this order:
 			1	sourcePath of gradoop graph data
 			2	writePath of result graph data
-			3 gradoop graphID
-			4 one of 'gradoop' or 'gvd' to determine result graph format
-			5 jar files necessary for flink job execution (ExecutionEnvironment.createRemoteEnvironment())
-			6 cluster entry point address (default: 'loclahost')
+			3 	gradoop graphID
+			4 	one of 'gradoop' or 'gvd' to determine result graph format
+			5 	jar files necessary for flink job execution (ExecutionEnvironment.createRemoteEnvironment())
+			6 	cluster entry point address (default: 'loclahost')
 			optional:
 				one of 'sample', 'degree', 'layout' or a combination (up to 8 arguments then)
+				
+	For GradoopToGradoop:
+	Graph has to be copied manually into 'writePath' directory, there 'vertices.csv' directory 
+	has to be deleted and 'metadata.csv' has to be edited manually according to the new vertex 
+	properties given!!!
  * 
  */
 
@@ -80,30 +85,30 @@ public class BuildCSVFromGradoop {
 					propertyKeyOutDegree, includeZeroDegreeVertices));
 		}
 		
-		//add numeric ID and layout level
-//		log.transformVertices(vertexTransformationFunction)
-		
 		//layout graph
-		if (operations.contains("layout")) {
-			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
-			log = new FRLayouter(1000, numberVertices).execute(log);
-		}
+//		if (operations.contains("layout")) {
+//			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
+//			log = new FRLayouter(1000, numberVertices).execute(log);
+//		}
 		
 		//random layouter
-//		if (operations.contains("layout")) {
-//			log = log.transformVertices(new RandomLayouter());
-//		}
+		if (operations.contains("layout")) {
+			log = log.transformVertices(new RandomLayouter());
+		}
 
 		//sink to gradoop format or GVD format
 		if (formatType.equals("gradoop")) {
-			DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
-			csvDataSink.write(log, true);
+			GradoopToGradoop gradoopToGradoop = new GradoopToGradoop(zoomLevelCoefficient);
+			gradoopToGradoop.transform(log, writePath, gradoopGraphId, env);
+//			gradoopToGradoop.editMetadata(writePath, env);
+//			DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
+//			csvDataSink.write(log, true);
 		} else if (formatType.equals("gvd")) {
 			if (!operations.contains("degree")) 
 				System.out.println("Warning: GVD Format assumes that vertex degrees are already calculated!");
 			if (!operations.contains("layout"))
 				System.out.println("Warning: GVD Format requires layout coordinates for all vertices!");
-			GradoopToCSV gradoopToCSV = new GradoopToCSV(zoomLevelCoefficient);
+			GradoopToGVD gradoopToCSV = new GradoopToGVD(zoomLevelCoefficient);
 			gradoopToCSV.parseGradoopToCSV(log, writePath, gradoopGraphId);
 		}
 		env.execute("Parse to GVD Format");

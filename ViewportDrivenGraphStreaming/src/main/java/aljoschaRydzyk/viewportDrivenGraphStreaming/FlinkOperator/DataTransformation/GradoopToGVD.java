@@ -24,10 +24,10 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperTu
 
 
 
-public class GradoopToCSV {
+public class GradoopToGVD {
 	private int zoomLevelCoefficient;
 	
-	public GradoopToCSV(int zoomLevelCoefficient) {
+	public GradoopToGVD(int zoomLevelCoefficient) {
 		this.zoomLevelCoefficient = zoomLevelCoefficient;
 	}
 	

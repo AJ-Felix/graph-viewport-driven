@@ -19,6 +19,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeTarge
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexEPGMMapTupleDegreeComplex;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapIdentityWrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexTupleComplexMapRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperFilterVisualizedVertices;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperRowMapWrapperGVD;
@@ -73,23 +74,23 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	
 	@Override
 	public void initializeDataSets() throws Exception{
-		int numberVertices = Integer.parseInt(String.valueOf(this.graph.getVertices().count()));
-		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
-		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
-		vertices = DataSetUtils.zipWithIndex((this.graph.getVertices()
-					.map(new VertexEPGMMapTupleDegreeComplex())
-					.sortPartition(1, Order.DESCENDING)
-					.setParallelism(1)
-				))
-				.map(new VertexTupleComplexMapRow(gradoopGraphId, zoomLevelSetSize));
-		
+//		int numberVertices = Integer.parseInt(String.valueOf(this.graph.getVertices().count()));
+//		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
+//		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
+//		vertices = DataSetUtils.zipWithIndex((this.graph.getVertices()
+//					.map(new VertexEPGMMapTupleDegreeComplex())
+//					.sortPartition(1, Order.DESCENDING)
+//					.setParallelism(1)
+//				))
+//				.map(new VertexTupleComplexMapRow(gradoopGraphId, zoomLevelSetSize));
+//		
+		vertices = this.graph.getVertices().map(new VertexMapRow());
 		DataSet<EPGMEdge> edges = this.graph.getEdges();
 		DataSet<Tuple2<Tuple2<Row, EPGMEdge>, Row>> wrapperTuple = 
 				vertices.join(edges).where(new VertexIDRowKeySelector())
 			.equalTo(new EdgeSourceIDKeySelector())
 			.join(vertices).where(new EdgeTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector());
-		
 		wrapper = wrapperTuple.map(new WrapperTupleComplexMapRow());
 	}
 	
