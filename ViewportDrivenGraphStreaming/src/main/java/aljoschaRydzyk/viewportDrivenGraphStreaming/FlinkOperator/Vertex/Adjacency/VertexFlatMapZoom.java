@@ -1,10 +1,8 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.Adjacency;
 
-import java.util.List;
 import java.util.Map;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 

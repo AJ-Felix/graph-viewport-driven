@@ -307,7 +307,7 @@ $(document).ready(function(){
 	}
 
 	//web socket
-	ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897/graphData");
+	ws = new WebSocket("ws://" + jsonObject.ServerIp4 + ":8897");
 	
 	ws.onopen = function() {
 		console.log("Opened!");

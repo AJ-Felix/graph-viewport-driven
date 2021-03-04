@@ -3,6 +3,7 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.websocket;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -11,24 +12,31 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.Eval.Evaluator;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkPrintSink;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinates;
 import io.undertow.Undertow;
+import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
+import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
+import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 public class Server implements Serializable{
 	
@@ -46,7 +54,7 @@ public class Server implements Serializable{
 	private List<WrapperGVD> wrapperCollection;
 	private FlinkCore flinkCore;
 	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
-    private String webSocketListenPath = "/graphData";
+    private String webSocketListenPath = "/";
     private int webSocketListenPort = 8897;    
     private int maxVertices;
     private int vertexCountNormalizationFactor = 5000;
@@ -63,42 +71,76 @@ public class Server implements Serializable{
 	private int vertexZoomLevel;
 	private boolean maxVerticesLock = false;
 	private int parallelism = 4;
+	private ClientCallHandler  clientCallHandler;
+	private Queue<WrapperGVD> messageList = new LinkedList<WrapperGVD>();
+	
+	private static Server INSTANCE;
 	
 	//evaluation
 	private boolean eval;
 	private Evaluator evaluator;
 
-    public Server (boolean eval) {
-    	this.eval = eval;
+    public Server () {
     	System.out.println("executing server constructor");
-    	if (this.eval) {
-    		this.evaluator = new Evaluator();
-    		System.out.println("Evaluator Mode enabled!");
-    	}
+
 	}
+    public static Server getInstance() {
+    	if (INSTANCE == null) {
+    		INSTANCE = new Server();
+    	}
+    	return INSTANCE;
+    }
+    
+    public void initializeEvaluator(boolean eval) {
+    	this.eval = eval;
+		this.evaluator = new Evaluator();
+		System.out.println("Evaluator Mode enabled!");
+    }
     
     public void initializeServerFunctionality() {
     	Undertow server = Undertow.builder()
     			.addHttpListener(webSocketListenPort, localMachinePublicIp4)
+//                .addHttpListener(8898, localMachinePublicIp4)
                 .setHandler(path()
                 	.addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
 	                    channels.add(channel);
 	                    channel.getReceiveSetter().set(getListener());
 	                    channel.resumeReceives();
 	                }))
-            	).build();
+            	)
+//                .setHandler(path()
+//                        .addPrefixPath("/", websocket(new WebSocketConnectionCallback() {
+//
+//                            @Override
+//                            public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
+//                                channel.getReceiveSetter().set(new AbstractReceiveListener() {
+//
+//                                    @Override
+//                                    protected void onFullTextMessage(WebSocketChannel channel, BufferedTextMessage message) {
+//                                    	System.out.println("A message: " + message);
+////                                      WebSockets.sendText(message.getData(), channel, null);
+//                                    }
+//                                });
+//                                channel.resumeReceives();
+//                            }
+//                        }))
+//                 )
+                .build();
     	server.start();
         System.out.println("Server started!");  
     }
     
     public void initializeHandlers() {
-    	wrapperHandler = new WrapperHandler(this);
+    	wrapperHandler = new WrapperHandler();
   		wrapperHandler.initializeGraphRepresentation(edgeCount);
   		wrapperHandler.initializeAPI(localMachinePublicIp4);
   		
   		//initialize FlinkResponseHandler
-        flinkResponseHandler = new FlinkResponseHandler(this, wrapperHandler);
+        flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
         flinkResponseHandler.start();
+        
+//        clientCallHandler = new ClientCallHandler(wrapperHandler);
+//        clientCallHandler.start();
     }
     
     public void setPublicIp4Adress() throws SocketException {
@@ -123,7 +165,6 @@ public class Server implements Serializable{
             if (localMachinePublicIp4.equals("localhost")) System.out.println("Server address set to 'localhost' (default).");
         }
     }
-    
     private AbstractReceiveListener getListener() {
         return new AbstractReceiveListener() {
             @Override
@@ -336,7 +377,7 @@ public class Server implements Serializable{
 	}
     
     private void buildTopViewGradoop() {
-    	flinkCore.initializeGradoopGraphUtil(gradoopGraphId);
+    	flinkCore.initializeGradoopGraphUtil();
 		wrapperHandler.initializeGraphRepresentation(edgeCount);
     	DataSet<WrapperGVD> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
     	try {
@@ -368,16 +409,19 @@ public class Server implements Serializable{
 			flinkResponseHandler.setVerticesHaveCoordinates(false);
 			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 		}
-		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));	
+
+		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema(), 3, true));	
+//		wrapperLine.addSink(new FlinkPrintSink());
 		try {
-				
+			System.out.println("Eval: " + eval);
         	//evaluation
         	if (eval) {
+            	System.out.println("Just before starting execution thread");
         		evaluator.executeStreamEvaluation(operation);
+            	System.out.println("Exiting after starting execution thread");
         	} else {
 				flinkCore.getFsEnv().execute("buildTopView");
         	}
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -398,7 +442,7 @@ public class Server implements Serializable{
 		}
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()));
 		try {
-			
+
         	//evaluation
         	if (eval) {
         		evaluator.executeStreamEvaluation(operation);
@@ -1174,10 +1218,18 @@ public class Server implements Serializable{
     /**
      * sends a message to the all connected web socket clients
      */
-    public void sendToAll(String message) {
+    public synchronized void sendToAll(String message) {
+    	System.out.println("sending message");
+    	System.out.println("Size of channels: " + channels.size());
         for (WebSocketChannel session : channels) {
-            WebSockets.sendText(message, session, null);
+        	System.out.println(session.getUrl());
+        	System.out.println(session.isRequireExplicitFlush());
+        	System.out.println(session.getDestinationAddress());
+        	System.out.println(session.getSourceAddress());
+        	WebSockets.sendText(message, session, new WebSocketCallbackTest());
+//			session.flush();
         }
+        System.out.println("after sending message");
     }
 	
 	private void setOperation(String operation) {
@@ -1261,5 +1313,13 @@ public class Server implements Serializable{
 		maxVertices = (int) (viewportPixelY * (yPixelProportion / viewportPixelY) *
 				viewportPixelX * (xPixelProportion / viewportPixelX) / vertexCountNormalizationFactor);
 		wrapperHandler.setMaxVertices(maxVertices);
+    }
+    
+    public void addMessageToQueue(WrapperGVD wrapper) {
+    	this.messageList.add(wrapper);
+    }
+    
+    public Queue<WrapperGVD> getMessageQueue() {
+    	return this.messageList;
     }
 }

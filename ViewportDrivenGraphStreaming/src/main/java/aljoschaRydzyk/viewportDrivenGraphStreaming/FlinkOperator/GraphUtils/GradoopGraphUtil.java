@@ -6,21 +6,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.operators.Order;
+import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.types.Row;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeSourceIDKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.EdgeTargetIDKeySelector;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexEPGMMapTupleDegreeComplex;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexIDRowKeySelector;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapIdentityWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexMapRow;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.VertexTupleComplexMapRow;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperFilterVisualizedVertices;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperRowMapWrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.WrapperSourceIDKeySelector;
@@ -48,11 +45,9 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.Wrapper
 public class GradoopGraphUtil implements GraphUtilSet{
 	
 	private LogicalGraph graph;
-	private String gradoopGraphId;
 	private Set<String> visualizedWrappers;
 	private Set<String> visualizedVertices;
 	private FilterFunction<Row> zoomOutVertexFilter;
-	private int zoomLevelCoefficient;
 	private int zoomLevel;
 	private DataSet<Row> vertices;
 	private DataSet<Row> wrapper;
@@ -63,10 +58,8 @@ public class GradoopGraphUtil implements GraphUtilSet{
 			//C : Inside viewport before and after operation
 			//D : Outside viewport after operation
 	
-	public GradoopGraphUtil (LogicalGraph graph, String gradoopGraphId, int zoomLevelCoefficient) {
+	public GradoopGraphUtil (LogicalGraph graph) {
 		this.graph = graph;
-		this.gradoopGraphId = gradoopGraphId;
-		this.zoomLevelCoefficient = zoomLevelCoefficient;
 		this.visualizedWrappers = new HashSet<String>();
 		this.visualizedVertices = new HashSet<String>();
 	}
@@ -74,16 +67,6 @@ public class GradoopGraphUtil implements GraphUtilSet{
 	
 	@Override
 	public void initializeDataSets() throws Exception{
-//		int numberVertices = Integer.parseInt(String.valueOf(this.graph.getVertices().count()));
-//		int numberZoomLevels = (numberVertices + zoomLevelCoefficient - 1) / zoomLevelCoefficient;
-//		int zoomLevelSetSize = (numberVertices + numberZoomLevels - 1) / numberZoomLevels;
-//		vertices = DataSetUtils.zipWithIndex((this.graph.getVertices()
-//					.map(new VertexEPGMMapTupleDegreeComplex())
-//					.sortPartition(1, Order.DESCENDING)
-//					.setParallelism(1)
-//				))
-//				.map(new VertexTupleComplexMapRow(gradoopGraphId, zoomLevelSetSize));
-//		
 		vertices = this.graph.getVertices().map(new VertexMapRow());
 		DataSet<EPGMEdge> edges = this.graph.getEdges();
 		DataSet<Tuple2<Tuple2<Row, EPGMEdge>, Row>> wrapperTuple = 
@@ -143,9 +126,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		
 		//produce wrapper set from in-view area to in-view area
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> inIn = verticesInner
-				.join(wrapper).where(new VertexIDRowKeySelector())
+				.join(wrapper, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(verticesInner).where(new WrapperTargetIDKeySelector())
+				.join(verticesInner, JoinHint.REPARTITION_SORT_MERGE).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		
 		
@@ -156,9 +139,9 @@ public class GradoopGraphUtil implements GraphUtilSet{
 				.join(verticesOuter).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> outIn = verticesOuter
-				.join(wrapper).where(new VertexIDRowKeySelector())
+				.join(wrapper, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(verticesInner).where(new WrapperTargetIDKeySelector())
+				.join(verticesInner, JoinHint.REPARTITION_SORT_MERGE).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		
 		//union
@@ -202,33 +185,33 @@ public class GradoopGraphUtil implements GraphUtilSet{
 		
 		//produce wrapper set from A to B and vice versa
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperBToA = verticesInnerNewNotOld
-				.join(wrapper).where(new VertexIDRowKeySelector())
+				.join(wrapper, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(verticesOuterBoth).where(new WrapperTargetIDKeySelector())
+				.join(verticesOuterBoth, JoinHint.REPARTITION_SORT_MERGE).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAToB = verticesOuterBoth
-				.join(wrapper).where(new VertexIDRowKeySelector())
+				.join(wrapper, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(verticesInnerNewNotOld).where(new WrapperTargetIDKeySelector())
+				.join(verticesInnerNewNotOld, JoinHint.REPARTITION_SORT_MERGE).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		
 		//produce wrapper set from A to A
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAToA = verticesInnerNewNotOld
-				.join(wrapper).where(new VertexIDRowKeySelector())
+				.join(wrapper, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(verticesInnerNewNotOld).where(new WrapperTargetIDKeySelector())
+				.join(verticesInnerNewNotOld, JoinHint.REPARTITION_SORT_MERGE).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		
 		//produce wrapper set from A+C to D and vice versa
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAPlusCToD = verticesInner
-				.join(wrapper).where(new VertexIDRowKeySelector())
+				.join(wrapper, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(verticesOldInnerNotNewInner).where(new WrapperTargetIDKeySelector())
+				.join(verticesOldInnerNotNewInner, JoinHint.REPARTITION_SORT_MERGE).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 		DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperDToAPlusC = verticesOldInnerNotNewInner
-				.join(wrapper).where(new VertexIDRowKeySelector())
+				.join(wrapper, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 				.equalTo(new WrapperSourceIDKeySelector())
-				.join(verticesInner).where(new WrapperTargetIDKeySelector())
+				.join(verticesInner, JoinHint.REPARTITION_SORT_MERGE).where(new WrapperTargetIDKeySelector())
 				.equalTo(new VertexIDRowKeySelector());
 			//filter out already visualized edges
 			DataSet<Tuple2<Tuple2<Row, Row>, Row>> wrapperAPlusCD = wrapperAPlusCToD.union(wrapperDToAPlusC);

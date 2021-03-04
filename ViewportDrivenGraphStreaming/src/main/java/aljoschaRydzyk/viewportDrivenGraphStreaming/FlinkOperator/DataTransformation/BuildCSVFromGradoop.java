@@ -6,9 +6,7 @@ import java.util.List;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.algorithms.gelly.vertexdegrees.DistinctVertexDegrees;
-import org.gradoop.flink.io.api.DataSink;
 import org.gradoop.flink.io.api.DataSource;
-import org.gradoop.flink.io.impl.csv.CSVDataSink;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.model.impl.operators.layouting.CentroidFRLayouter;
@@ -63,7 +61,7 @@ public class BuildCSVFromGradoop {
 		//create gradoop Flink configuration
 		ExecutionEnvironment env = ExecutionEnvironment
 				.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, flinkJobJarPath);
-		env.setParallelism(8);
+		env.setParallelism(24);
 		GradoopFlinkConfig gra_flink_cfg = GradoopFlinkConfig.createConfig(env);
 		
 		//load graph
@@ -98,11 +96,9 @@ public class BuildCSVFromGradoop {
 
 		//sink to gradoop format or GVD format
 		if (formatType.equals("gradoop")) {
-			GradoopToGradoop gradoopToGradoop = new GradoopToGradoop(zoomLevelCoefficient);
-			gradoopToGradoop.transform(log, writePath, gradoopGraphId, env);
-//			gradoopToGradoop.editMetadata(writePath, env);
-//			DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
-//			csvDataSink.write(log, true);
+			GradoopToGradoop gradoopToGradoop = new GradoopToGradoop(operations, zoomLevelCoefficient);
+			gradoopToGradoop.transform(log, sourcePath, writePath, gradoopGraphId, env);
+			gradoopToGradoop.editMetadata(sourcePath, writePath, env);
 		} else if (formatType.equals("gvd")) {
 			if (!operations.contains("degree")) 
 				System.out.println("Warning: GVD Format assumes that vertex degrees are already calculated!");

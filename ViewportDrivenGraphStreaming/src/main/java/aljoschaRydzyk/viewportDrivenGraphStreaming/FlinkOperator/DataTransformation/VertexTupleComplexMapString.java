@@ -1,18 +1,21 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.DataTransformation;
 
+import java.util.List;
+
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.gradoop.common.model.impl.pojo.EPGMVertex;
-import org.gradoop.common.model.impl.properties.Properties;
 
 public class VertexTupleComplexMapString implements 
 MapFunction<Tuple2<String, Tuple2<Long, Tuple2<EPGMVertex, Long>>>,String>{
 	private String graphId;
 	private int zoomLevelSetSize;
+	private List<String> operations;
 	
-	public VertexTupleComplexMapString(String graphId, int zoomLevelSetSize) {
+	public VertexTupleComplexMapString(List<String> operations, String graphId, int zoomLevelSetSize) {
 		this.graphId = graphId;
 		this.zoomLevelSetSize = zoomLevelSetSize;
+		this.operations = operations;
 	}
 
 
@@ -34,18 +37,9 @@ MapFunction<Tuple2<String, Tuple2<Long, Tuple2<EPGMVertex, Long>>>,String>{
 		}
 		vertexString += value.f1.f0 + "|" + 
 				String.valueOf(Integer.parseInt(String.valueOf(value.f1.f0)) / zoomLevelSetSize);
-//		EPGMVertex vertex = value.f1.f0;
-//		String s = "";
-//		s += vertex.getId().toString() + ";";
-//		s += "[" + this.graphId + "]" + ";";
-//		s += vertex.getLabel() + ";";
-//		for (String key :vertex.getPropertyKeys()) {
-//			s += vertex.getPropertyValue(key) + "|";
-//		}
-//		s += value.f0 + "|";
-//		s += String.valueOf(Integer.parseInt(String.valueOf(value.f0)) / zoomLevelSetSize);
-//		return s;		return null;
+		if (operations.contains("degree")) vertexString += "|" + vertex.getPropertyValue("degree");
+		if (operations.contains("layout"))
+			vertexString += "|" + vertex.getPropertyValue("X") + "|" + vertex.getPropertyValue("Y");
 		return vertexString;
 	}
-	
 }

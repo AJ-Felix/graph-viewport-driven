@@ -12,13 +12,21 @@ import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.streaming.api.datastream.AllWindowedStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
+import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
+import org.apache.flink.table.runtime.operators.window.CountWindow;
 import org.apache.flink.types.Row;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Batch.ProcessWindowTest;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInner;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Vertex.VertexFilterInnerOldNotNew;
@@ -141,8 +149,15 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 	public DataStream<Row> getMaxDegreeSubset(int numberVertices){
 		
 		//filter for X vertices with highest degree where X is 'numberVertices' to retain a subset
-		DataStream<Row> verticesMaxDegree = this.vertexStream
-				.filter(new VertexFilterMaxDegree(numberVertices));
+		DataStream<Row> verticesMaxDegree = this.vertexStream.keyBy(new KeySelector<Row,Integer>(){
+
+			@Override
+			public Integer getKey(Row value) throws Exception {
+				return 0;
+			}
+			
+		}).countWindow(100).process(new ProcessWindowTest())
+				.filter(new VertexFilterMaxDegree(numberVertices)).returns(new RowTypeInfo(this.vertexFormatTypeInfo));
 		Table vertexTable = fsTableEnv.fromDataStream(verticesMaxDegree).as(this.vertexFields);
 			
 		//produce wrappers containing only the subset of vertices

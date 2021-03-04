@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkExecutorThread;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 
 public class Evaluator {
@@ -27,7 +29,8 @@ public class Evaluator {
 	public void executeStreamEvaluation(String operation) throws Exception {
 		System.out.println("Exeuting Stream Evaluation");
 		Long beforeJobCall = System.currentTimeMillis();
-		fsEnv.execute(operation);
+		new FlinkExecutorThread("flinkExec", fsEnv).start();
+//		fsEnv.execute(operation);
 		Long afterJobCall = System.currentTimeMillis();
 		Long callToResultDuration = afterJobCall - beforeJobCall;
 		String s = "Operation: " + operation + ", call-to-result duration: " + callToResultDuration + System.lineSeparator();

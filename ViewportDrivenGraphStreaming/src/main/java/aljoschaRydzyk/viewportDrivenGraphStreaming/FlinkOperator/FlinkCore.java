@@ -33,7 +33,6 @@ public class FlinkCore {
 	  private StreamTableEnvironment fsTableEnv;
 	  private String flinkJobJarPath = "/home/aljoscha/remoteEnvJars/combined.jar";
 	  private int clusterEntryPointPort = 8081;
-	  private int zoomLevelCoefficient = 250;
 	  private String hdfsFullPath;
 	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
 	  private Boolean stream = true;
@@ -106,11 +105,11 @@ public class FlinkCore {
 		return graph;
 	}
 	
-	public GraphUtilSet initializeGradoopGraphUtil(String gradoopGraphId) {
+	public GraphUtilSet initializeGradoopGraphUtil() {
 		LogicalGraph graph;
 		try {
 			graph = this.getLogicalGraph();	//5ebe6813a7986cc7bd77f9c2 is one10thousand_sample_2_third_degrees_layout
-			this.graphUtilSet = new GradoopGraphUtil(graph, gradoopGraphId, this.zoomLevelCoefficient);
+			this.graphUtilSet = new GradoopGraphUtil(graph);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}	
