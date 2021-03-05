@@ -161,7 +161,7 @@ public class WrapperHandler{
 //		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
 //		System.out.println("TargetIdNumeric: " + wrapper.getTargetIdNumeric());
 //		System.out.println("TargetIdGradoop: " + wrapper.getTargetIdGradoop());
-		System.out.println("WrapperLabel: " + wrapper.getEdgeLabel());
+//		System.out.println("WrapperLabel: " + wrapper.getEdgeLabel());
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentityInitial(wrapper.getSourceVertex());
 		} else {
@@ -170,7 +170,6 @@ public class WrapperHandler{
 	}
 	
 	private void addWrapperIdentityInitial(VertexGVD vertex) {
-		System.out.println("adding initial identity vertex");
 		boolean added = addVertex(vertex);
 		if (added) innerVertices.put(vertex.getIdGradoop(), vertex);
 	}
@@ -749,6 +748,7 @@ public class WrapperHandler{
 		GraphUtil graphUtil =  server.getFlinkCore().getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
+		server.sendToAll("enableMouse");
 	}
 
 	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {

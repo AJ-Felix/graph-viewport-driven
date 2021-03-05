@@ -33,32 +33,32 @@ class Client {
 						this.graphVisualizer.colorVertex(dataArray[1], dataArray[4]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[5]));
 						if (eval) this.updateResponseTimes();				
-						clearTimeout(window.timeOut);
-						client = this;
-						window.timeOut = setTimeout(function(){
-							client.finalOperations()
-						}, this.timeOut);		
+						// clearTimeout(window.timeOut);
+						// client = this;
+						// window.timeOut = setTimeout(function(){
+						// 	client.finalOperations()
+						// }, this.timeOut);		
 						break;
 					case 'addVertexServerToBeLayouted':
 						this.graphVisualizer.addVertexToLayoutBase(dataArray);
 						this.graphVisualizer.updateVertexSize(dataArray[1]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[3]));
 						if (eval) this.updateResponseTimes();				
-						clearTimeout(window.timeOut);
-						client = this;
-						window.timeOut = setTimeout(function(){
-							client.finalOperations()
-						}, this.timeOut);	
+						// clearTimeout(window.timeOut);
+						// client = this;
+						// window.timeOut = setTimeout(function(){
+						// 	client.finalOperations()
+						// }, this.timeOut);	
 						break;
 					case 'addEdgeServer':
 						this.graphVisualizer.cy.add({group : 'edges', data: {id: dataArray[1], label: dataArray[4], source: dataArray[2], target: dataArray[3]}});
 						console.log("label: " + dataArray[4]);
 						if (eval) this.updateResponseTimes();				
-						clearTimeout(window.timeOut);
-						client = this;
-						window.timeOut = setTimeout(function(){
-							client.finalOperations()
-						}, this.timeOut);
+						// clearTimeout(window.timeOut);
+						// client = this;
+						// window.timeOut = setTimeout(function(){
+						// 	client.finalOperations()
+						// }, this.timeOut);
 						break;
 					case 'removeObjectServer':
 						if (!this.layout) this.graphVisualizer.layoutBase.delete(dataArray[1]);
@@ -222,12 +222,12 @@ class Client {
 			this.ws.send("layoutBaseString" + layoutBaseString);
 			if (this.evalOperationAndStep()) {
 				if (eval) this.outputQueryTime();
-				this.enableMouseEvents();
+				// this.enableMouseEvents();
 			}
 		} else {
 			if (eval) this.outputQueryTime();
 			if (this.operation == "initial") this.fitTopView();
-			this.enableMouseEvents();
+			// this.enableMouseEvents();
 		}
 	}
 

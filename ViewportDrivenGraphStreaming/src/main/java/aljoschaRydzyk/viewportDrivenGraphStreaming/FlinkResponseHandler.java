@@ -3,10 +3,8 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Scanner;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.EdgeGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
@@ -23,7 +21,6 @@ public class FlinkResponseHandler extends Thread{
     private ServerSocket serverSocket = null;
     private String line;
     private Socket echoSocket;
-    private PrintWriter out;
 	private BufferedReader in;
 	private Server server;
 	
@@ -58,95 +55,45 @@ public class FlinkResponseHandler extends Thread{
 	}
     
     public void listen() throws IOException {
-    	System.out.println("executing listen on flinkResponseHandler");
-    	try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	this.server.sendToAll("test String");
+    	System.out.println("Executing 'listen()' on flinkResponseHandler!");
 		echoSocket = serverSocket.accept();
-    	this.server.sendToAll("test String2");
-        out = new PrintWriter(echoSocket.getOutputStream(), true);
-        InputStreamReader inReader = new InputStreamReader(echoSocket.getInputStream());
-//        while(true) {
-//        }
+        System.out.println("Connected to Socket!");
         in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-//        byte[] messageByte = new byte[1000];
-//        Scanner scanner = new Scanner(inReader);
-//        while(scanner.hasNextLine()) System.out.print(scanner.nextLine());
-//        scanner.close();
-//        int i;
-//        int count = 0;
-//        while((i = in.read()) != -1) {
-//        	count += 1;
-//        	StringBuilder stringBuilder = new StringBuilder();
-//        	stringBuilder.append((char) i);
-//        	
-//        	while(((char) (i = in.read())) != ('\n')) {
-//        		stringBuilder.append((char) i);
-//        	}
-//        	System.out.println(stringBuilder.toString());
-//        	System.out.print((char) i);
-//        	System.out.println(in.readLine());
-//        	System.out.print(in.read());
-//        	System.out.println("in loop");
-//        }
-//        System.out.println("Count: " + count);
-        System.out.println("connected to socket!!!");
         line = "empty";
         if (!(operation.startsWith("initial"))) {
         	if (layout) {
-        		wrapperHandler.setSentToClientInSubStep(false);
         		while((line = in.readLine()) != null)  {
 	            	System.out.println("flinkResponseHandler: " + line);	            	
 	            	wrapperHandler.addWrapper(parseWrapperString(line));
 	            }
-        		if (wrapperHandler.getSentToClientInSubStep() == false) server.sendToAll("enableMouse");
-        		else wrapperHandler.clearOperation();
+        		this.server.onIsLayoutedStreamJobtermination();
         	} else {
         		while((line = in.readLine()) != null)  {
 	            	System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
 	            }
+        		this.server.onLayoutingStreamJobTermination();
         	}	
         } else {
         	if (layout) {
         		while((line = in.readLine()) != null)  {
 	            	System.out.println("flinkResponseHandler, initial, layout: " + line);
-//	            	synchronized (server) {
-//	            		server.addMessageToQueue(parseWrapperString(line));
-//	            	}
-        	    	this.server.sendToAll("test String3");
-//	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
+	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	            }
-                wrapperHandler.clearOperation();
+        		this.server.onIsLayoutedStreamJobtermination();
         	} else  {
         		while((line = in.readLine()) != null)  {
 	            	System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	            }
+        		this.server.onLayoutingStreamJobTermination();
         	}	
         }
     	in.close();
-	    out.close();
 	    echoSocket.close();   
 	    this.listen();
     }
-    
-//    public void closeAndReopen() {
-//		try {
-//			in.close();
-//			out.close();
-//			echoSocket.close();
-//			serverSocket.close();
-//			this.listen();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}  
-//    }
-	
+
 	private WrapperGVD parseWrapperStringNoCoordinates(String line) {
 		String[] array = line.split(",");
 		System.out.println(array);
