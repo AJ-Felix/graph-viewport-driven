@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.io.RowCsvInputFormat;
@@ -299,7 +300,6 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
 		 * other hand.
 		 */
-		
 		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
 		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionKeySet));
@@ -308,8 +308,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 				.filter(new VertexFilterZoomLevel(zoomLevel));
 		Table visualizedVerticesTable = fsTableEnv.fromDataStream(visualizedVertices).as(this.vertexFields);
 		Table neighboursTable = fsTableEnv.fromDataStream(neighbours).as(this.vertexFields);
-		DataStream<Row> wrapperStream = 
-			fsTableEnv.toAppendStream(wrapperTable
+		DataStream<Row> wrapperStream = fsTableEnv.toAppendStream(wrapperTable
 					.join(visualizedVerticesTable).where("vertexIdGradoop = sourceVertexIdGradoop").select(this.wrapperFields)
 					.join(neighboursTable).where("vertexIdGradoop = targetVertexIdGradoop").select(this.wrapperFields)
 				, wrapperRowTypeInfo)

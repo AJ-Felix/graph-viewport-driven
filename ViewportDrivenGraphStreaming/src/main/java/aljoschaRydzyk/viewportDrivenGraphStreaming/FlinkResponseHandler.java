@@ -60,19 +60,26 @@ public class FlinkResponseHandler extends Thread{
         System.out.println("Connected to Socket!");
         in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
         line = "empty";
+        System.out.println("State of flinkCore: " + this.server.getFlinkCore());
         if (!(operation.startsWith("initial"))) {
         	if (layout) {
         		while((line = in.readLine()) != null)  {
 	            	System.out.println("flinkResponseHandler: " + line);	            	
 	            	wrapperHandler.addWrapper(parseWrapperString(line));
 	            }
-        		this.server.onIsLayoutedStreamJobtermination();
+        		synchronized (Server.threadObj) {
+        			Server.threadObj.notify();
+        		}
+//        		this.server.onIsLayoutedStreamJobtermination();
         	} else {
         		while((line = in.readLine()) != null)  {
 	            	System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
 	            }
-        		this.server.onLayoutingStreamJobTermination();
+        		synchronized (Server.threadObj) {
+        			Server.threadObj.notify();
+        		}
+//        		this.server.onLayoutingStreamJobTermination();
         	}	
         } else {
         	if (layout) {
@@ -80,13 +87,20 @@ public class FlinkResponseHandler extends Thread{
 	            	System.out.println("flinkResponseHandler, initial, layout: " + line);
 	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	            }
-        		this.server.onIsLayoutedStreamJobtermination();
+        		synchronized (Server.threadObj) {
+        			Server.threadObj.notify();
+        		}
+//        		this.server.onIsLayoutedStreamJobtermination();
         	} else  {
+
         		while((line = in.readLine()) != null)  {
 	            	System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	            }
-        		this.server.onLayoutingStreamJobTermination();
+        		synchronized (Server.threadObj) {
+        			Server.threadObj.notify();
+        		}
+//        		this.server.onLayoutingStreamJobTermination();
         	}	
         }
     	in.close();
@@ -121,9 +135,5 @@ public class FlinkResponseHandler extends Thread{
 	
 	public void setVerticesHaveCoordinates(Boolean have) {
 		this.layout = have;
-	}
-	
-	public String getLine() {
-		return this.line;
 	}
 }

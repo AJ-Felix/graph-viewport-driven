@@ -42,6 +42,7 @@ class Client {
 					case 'addVertexServerToBeLayouted':
 						this.graphVisualizer.addVertexToLayoutBase(dataArray);
 						this.graphVisualizer.updateVertexSize(dataArray[1]);
+						this.graphVisualizer.colorVertex(dataArray[1], dataArray[2]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[3]));
 						if (eval) this.updateResponseTimes();				
 						// clearTimeout(window.timeOut);

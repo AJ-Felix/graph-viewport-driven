@@ -208,11 +208,11 @@ TODO: Edgecapacity in die Theorie einpflegen
 
 TODO: GradoopCSV mit layoutlevel und numeric ID konvertieren
 TODO: eval automatisieren
-TODO: windowing implementieren
+
 TODO: partitionierung implementieren
 TODO: nur topview und zoom-in
 
-TODO: wrapperCollection im Server nicht static lassen
+TODO: Job cancelling konsequenter anwenden
 
 
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 

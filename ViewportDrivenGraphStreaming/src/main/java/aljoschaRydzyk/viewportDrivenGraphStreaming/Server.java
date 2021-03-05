@@ -3,6 +3,7 @@ package aljoschaRydzyk.viewportDrivenGraphStreaming;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.websocket;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -65,6 +66,8 @@ public class Server implements Serializable{
 	
 	private static Server INSTANCE;
 	
+	public final static Object threadObj = new Object();
+	
 	//evaluation
 	private boolean eval;
 	private Evaluator evaluator;
@@ -103,7 +106,7 @@ public class Server implements Serializable{
     public void initializeHandlers() {
     	wrapperHandler = new WrapperHandler();
   		wrapperHandler.initializeGraphRepresentation(edgeCount);
-  		wrapperHandler.initializeAPI(localMachinePublicIp4);
+  		wrapperHandler.initializeAPI(clusterEntryPointAddress);
   		
   		//initialize FlinkResponseHandler
         flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
@@ -152,6 +155,7 @@ public class Server implements Serializable{
                 	wrapperHandler.initializeGraphRepresentation(edgeCount);
                 } else if (messageData.startsWith("clusterEntryAddress")) {
                 	clusterEntryPointAddress = messageData.split(";")[1];
+                	wrapperHandler.initializeAPI(clusterEntryPointAddress);
                 } else if (messageData.startsWith("hDFSEntryAddress")) {
                 	hdfsEntryPointAddress = messageData.split(";")[1];
                 } else if (messageData.startsWith("hDFSEntryPointPort")) {
@@ -193,8 +197,8 @@ public class Server implements Serializable{
     							else zoomSet();
     						} else {								
     							System.out.println("in zoom in layout function");
-    							if (stream) zoomInLayoutStep1Stream();
-    							else  zoomInLayoutStep1Set();				
+    							if (stream) layoutingStreamOperation(1);
+    							else layoutingSetOperation(1);				
     						}
     					} else {
     						setOperation("zoomOut");
@@ -204,8 +208,8 @@ public class Server implements Serializable{
     							else zoomSet();
     						}
     						else {
-    							if (stream)	zoomOutLayoutStep1Stream();
-    							else zoomOutLayoutStep1Set();
+    							if (stream)	layoutingStreamOperation(1);
+    							else layoutingSetOperation(1);
     						}
     					}
                   	} 
@@ -261,7 +265,9 @@ public class Server implements Serializable{
         			flinkCore.setModelPositionsOld();
         			setModelPositions(topModel, rightModel, bottomModel, leftModel);
         			if (!maxVerticesLock) calculateMaxVertices(topModel, rightModel, bottomModel, leftModel, zoomLevel);
-					if (messageData.startsWith("zoomIn")) {
+					System.out.println("Thread that will spawn zoomIn-Executor has name: " 
+							+ Thread.currentThread().getName() + "and ID: " + Thread.currentThread().getId());
+        			if (messageData.startsWith("zoomIn")) {
 						setOperation("zoomIn");
 						setVertexZoomLevel(vertexZoomLevel + 1);
 						wrapperHandler.prepareOperation();
@@ -269,8 +275,8 @@ public class Server implements Serializable{
 							if (stream) zoomStream();
 							else zoomSet();
 						} else {								
-							if (stream) zoomInLayoutStep1Stream();
-							else  zoomInLayoutStep1Set();				
+							if (stream) layoutingStreamOperation(1);
+							else  layoutingSetOperation(1);				
 						}
 					} else {
 						setOperation("zoomOut");
@@ -280,8 +286,8 @@ public class Server implements Serializable{
 							if (stream) zoomStream();
 							else zoomSet();
 						} else {
-							if (stream)	zoomOutLayoutStep1Stream();
-							else zoomOutLayoutStep1Set();
+							if (stream)	layoutingStreamOperation(1);
+							else layoutingSetOperation(1);
 						}
 					}
     			} else if (messageData.startsWith("pan")) {
@@ -304,8 +310,8 @@ public class Server implements Serializable{
 					setOperation("pan");
     				wrapperHandler.prepareOperation();
 					if (!layout) {
-						if (stream) panLayoutStep1Stream();
-						else panLayoutStep1Set();
+						if (stream) layoutingStreamOperation(1);
+						else layoutingSetOperation(1);
 					} else {
 						if (stream)	panStream();
 						else panSet();
@@ -346,7 +352,21 @@ public class Server implements Serializable{
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, 
 				new SimpleStringSchema(), 3, true)).setParallelism(1);	
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval).start();
+		System.out.println("Thread that spawned topView Executor has name: " + Thread.currentThread().getName()
+				+ "and ID: " + Thread.currentThread().getId());
+		synchronized (threadObj) {
+			try {
+				threadObj.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Thread woke up");
+		if (layout) onIsLayoutedStreamJobtermination();
+		else onLayoutingStreamJobTermination();
     }
+    
     
     private void buildTopViewAdjacency() {
     	flinkCore.initializeAdjacencyGraphUtil();
@@ -364,6 +384,17 @@ public class Server implements Serializable{
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, 
 				new SimpleStringSchema())).setParallelism(1);
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval).start();
+		synchronized (threadObj) {
+			try {
+				threadObj.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Thread woke up");
+		if (layout) onIsLayoutedStreamJobtermination();
+		else onLayoutingStreamJobTermination();
     }
     
     private void zoomSet() {
@@ -382,6 +413,15 @@ public class Server implements Serializable{
 				new SimpleStringSchema())).setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval).start();
+		synchronized (threadObj) {
+			try {
+				threadObj.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		onIsLayoutedStreamJobtermination();
     }
     
     private void panSet() {
@@ -399,6 +439,15 @@ public class Server implements Serializable{
 				new SimpleStringSchema())).setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval).start();
+		synchronized (threadObj) {
+			try {
+				threadObj.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		onIsLayoutedStreamJobtermination();
     }
     
     private void nextSubStep() {
@@ -542,20 +591,17 @@ public class Server implements Serializable{
     			new SimpleStringSchema())).setParallelism(1);
     	wrapperHandler.setSentToClientInSubStep(false);
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval).start();	
+		synchronized (threadObj) {
+			try {
+				threadObj.wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Thread woke up");
+		if (layout) onIsLayoutedStreamJobtermination();
+		else onLayoutingStreamJobTermination();
     }
-    
-    private void zoomInLayoutStep1Set() {}
-
-	private void zoomInLayoutStep1Stream() {}
-    
-    private void zoomOutLayoutStep1Set() {}
-    
-    private void zoomOutLayoutStep1Stream() {}
- 
-    
-    private void panLayoutStep1Set() {}
-    
-    private void panLayoutStep1Stream() { }
 
     /**
      * sends a message to the all connected web socket clients

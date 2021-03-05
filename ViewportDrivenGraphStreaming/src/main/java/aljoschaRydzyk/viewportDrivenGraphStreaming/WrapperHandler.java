@@ -46,9 +46,9 @@ public class WrapperHandler{
     	System.out.println("wrapper handler constructor is executed");
     }
 	 
-	public void initializeAPI(String localMachinePublicIp4) {
+	public void initializeAPI(String clusterEntryPointAddress) {
 		api = new FlinkApi();
-        api.getApiClient().setBasePath("http://" + localMachinePublicIp4 + ":8081");  
+        api.getApiClient().setBasePath("http://" + clusterEntryPointAddress + ":8081");  
 	}
 	
 	public void initializeGraphRepresentation(int edgeCount) {

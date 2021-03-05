@@ -12,6 +12,8 @@ var colorMapping = {
 	"comment" : "red",
 	"country" : "blue",
 	"post" : "yellow",
-	"forum" : "green"
+	"forum" : "green",
+	"tag" : "orange",
+	"person" : "violet"
 };
 

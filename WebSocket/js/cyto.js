@@ -146,11 +146,6 @@ class GraphVisualizer {
 		const yVertex = this.layoutWindow.y1 + Math.random() * (this.layoutWindow.y2 - this.layoutWindow.y1);
 		this.cy.add({group : 'nodes', data: {id: dataArray[1], label: dataArray[2], degree: dataArray[3], zoomLevel: dataArray[4]}, position: {x: xVertex, y: yVertex}});
 		this.layoutBase.add(dataArray[1]);
-		console.log(this.layoutWindow.x1);
-		console.log(this.layoutWindow.x2);
-		console.log(this.layoutWindow.y1);
-		console.log(this.layoutWindow.y2);
-
 	}
 
 	derivelayoutWindow(topModel, rightModel, bottomModel, leftModel){
