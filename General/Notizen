@@ -212,8 +212,6 @@ TODO: eval automatisieren
 TODO: partitionierung implementieren
 TODO: nur topview und zoom-in
 
-TODO: Job cancelling konsequenter anwenden
-
 
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
 	Bei Verkleinerung: 

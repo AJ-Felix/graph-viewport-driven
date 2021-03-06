@@ -106,49 +106,75 @@ public class WrapperHandler{
 		vertexCapacity = maxVertices - innerVertices.size();
 		if (operation.equals("pan") || operation.equals("zoomOut")) {
 			newVertices = innerVertices;
-			if (vertexCapacity < 0) {
-				List<VertexGVD> list = new ArrayList<VertexGVD>(newVertices.values());
-				list.sort(new VertexGVDNumericIdComparator().reversed());
-				while (vertexCapacity < 0) {
-					list.remove(list.size() - 1);
-					vertexCapacity += 1;
-				}
-				newVertices = new HashMap<String,VertexGVD>();
-				for (VertexGVD vertex : list) newVertices.put(vertex.getIdGradoop(), vertex);
-			}
-			innerVertices = new HashMap<String,VertexGVD>();
-				
-			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
-			if (newVertices.size() > 1) {
-				updateMinDegreeVertices(newVertices);
-			} else if (newVertices.size() == 1) {
-				minDegreeVertex = newVertices.values().iterator().next();
-			}
-			System.out.println("Capacity after prepareOperation: " + vertexCapacity);
-		} else {
-			if (vertexCapacity < 0) {
-				List<VertexGVD> list = new ArrayList<VertexGVD>(innerVertices.values());
-				list.sort(new VertexGVDNumericIdComparator().reversed());
-				while (vertexCapacity < 0) {
-					list.remove(list.size() - 1);
-					vertexCapacity += 1;
-				}
-				innerVertices = new HashMap<String,VertexGVD>();
-				for (VertexGVD vertex : list) {
-					innerVertices.put(vertex.getIdGradoop(), vertex);
-				}
-			}
-			
-			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
-			if (innerVertices.size() > 1) {
-				updateMinDegreeVertices(innerVertices);
-			} else if (innerVertices.size() == 1) {
-				minDegreeVertex = innerVertices.values().iterator().next();
-			}
-			System.out.println("Capacity after prepareOperation: " + vertexCapacity);
-			newVertices = new HashMap<String,VertexGVD>();
+			prepareOperationHelper(newVertices, innerVertices);
+//			if (vertexCapacity < 0) {
+//				List<VertexGVD> list = new ArrayList<VertexGVD>(newVertices.values());
+//				list.sort(new VertexGVDNumericIdComparator().reversed());
+//				while (vertexCapacity < 0) {
+//					list.remove(list.size() - 1);
+//					vertexCapacity += 1;
+//				}
+//				newVertices = new HashMap<String,VertexGVD>();
+//				for (VertexGVD vertex : list) newVertices.put(vertex.getIdGradoop(), vertex);
+//			}
+//			innerVertices = new HashMap<String,VertexGVD>();
+//				
+//			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
+//			if (newVertices.size() > 1) {
+//				updateMinDegreeVertices(newVertices);
+//			} else if (newVertices.size() == 1) {
+//				minDegreeVertex = newVertices.values().iterator().next();
+//			}
+//			System.out.println("Capacity after prepareOperation: " + vertexCapacity);
+		} else { 
+			prepareOperationHelper(innerVertices, newVertices);
+//			if (vertexCapacity < 0) {
+//				List<VertexGVD> list = new ArrayList<VertexGVD>(innerVertices.values());
+//				list.sort(new VertexGVDNumericIdComparator().reversed());
+//				while (vertexCapacity < 0) {
+//					list.remove(list.size() - 1);
+//					vertexCapacity += 1;
+//				}
+//				innerVertices = new HashMap<String,VertexGVD>();
+//				for (VertexGVD vertex : list) {
+//					innerVertices.put(vertex.getIdGradoop(), vertex);
+//				}
+//			}
+//			
+//			//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
+//			if (innerVertices.size() > 1) {
+//				updateMinDegreeVertices(innerVertices);
+//			} else if (innerVertices.size() == 1) {
+//				minDegreeVertex = innerVertices.values().iterator().next();
+//			}
+//			System.out.println("Capacity after prepareOperation: " + vertexCapacity);
+//			newVertices = new HashMap<String,VertexGVD>();
 		}
 		
+	}
+	
+	private void prepareOperationHelper(Map<String,VertexGVD> controlMap, Map<String,VertexGVD> emptyMap) {
+		if (vertexCapacity < 0) {
+			List<VertexGVD> list = new ArrayList<VertexGVD>(controlMap.values());
+			list.sort(new VertexGVDNumericIdComparator().reversed());
+			while (vertexCapacity < 0) {
+				list.remove(list.size() - 1);
+				vertexCapacity += 1;
+			}
+			controlMap = new HashMap<String,VertexGVD>();
+			for (VertexGVD vertex : list) {
+				controlMap.put(vertex.getIdGradoop(), vertex);
+			}
+		}
+		
+		//this is necessary in case the (second)minDegreeVertex will get deleted in the clear up step befor
+		if (controlMap.size() > 1) {
+			updateMinDegreeVertices(controlMap);
+		} else if (controlMap.size() == 1) {
+			minDegreeVertex = controlMap.values().iterator().next();
+		}
+		System.out.println("Capacity after prepareOperation: " + vertexCapacity);
+		emptyMap = new HashMap<String,VertexGVD>();
 	}
 	
 	public void addWrapperCollectionInitial(List<WrapperGVD> wrapperCollection) {
@@ -156,12 +182,7 @@ public class WrapperHandler{
 		while (iter.hasNext()) addWrapperInitial(iter.next());
 	}
 	
-	public void addWrapperInitial(WrapperGVD wrapper) {
-//		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
-//		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
-//		System.out.println("TargetIdNumeric: " + wrapper.getTargetIdNumeric());
-//		System.out.println("TargetIdGradoop: " + wrapper.getTargetIdGradoop());
-//		System.out.println("WrapperLabel: " + wrapper.getEdgeLabel());
+	public void addWrapperInitial(WrapperGVD wrapper) {;
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentityInitial(wrapper.getSourceVertex());
 		} else {
@@ -190,19 +211,6 @@ public class WrapperHandler{
 	}
 	  
 	public void addWrapper(WrapperGVD wrapper) {
-//		System.out.println("EdgeIdGradoop: " + wrapper.getEdgeIdGradoop());
-//		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
-//		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());
-//		System.out.println("TargetIdNumeric: " + wrapper.getTargetIdNumeric());
-//		System.out.println("TargetIdGradoop: " + wrapper.getTargetIdGradoop());
-//		System.out.println("WrapperLabel: " + wrapper.getEdgeLabel());
-//		System.out.println("Size of innerVertices: " + innerVertices.size());
-//		System.out.println("Size of newVertices: " + newVertices.size());
-//		System.out.println("ID Gradoop minDegreeVertex, degree: " + minDegreeVertex.getIdGradoop() + " " +
-//				minDegreeVertex.getIdGradoop());
-//		System.out.println("ID Gradoop secondMinDegreeVertex, degree: " + secondMinDegreeVertex.getIdGradoop() +
-//				" " + secondMinDegreeVertex.getIdGradoop());
-//		System.out.println("Capacity: " + capacity);
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentity(wrapper.getSourceVertex());
 		} else {
@@ -226,6 +234,26 @@ public class WrapperHandler{
 				if (!vertexIsRegisteredInside) {
 					removeVertex(minDegreeVertex);
 					registerInside(vertex);
+				}
+			} 
+			
+			//only applicable if identity wrapper stream  is degree-sorted!
+			else {
+				try {
+					JobIdsWithStatusOverview jobs = api.getJobs();
+					List<JobIdWithStatus> list = jobs.getJobs();
+					System.out.println("flink api job list size: " + list.size());
+					Iterator<JobIdWithStatus> iter = list.iterator();
+					JobIdWithStatus job;
+					while (iter.hasNext()) {
+						job = iter.next();
+						if (job.getStatus() == StatusEnum.RUNNING) {
+							api.terminateJob(job.getId(), "cancel");
+							break;
+						}
+					}
+				} catch (ApiException e) {
+					e.printStackTrace();
 				}
 			}
 		}
@@ -388,8 +416,8 @@ public class WrapperHandler{
 	public void addWrapperLayout(WrapperGVD wrapper) {
 		//if in zoomIn3 or pan3: cancel flinkjob if still running, close socket and reopen for next step and move to next step!
 		System.out.println("wrapperHandler, operationStep: " + operationStep);
-		if (operationStep == 3 && (operation == "zoomIn" || operation == "pan")) {
-			if (vertexCapacity == 0) {
+//		if (operationStep == 3 && (operation == "zoomIn" || operation == "pan")) {
+			if (vertexCapacity <= 0 && edgeCapacity <= 0) {
 				try {
 					JobIdsWithStatusOverview jobs = api.getJobs();
 					List<JobIdWithStatus> list = jobs.getJobs();
@@ -407,7 +435,7 @@ public class WrapperHandler{
 					e.printStackTrace();
 				}
 			}
-		} 
+//		} 
 //		System.out.println("EdgeIdGradoop; " + wrapper.getEdgeIdGradoop());
 //		System.out.println("SourceIdNumeric: " + wrapper.getSourceIdNumeric());
 //		System.out.println("SourceIdGradoop: " + wrapper.getSourceIdGradoop());

@@ -14,6 +14,10 @@ public class Evaluator {
 		this.fsEnv = fsEnv;
 	}
 	
+	public Evaluator() {
+		
+	}
+	
 	private void writeToFile(String s) throws IOException{
 		FileWriter fw = new FileWriter("/home/aljoscha/performance_evaluation.log", true); //the true will append the new data
 	    fw.write(s);
