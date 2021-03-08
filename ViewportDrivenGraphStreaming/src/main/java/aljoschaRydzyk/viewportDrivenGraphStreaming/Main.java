@@ -27,7 +27,7 @@ public class Main {
 		
 		//parse command line
 		Options options = new Options();
-		Option evalOption = new Option("e", "evaluation", false, "toggle performance evaluation");
+		Option evalOption = new Option("e", "evaluation", true, "toggle performance evaluation");
 		options.addOption(evalOption);
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmd = null;
@@ -36,7 +36,6 @@ public class Main {
 		} catch (ParseException e1) {
 			e1.printStackTrace();
 		}
-		boolean eval = cmd.hasOption("e");
 		
 		//initialize Server
 		server = Server.getInstance();
@@ -48,6 +47,11 @@ public class Main {
 		}
 		server.initializeServerFunctionality();
 		server.initializeHandlers();
-		server.setEvaluation(eval);
+		if (cmd.hasOption("e"))	{
+			boolean automated;
+			if (cmd.getOptionValue("e").equals("automated")) automated = true;
+			else automated = false;
+			server.setEvaluation(automated);
+		}
     }
 }

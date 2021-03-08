@@ -1,6 +1,7 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.DataTransformation;
 
 import org.apache.flink.api.common.operators.Order;
+import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.operators.ReduceOperator;
@@ -53,9 +54,9 @@ public class GradoopToGVD {
 		//wrappers
 		DataSet<EPGMEdge> edges = graph.getEdges();
 		DataSet<Row> wrapper = 
-				vertices.join(edges).where(new VertexIDRowKeySelector())
+				vertices.join(edges, JoinHint.REPARTITION_SORT_MERGE).where(new VertexIDRowKeySelector())
 			.equalTo(new EdgeSourceIDKeySelector())
-			.join(vertices).where(new EdgeTargetIDKeySelector())
+			.join(vertices, JoinHint.REPARTITION_SORT_MERGE).where(new EdgeTargetIDKeySelector())
 			.equalTo(new VertexIDRowKeySelector())
 			.map(new WrapperTupleComplexMapRow());
 		

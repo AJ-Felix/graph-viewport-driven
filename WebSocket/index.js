@@ -10,6 +10,8 @@ class Client {
 		this.vertexZoomLevel = 0;
 		this.timeBeforeQuery;
 		this.timeLastResponse;
+		this.evaluationCount = 0;
+		this.evaluationCountThreshold = 10;
 	}
 
 	addMessageToQueue(dataArray){
@@ -33,11 +35,6 @@ class Client {
 						this.graphVisualizer.colorVertex(dataArray[1], dataArray[4]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[5]));
 						if (eval) this.updateResponseTimes();				
-						// clearTimeout(window.timeOut);
-						// client = this;
-						// window.timeOut = setTimeout(function(){
-						// 	client.finalOperations()
-						// }, this.timeOut);		
 						break;
 					case 'addVertexServerToBeLayouted':
 						this.graphVisualizer.addVertexToLayoutBase(dataArray);
@@ -45,21 +42,10 @@ class Client {
 						this.graphVisualizer.colorVertex(dataArray[1], dataArray[2]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[3]));
 						if (eval) this.updateResponseTimes();				
-						// clearTimeout(window.timeOut);
-						// client = this;
-						// window.timeOut = setTimeout(function(){
-						// 	client.finalOperations()
-						// }, this.timeOut);	
-						break;
 					case 'addEdgeServer':
 						this.graphVisualizer.cy.add({group : 'edges', data: {id: dataArray[1], label: dataArray[4], source: dataArray[2], target: dataArray[3]}});
 						console.log("label: " + dataArray[4]);
 						if (eval) this.updateResponseTimes();				
-						// clearTimeout(window.timeOut);
-						// client = this;
-						// window.timeOut = setTimeout(function(){
-						// 	client.finalOperations()
-						// }, this.timeOut);
 						break;
 					case 'removeObjectServer':
 						if (!this.layout) this.graphVisualizer.layoutBase.delete(dataArray[1]);
@@ -89,6 +75,12 @@ class Client {
 						break;
 					case 'enableMouse':
 						if (!this.mouseEnabled) this.enableMouseEvents();
+						break;
+					case 'resetSuccessful':
+						if (this.automatedEvaluation) this.topView();
+						break;
+					case 'automatedEvaluation':
+						this.automatedEvaluation = true;
 						break;
 				}
 				resolve(true);
@@ -136,36 +128,41 @@ class Client {
 	}
 
 	sendSignalGradoop(){
-		if (eval) this.initiateEvaluation();
+		if (eval) {
+			this.initiateEvaluation();
+			this.backendVariant = "gradoop";
+		}
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;gradoop");
 	}
 
 	sendSignalCSV(){
-		if (eval) this.initiateEvaluation();
+		if (eval) {
+			this.initiateEvaluation();
+			this.backendVariant = "tableStream";
+		}
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;CSV");
 	}
 
 	sendSignalAdjacency(){
-		if (eval) this.initiateEvaluation();
+		if (eval) {
+			this.initiateEvaluation();
+			this.backendVariant = "adjacencyMatrix";
+		}
 		this.buildTopViewOperations();
 		this.ws.send("buildTopView;adjacency");
 	}
 
 	buildTopViewOperations(){
-		if (!this.layout) {
-			this.graphVisualizer.layoutBase = new Set();
-		}
-		// this.graphVisualizer.layoutWindow = {x1: this.leftModelBorder, y1: this.topModelBorder, x2: this.rightModelBorder, y2: this.bottomModelBorder};
-		// this.graphVisualizer.cy.zoom(1 / (4000 / Math.min(this.cyWidth, this.cyHeight)));
-		// this.graphVisualizer.zoomLevel = this.graphVisualizer.cy.zoom();
+		if (!this.layout) this.graphVisualizer.layoutBase = new Set();
 		this.disableMouseEvents();
 	}
 
 	resetVisualization(){
 		this.graphVisualizer = new GraphVisualizer();
-		this.ws.send("resetWrapperHandler");
+		this.vertexZoomLevel = 0;
+		this.ws.send("resetVisualization");
 	}
 
 	resize(){
@@ -243,6 +240,18 @@ class Client {
 	}
 
 	enableMouseEvents(){
+		if (this.automatedEvaluation){
+			if (this.evaluationCount < this.evaluationCountThreshold){
+				if (this.operation == "initial"){
+					this.disableMouseEvents();
+					zoom(1, this.cyWidthHalf, this.cyHeightHalf);
+				} else if (this.operation == "zoomIn"){
+					this.evaluationCount += 1;
+					this.disableMouseEvents();
+					this.resetVisualization();
+				}
+			}
+		}
 		$("body").css("cursor", "default");
 		console.log("enabling mouse events");
 		const cyto = document.getElementById('cy');
@@ -264,6 +273,13 @@ class Client {
 		}
 		else return false;
 	}
+
+	topView(){
+		if (this.backendVariant == "gradoop") this.sendSignalGradoop();
+		else if (this.backendVariant == "tableStream") this.sendSignalCSV();
+		else if (this.backendVariant == "adjacencyMatrix") this.sendSignalAdjacency();
+	}
+
 
 	fitTopView(){
 		const cy = this.graphVisualizer.cy;
@@ -416,6 +432,10 @@ function mouseWheel(e) {
 	const scroll = document.documentElement.scrollTop || document.body.scrollTop;
 	const cytoX = e.pageX - rect.left;
 	const cytoY = e.pageY - (rect.top + scroll);
+	zoom(delta, cytoX, cytoY);
+}
+
+function zoom(delta, cytoX, cytoY){
 	let pan = client.graphVisualizer.cy.pan();
 	client.graphVisualizer.layoutBase = new Set();
 	if (delta < 0){

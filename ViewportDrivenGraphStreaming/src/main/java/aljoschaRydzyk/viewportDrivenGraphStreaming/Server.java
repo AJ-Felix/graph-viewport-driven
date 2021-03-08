@@ -29,6 +29,7 @@ import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
+import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 public class Server implements Serializable {
 
@@ -69,8 +70,8 @@ public class Server implements Serializable {
 	public final static Object threadObj = new Object();
 
 	// evaluation
-	private boolean eval;
-	private Evaluator evaluator;
+	private boolean eval = false;
+	private boolean automatedEvaluation;
 
 	public Server() {
 		System.out.println("executing server constructor");
@@ -84,14 +85,16 @@ public class Server implements Serializable {
 		return INSTANCE;
 	}
 
-	public void setEvaluation(boolean eval) {
-		this.eval = eval;
+	public void setEvaluation(boolean automated) {
+		this.eval = true;
+		this.automatedEvaluation = automated;
 		System.out.println("Evaluator Mode enabled!");
 	}
 
 	public void initializeServerFunctionality() {
 		Undertow server = Undertow.builder().addHttpListener(webSocketListenPort, localMachinePublicIp4)
 				.setHandler(path().addPrefixPath(webSocketListenPath, websocket((exchange, channel) -> {
+					if (this.automatedEvaluation) sendToAll("automatedEvaluation");		
 					channels.add(channel);
 					channel.getReceiveSetter().set(getListener());
 					channel.resumeReceives();
@@ -152,8 +155,9 @@ public class Server implements Serializable {
 						setLayoutMode(false);
 						wrapperHandler.resetLayoutedVertices();
 					}
-				} else if (messageData.equals("resetWrapperHandler")) {
+				} else if (messageData.equals("resetVisualization")) {
 					wrapperHandler.initializeGraphRepresentation(edgeCount);
+					sendToAll("resetSuccessful");
 				} else if (messageData.startsWith("clusterEntryAddress")) {
 					clusterEntryPointAddress = messageData.split(";")[1];
 					wrapperHandler.initializeAPI(clusterEntryPointAddress);

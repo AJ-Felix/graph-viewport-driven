@@ -41,6 +41,7 @@ public class GradoopToGradoop {
 			.equalTo(new VertexKeyselectorVertexLabel());
 		DataSet<String> verticesString = 
 				joined.map(new VertexTupleComplexMapString(operations, gradoopGraphId, zoomLevelSetSize));
+		verticesString.rebalance();
 		verticesString.writeAsText(writePath + "/vertices.csv");
 		
 	}	
