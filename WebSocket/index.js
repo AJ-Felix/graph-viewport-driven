@@ -11,7 +11,7 @@ class Client {
 		this.timeBeforeQuery;
 		this.timeLastResponse;
 		this.evaluationCount = 0;
-		this.evaluationCountThreshold = 3;
+		this.evaluationCountThreshold = 2;
 		this.lastAutomatedOperation = "zoomIn";
 		this.automatedEvaluation = false;
 	}
@@ -224,15 +224,9 @@ class Client {
 				this.graphVisualizer.layoutBase = new Set();
 			}	
 			this.ws.send("layoutBaseString" + layoutBaseString);
-			if (this.evalOperationAndStep()) {
-				if (eval) this.outputQueryTime();
-				// this.enableMouseEvents();
-			}
-		} else {
-			if (eval) this.outputQueryTime();
-			if (this.operation == "initial") this.fitTopView();
-			// this.enableMouseEvents();
 		}
+		if (eval) this.outputQueryTime();
+		if (this.operation == "initial") this.fitTopView();
 	}
 
 	disableMouseEvents(){
@@ -265,19 +259,6 @@ class Client {
 			cyto.addEventListener("wheel", mouseWheel);
 			this.mouseEnabled = true;
 		}
-	}
-
-	evalOperationAndStep(){
-		console.log(this.operation);
-		console.log(this.operationStep);
-		const step4Operations = ["zoomIn", "pan"];
-		if (step4Operations.includes(this.operation) && this.operationStep == 4) return true;
-		else if (this.operation == "zoomOut" && this.operationStep == 2) return true;
-		else if (this.operation == "initial") {
-			this.fitTopView();
-			return true;
-		}
-		else return false;
 	}
 
 	topView(){
@@ -318,7 +299,8 @@ class Client {
 				this.outputConcat += output + "\n";
 			} else {
 				this.outputConcat += output + "\n";
-				if (this.operation == this.lastAutomatedOperation) download(this.outputConcat, "client_evaluation_automated", "string");
+				if (this.operation == this.lastAutomatedOperation && (this.operationStep == null || this.operationStep == 4)) 
+					download(this.outputConcat, "client_evaluation_automated", "string");
 			}
 		} else {
 			download(output, "client_evaluation", "string");
