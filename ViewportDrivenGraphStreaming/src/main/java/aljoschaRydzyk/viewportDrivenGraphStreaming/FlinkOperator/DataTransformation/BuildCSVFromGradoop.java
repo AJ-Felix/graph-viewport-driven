@@ -9,8 +9,6 @@ import org.gradoop.flink.algorithms.gelly.vertexdegrees.DistinctVertexDegrees;
 import org.gradoop.flink.io.api.DataSource;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
-import org.gradoop.flink.model.impl.operators.layouting.CentroidFRLayouter;
-import org.gradoop.flink.model.impl.operators.layouting.FRLayouter;
 import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodSampling;
 import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.util.GradoopFlinkConfig;

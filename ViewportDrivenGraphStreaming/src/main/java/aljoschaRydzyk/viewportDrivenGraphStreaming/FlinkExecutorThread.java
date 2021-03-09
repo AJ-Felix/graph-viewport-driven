@@ -9,11 +9,13 @@ public class FlinkExecutorThread extends Thread{
 	private String operation;
 	private StreamExecutionEnvironment fsEnv;
 	private boolean eval;
+	private String evalSpec;
 	
-	public FlinkExecutorThread(String operation, StreamExecutionEnvironment fsEnv, boolean eval) {
+	public FlinkExecutorThread(String operation, StreamExecutionEnvironment fsEnv, boolean eval, String fileSpec) {
 		this.operation = operation;
 		this.fsEnv = fsEnv;
 		this.eval = eval;
+		this.evalSpec = fileSpec;
 	}
 		
 	@Override
@@ -27,12 +29,17 @@ public class FlinkExecutorThread extends Thread{
 	@Override
 	public void run() {
 		System.out.println("Flink Streaming Executor Thread with operation '" + operation + "' is running!");
-		try {
-			if (eval) {
-				new Evaluator(this.fsEnv).executeStream(operation);
-			} else fsEnv.execute();
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (eval) {
+			synchronized (Server.writeSyn) {
+				new Evaluator(this.fsEnv, evalSpec).executeStream(operation);
+			}
+		} else {
+			try {
+				fsEnv.execute();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
+		
 	}
 }

@@ -11,7 +11,9 @@ class Client {
 		this.timeBeforeQuery;
 		this.timeLastResponse;
 		this.evaluationCount = 0;
-		this.evaluationCountThreshold = 10;
+		this.evaluationCountThreshold = 3;
+		this.lastAutomatedOperation = "zoomIn";
+		this.automatedEvaluation = false;
 	}
 
 	addMessageToQueue(dataArray){
@@ -41,7 +43,8 @@ class Client {
 						this.graphVisualizer.updateVertexSize(dataArray[1]);
 						this.graphVisualizer.colorVertex(dataArray[1], dataArray[2]);
 						this.graphVisualizer.updateDegreeExtrema(parseInt(dataArray[3]));
-						if (eval) this.updateResponseTimes();				
+						if (eval) this.updateResponseTimes();	
+						break;			
 					case 'addEdgeServer':
 						this.graphVisualizer.cy.add({group : 'edges', data: {id: dataArray[1], label: dataArray[4], source: dataArray[2], target: dataArray[3]}});
 						console.log("label: " + dataArray[4]);
@@ -55,6 +58,8 @@ class Client {
 						this.graphVisualizer.zoomLevel = parseFloat(dataArray[1]);
 						this.graphVisualizer.cy.zoom(this.graphVisualizer.zoomLevel);
 						this.graphVisualizer.cy.pan({x: parseFloat(dataArray[2]), y: parseFloat(dataArray[3])});
+						if (this.automatedEvaluation) this.topView();
+						else this.enableMouseEvents();
 						break;
 					case 'modelBorders':
 						this.graphVisualizer.setModelBorders(parseInt(dataArray[1]), parseInt(dataArray[2]), parseInt(dataArray[3]), parseInt(dataArray[4]));
@@ -77,7 +82,7 @@ class Client {
 						if (!this.mouseEnabled) this.enableMouseEvents();
 						break;
 					case 'resetSuccessful':
-						if (this.automatedEvaluation) this.topView();
+						this.resize();
 						break;
 					case 'automatedEvaluation':
 						this.automatedEvaluation = true;
@@ -160,6 +165,7 @@ class Client {
 	}
 
 	resetVisualization(){
+		this.disableMouseEvents();
 		this.graphVisualizer = new GraphVisualizer();
 		this.vertexZoomLevel = 0;
 		this.ws.send("resetVisualization");
@@ -240,25 +246,25 @@ class Client {
 	}
 
 	enableMouseEvents(){
-		if (this.automatedEvaluation){
-			if (this.evaluationCount < this.evaluationCountThreshold){
-				if (this.operation == "initial"){
-					this.disableMouseEvents();
-					zoom(1, this.cyWidthHalf, this.cyHeightHalf);
-				} else if (this.operation == "zoomIn"){
-					this.evaluationCount += 1;
-					this.disableMouseEvents();
-					this.resetVisualization();
-				}
+		console.log("automated?")
+		console.log(this.automatedEvaluation);
+		if (this.automatedEvaluation && this.evaluationCount < this.evaluationCountThreshold){
+			if (this.operation == "initial"){
+				this.evaluationCount += 1;
+				zoom(-1, this.cyWidthHalf, this.cyHeightHalf);
+			} else if (this.operation == this.lastAutomatedOperation){
+				this.resetVisualization();
 			}
+			console.log("evalCount: " + this.evaluationCount);
+		} else {
+			$("body").css("cursor", "default");
+			console.log("enabling mouse events");
+			const cyto = document.getElementById('cy');
+			cyto.addEventListener("mouseup", mouseUp);
+			cyto.addEventListener("mousedown", mouseDown);
+			cyto.addEventListener("wheel", mouseWheel);
+			this.mouseEnabled = true;
 		}
-		$("body").css("cursor", "default");
-		console.log("enabling mouse events");
-		const cyto = document.getElementById('cy');
-		cyto.addEventListener("mouseup", mouseUp);
-		cyto.addEventListener("mousedown", mouseDown);
-		cyto.addEventListener("wheel", mouseWheel);
-		this.mouseEnabled = true;
 	}
 
 	evalOperationAndStep(){
@@ -306,7 +312,17 @@ class Client {
 		const output = "Operation: " + this.operation + ", operation step: " + this.operationStep + ", full-query-duration: " + fullQueryDuration + 
 			", first-to-last-Response-duration: " + firstToLastDuration;
 		console.info(output);
-		download(output, "client_evaluation", "string");
+		if (this.automatedEvaluation){
+			if (this.outputConcat == null) this.outputConcat = "";
+			if (this.evaluationCount < this.evaluationCountThreshold){
+				this.outputConcat += output + "\n";
+			} else {
+				this.outputConcat += output + "\n";
+				if (this.operation == this.lastAutomatedOperation) download(this.outputConcat, "client_evaluation_automated", "string");
+			}
+		} else {
+			download(output, "client_evaluation", "string");
+		}
 	}
 }
 
@@ -329,7 +345,7 @@ $(document).ready(function(){
 	ws.onopen = function() {
 		console.log("Opened!");
 		ws.send("Hello Server");
-		ws.send("resetWrapperHandler");
+		// client.resetVisualization();
 		client.resize(client);
 	}
 

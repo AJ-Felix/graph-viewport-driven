@@ -185,11 +185,7 @@ in flink-config web.timeout auf 1000000 milliseconds gestellt für Graphformattr
 
 Wenn das Flink-Cluster weniger Task Slots zur Verfügung hat als der Job an Parallelität benötigt, dann hängt der Job im Status "CREATED"!!!
 
-TODO: All nodes disappear all of a sudden at certain zoomIn and do not come back upon zoomOut
-
 TODO: Adjacency: WrapperMap wird in JVM Speicher gehalten. Überlegung, das nach Flink auszulagern (weil zu groß) und entsprechend der ID-prefixe zu partitionieren, um einen effizienteren Zugriff zu ermöglichen.
-
-Late-TODO: Visualisierung farbig etc.
 
 cytoscape bug mit zufälligen label-verschwinden trouble shooten +  Manchmal werden Knoten bei zoom in gelöscht... ist wieder normal, seltsam...
 
@@ -200,20 +196,11 @@ OBERSTE PRIOOOOOOOOO:  Graph auf der im HDFS des Galaxy Cluster liegt einlesen m
 
 TODO: introduce better layout algorithms --> fcose und cose verändern die Knotenposition nicht und andere force-directed algorithms lassen sich nicht per src-tag in plain html einbinden
 
-TODO: Für alle Graphen die Knotengrade mit Gradoop vorher berechnen lassen
-
 TODO: Funktionen kommentieren
 
 TODO: Edgecapacity in die Theorie einpflegen
 
-TODO: GradoopCSV mit layoutlevel und numeric ID konvertieren
-TODO: eval automatisieren
-
 TODO: partitionierung implementieren
-TODO: nur topview und zoom-in
-
-
-TODO: edgeCountThreshold von vertexThreshold bzw. viewport size abhängig machen
 
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
 	Bei Verkleinerung: 
@@ -226,9 +213,6 @@ Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten i
 		Anschließend müssen Knoten entsprechend der Kapazität nachgeladen werden.
 		Dies entspricht einem ZoomOut.
 		
-late-TODO: sometimes frontend error when zooming in from initial view, but only rarely --> extensive debugging!
-late-TODO: implement parser for different ports given by command-line arguments
-
 FLINK TABLE: Man kann keine Indexierung vornehmen. Um eine Adjazenzliste zu implementieren wurde auf Java-HashMaps zurückgegriffen.
 
 BuildTopView: Aus dem kleineren von cyWidth/cyHeight jeweils den zoom berechnen, damit 4000 * 4000 Modellkoordinaten visualisiert werden. Dann Knoten kommen lassen und am Ende cy.fit() durchführen und zurückschreiben.

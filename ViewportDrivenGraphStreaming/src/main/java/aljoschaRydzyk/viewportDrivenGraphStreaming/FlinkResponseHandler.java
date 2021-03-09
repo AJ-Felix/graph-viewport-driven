@@ -21,9 +21,7 @@ public class FlinkResponseHandler extends Thread{
     private ServerSocket serverSocket = null;
     private String line;
     private Socket echoSocket;
-	private BufferedReader in;
-	private Server server;
-	
+	private BufferedReader in;	
 	
 	@Override
 	public void start() {
@@ -35,7 +33,6 @@ public class FlinkResponseHandler extends Thread{
 	
 	@Override
 	public void run() {
-		System.out.println("thread running");
 		try {
 			this.listen();
 		} catch (IOException e) {
@@ -44,7 +41,6 @@ public class FlinkResponseHandler extends Thread{
 	}
     
 	public FlinkResponseHandler(WrapperHandler wrapperHandler) {
-		this.server = Server.getInstance();
 		this.wrapperHandler = wrapperHandler;
 		this.threadName = "flinkClusterListener";
         try {
@@ -55,52 +51,43 @@ public class FlinkResponseHandler extends Thread{
 	}
     
     public void listen() throws IOException {
-    	System.out.println("Executing 'listen()' on flinkResponseHandler!");
+    	System.out.println("Executing FlinkResponseHandler.listen()!");
 		echoSocket = serverSocket.accept();
         System.out.println("Connected to Socket!");
         in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
         line = "empty";
-        System.out.println("State of flinkCore: " + this.server.getFlinkCore());
         if (!(operation.startsWith("initial"))) {
         	if (layout) {
         		while((line = in.readLine()) != null)  {
-	            	System.out.println("flinkResponseHandler: " + line);	            	
 	            	wrapperHandler.addWrapper(parseWrapperString(line));
 	            }
-        		synchronized (Server.threadObj) {
-        			Server.threadObj.notify();
+        		synchronized (Server.serverSyn) {
+        			Server.serverSyn.notify();
         		}
-//        		this.server.onIsLayoutedStreamJobtermination();
         	} else {
         		while((line = in.readLine()) != null)  {
-	            	System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
 	            }
-        		synchronized (Server.threadObj) {
-        			Server.threadObj.notify();
+        		synchronized (Server.serverSyn) {
+        			Server.serverSyn.notify();
         		}
-//        		this.server.onLayoutingStreamJobTermination();
         	}	
         } else {
         	if (layout) {
         		while((line = in.readLine()) != null)  {
-	            	System.out.println("flinkResponseHandler, initial, layout: " + line);
 	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	            }
-        		synchronized (Server.threadObj) {
-        			Server.threadObj.notify();
+        		synchronized (Server.serverSyn) {
+        			Server.serverSyn.notify();
         		}
-//        		this.server.onIsLayoutedStreamJobtermination();
         	} else  {
 
         		while((line = in.readLine()) != null)  {
-	            	System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	            }
-        		synchronized (Server.threadObj) {
-        			Server.threadObj.notify();
+        		synchronized (Server.serverSyn) {
+        			Server.serverSyn.notify();
         		}
-//        		this.server.onLayoutingStreamJobTermination();
         	}	
         }
     	in.close();
@@ -110,7 +97,6 @@ public class FlinkResponseHandler extends Thread{
 
 	private WrapperGVD parseWrapperStringNoCoordinates(String line) {
 		String[] array = line.split(",");
-		System.out.println(array);
 		VertexGVD sourceVertex = new VertexGVD(array[1], array[3], Integer.parseInt(array[2]), Long.parseLong(array[4]), Integer.parseInt(array[5]));
 		VertexGVD targetVertex = new VertexGVD(array[6], array[8], Integer.parseInt(array[7]), Long.parseLong(array[9]), Integer.parseInt(array[10]));
 		EdgeGVD edge = new EdgeGVD(array[11], array[12], array[1], array[6]);

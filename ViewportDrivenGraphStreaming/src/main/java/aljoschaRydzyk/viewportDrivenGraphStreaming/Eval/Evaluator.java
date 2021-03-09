@@ -1,5 +1,6 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.Eval;
 
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
@@ -9,28 +10,46 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Wra
 
 public class Evaluator {
 	private StreamExecutionEnvironment fsEnv;
-	
-	public Evaluator(StreamExecutionEnvironment fsEnv) {
+	private String fileName;
+
+	public Evaluator(StreamExecutionEnvironment fsEnv, String fileName) {
 		this.fsEnv = fsEnv;
+		this.fileName = fileName;
 	}
 	
-	public Evaluator() {
-		
+	public Evaluator(String fileSpec) {
+		this.fileName = fileSpec;
 	}
 	
 	private void writeToFile(String s) throws IOException{
-		FileWriter fw = new FileWriter("/home/aljoscha/performance_evaluation.log", true); //the true will append the new data
-	    fw.write(s);
-	    fw.close();
+		BufferedWriter bw;
+		if (this.fileName.equals("default")) {
+			bw = new BufferedWriter(new FileWriter("/home/aljoscha/server_evaluation.log", true)); 
+		} else {
+			bw = new BufferedWriter(new FileWriter("/home/aljoscha/server_evaluation_" + fileName + ".log", true));
+		}
+	    bw.write(s);
+	    bw.close();
 	}
 	
-	public void executeStream(String operation) throws Exception {
+	public void executeStream(String operation) {
 		Long beforeJobCall = System.currentTimeMillis();
-		fsEnv.execute(operation);
+		String s;
+		try {
+			fsEnv.execute(operation);
+			s = "Operation: " + operation;
+		} catch (Exception e) {
+			s = "Operation (cancelled): " + operation;
+			System.out.println("Job was probably cancelled by server application.");	
+		}
 		Long afterJobCall = System.currentTimeMillis();
 		Long callToResultDuration = afterJobCall - beforeJobCall;
-		String s = "Operation: " + operation + ", call-to-result duration: " + callToResultDuration + System.lineSeparator();
-		writeToFile(s);
+		s += ", call-to-result duration: " + callToResultDuration;
+		try {
+			writeToFile(s);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public List<WrapperGVD> executeSet(String operation, DataSet<WrapperGVD> wrapperSet) throws Exception {
@@ -38,7 +57,7 @@ public class Evaluator {
 		List<WrapperGVD> wrapperCollection = wrapperSet.collect();
 		Long afterJobCall = System.currentTimeMillis();
 		Long callToResultDuration = afterJobCall - beforeJobCall;
-		String s = "Operation: " + operation + ", call-to-result duration: " + callToResultDuration + System.lineSeparator();
+		String s = "Operation: " + operation + ", call-to-result duration: " + callToResultDuration;
 		writeToFile(s);
 		return wrapperCollection;
 	}

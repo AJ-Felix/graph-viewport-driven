@@ -17,18 +17,6 @@ class GraphVisualizer {
 		this.currentMaxDegree = null;
 		this.cytoConfig = {
 			container: $('#cy'),
-			elements: [ 
-				// { 
-				// data: { id: 'a' }
-				// },
-				// { 
-				// data: { id: 'b' }
-				// },
-				// { 
-				// data: { id: 'ab', source: 'a', target: 'b' }
-				// }
-			],
-		
 			style: [ 
 				{
 				selector: 'node',
