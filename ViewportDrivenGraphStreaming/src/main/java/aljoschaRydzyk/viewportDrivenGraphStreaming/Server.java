@@ -19,6 +19,7 @@ import java.util.List;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 import org.json.JSONArray;
@@ -30,6 +31,7 @@ import com.squareup.okhttp.Response;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.Eval.Evaluator;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkPrintSink;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinates;
@@ -52,8 +54,8 @@ public class Server implements Serializable {
 	private float bottomModelBorder = 4000;
 	private float leftModelBorder = 0;
 	private List<WrapperGVD> wrapperCollection;
-	private FlinkCore flinkCore;
-	public ArrayList<WebSocketChannel> channels = new ArrayList<>();
+	private static FlinkCore flinkCore;
+	public static ArrayList<WebSocketChannel> channels = new ArrayList<>();
 	private String webSocketListenPath = "/";
 	private int webSocketListenPort = 8897;
 	private int maxVertices;
@@ -105,8 +107,8 @@ public class Server implements Serializable {
 					channels.add(channel);
 					channel.getReceiveSetter().set(getListener());
 					channel.resumeReceives();
-					if (this.automatedEvaluation)
-						sendToAll("automatedEvaluation");
+//					if (this.automatedEvaluation)
+//						sendToAll("automatedEvaluation");
 				}))).build();
 		server.start();
 		System.out.println("Server started!");
@@ -167,7 +169,7 @@ public class Server implements Serializable {
 				} else if (messageData.equals("resetVisualization")) {
 					wrapperHandler.initializeGraphRepresentation();
 					wrapperHandler.resetLayoutedVertices();
-					sendToAll("resetSuccessful");
+//					sendToAll("resetSuccessful");
 				} else if (messageData.startsWith("clusterEntryAddress")) {
 					clusterEntryPointAddress = messageData.split(";")[1];
 					wrapperHandler.initializeAPI(clusterEntryPointAddress);
@@ -396,23 +398,24 @@ public class Server implements Serializable {
 			wrapperLine = wrapperStream.map(new WrapperMapLineNoCoordinates());
 		}
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort,
-				new SimpleStringSchema(), 3, true)).setParallelism(1);
+				new SimpleStringSchema())).setParallelism(1);
+//		wrapperLine.addSink(new FlinkPrintSink());
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
 			String fileSpec = "tableStream_layout:" + layout + "_graph:" + graphName;
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
+		System.out.println("Thread that is starting executor and then waiting: " + Thread.currentThread().getId());
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
 		synchronized (serverSyn) {
 			try {
 				serverSyn.wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			System.out.println("Thread woke up");
 		}
-		System.out.println("Thread woke up");
 		if (layout)
 			onIsLayoutedStreamJobtermination();
 		else
@@ -446,7 +449,6 @@ public class Server implements Serializable {
 			try {
 				serverSyn.wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -470,6 +472,7 @@ public class Server implements Serializable {
 				new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()))
 				.setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
+		System.out.println("Thread that is starting executor and then waiting: " + Thread.currentThread().getId());
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
 		synchronized (serverSyn) {
 			try {
@@ -477,6 +480,7 @@ public class Server implements Serializable {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			System.out.println("Thread woke up");
 		}
 		onIsLayoutedStreamJobtermination();
 	}
@@ -500,7 +504,6 @@ public class Server implements Serializable {
 			try {
 				serverSyn.wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -563,33 +566,20 @@ public class Server implements Serializable {
 						wrapperHandler.getInnerVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingSetJobTermination();
-//	        	if (!wrapperHandler.getSentToClientInSubStep()) {
-//	        		if (wrapperHandler.getCapacity() == 0) layoutingSetOperation(4);
-//	        		else layoutingSetOperation(2);
-//    	    	} else sendToAll("finalOperations");
 			} else if (nextOperationStep == 2) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingSetJobTermination();
-//	        	if (!wrapperHandler.getSentToClientInSubStep()) {
-//	        		if (wrapperHandler.getCapacity() == 0) layoutingSetOperation(4);
-//	        		else layoutingSetOperation(3);
-//	        	} else sendToAll("finalOperations");
 			} else if (nextOperationStep == 3) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep3Set(wrapperHandler.getLayoutedVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingSetJobTermination();
-//	        	if (!wrapperHandler.getSentToClientInSubStep()) layoutingSetOperation(4);
-//	        	else sendToAll("finalOperations");
 			} else if (nextOperationStep == 4) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep4Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingSetJobTermination();
-//	        	if (!wrapperHandler.getSentToClientInSubStep()) {
-//	        		wrapperHandler.clearOperation();
-//	        	} else sendToAll("finalOperations");
 			}
 		} else if (operation.equals("zoomOut")) {
 			if (nextOperationStep == 1) {
@@ -597,15 +587,11 @@ public class Server implements Serializable {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomOutLayoutStep1Set(wrapperHandler.getLayoutedVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingSetJobTermination();
-//	        	if (!wrapperHandler.getSentToClientInSubStep())	sendToAll("enableMouse");
 			} else if (nextOperationStep == 2) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomOutLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingSetJobTermination();
-//	        	if (!wrapperHandler.getSentToClientInSubStep()) {
-//	        		wrapperHandler.clearOperation();
-//	        	}
 			}
 		}
 	}
@@ -678,10 +664,13 @@ public class Server implements Serializable {
 	/**
 	 * sends a message to the all connected web socket clients
 	 */
-	public synchronized void sendToAll(String message) {
-		for (WebSocketChannel session : channels) {
-			WebSockets.sendText(message, session, null);
+	public synchronized static void sendToAll(String message) {
+		System.out.println("in sendToAll method, Thread: " + Thread.currentThread().getId());
+		System.out.println(channels.size());
+		for (WebSocketChannel channel : channels) {
+			WebSockets.sendText(message, channel, null);
 		}
+	
 	}
 
 	private void setOperation(String operation) {
@@ -689,6 +678,7 @@ public class Server implements Serializable {
 		flinkResponseHandler.setOperation(operation);
 		this.operation = operation;
 		sendToAll("operation;" + operation);
+		System.out.println("executing setOperation in server");
 	}
 
 	private void setOperationStep(int step) {
@@ -706,8 +696,8 @@ public class Server implements Serializable {
 		wrapperHandler.setModelPositions(topModel, rightModel, bottomModel, leftModel);
 	}
 
-	public FlinkCore getFlinkCore() {
-		return this.flinkCore;
+	public static FlinkCore getFlinkCore() {
+		return flinkCore;
 	}
 
 	public void setStreamBool(Boolean stream) {
@@ -890,9 +880,4 @@ public class Server implements Serializable {
 			e.printStackTrace();
 		}
 	}
-	
-	public synchronized void writeEvluation() {
-		
-	}
-
 }

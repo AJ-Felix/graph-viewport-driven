@@ -38,10 +38,10 @@ public class WrapperHandler{
     private int maxVertices = 100;
     private FlinkApi api;
     public boolean sentToClientInSubStep;
-	private Server server;
+//	private Server server;
 
     public WrapperHandler () {
-    	this.server = Server.getInstance();
+//    	this.server = Server.getInstance();
     	System.out.println("wrapper handler constructor is executed");
     }
 	 
@@ -83,8 +83,8 @@ public class WrapperHandler{
 					targetY = targetVertex.getY();
 				}
 				if (((sourceX < left) || (right < sourceX) || (sourceY < top) || (bottom < sourceY)) &&
-						((targetX  < left) || (right < targetX ) || (targetY  < top) || (bottom < targetY))){
-					server.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
+						((targetX  < left) || (right < targetX ) || (targetY  < top) || (bottom < targetY))) {
+					Server.sendToAll("removeObjectServer;" + wrapper.getEdgeIdGradoop());
 				}
 			}			
 			Iterator<Map.Entry<String,VertexGVD>> iter = innerVertices.entrySet().iterator();
@@ -192,21 +192,21 @@ public class WrapperHandler{
 			
 			//only applicable if identity wrapper stream  is degree-sorted!
 			else {
-				try {
-					JobIdsWithStatusOverview jobs = api.getJobs();
-					List<JobIdWithStatus> list = jobs.getJobs();
-					Iterator<JobIdWithStatus> iter = list.iterator();
-					JobIdWithStatus job;
-					while (iter.hasNext()) {
-						job = iter.next();
-						if (job.getStatus() == StatusEnum.RUNNING) {
-							api.terminateJob(job.getId(), "cancel");
-							break;
-						}
-					}
-				} catch (ApiException e) {
-					System.out.println("job was cancelled by server application.");
-				}
+//				try {
+//					JobIdsWithStatusOverview jobs = api.getJobs();
+//					List<JobIdWithStatus> list = jobs.getJobs();
+//					Iterator<JobIdWithStatus> iter = list.iterator();
+//					JobIdWithStatus job;
+//					while (iter.hasNext()) {
+//						job = iter.next();
+//						if (job.getStatus() == StatusEnum.RUNNING) {
+//							api.terminateJob(job.getId(), "cancel");
+//							break;
+//						}
+//					}
+//				} catch (ApiException e) {
+//					System.out.println("job was cancelled by server application.");
+//				}
 			}
 		}
 	}
@@ -368,21 +368,21 @@ public class WrapperHandler{
 	public void addWrapperLayout(WrapperGVD wrapper) {
 		//if in zoomIn3 or pan3: cancel flinkjob if still running, close socket and reopen for next step and move to next step!
 			if (vertexCapacity <= 0 && edgeCapacity <= 0) {
-				try {
-					JobIdsWithStatusOverview jobs = api.getJobs();
-					List<JobIdWithStatus> list = jobs.getJobs();
-					Iterator<JobIdWithStatus> iter = list.iterator();
-					JobIdWithStatus job;
-					while (iter.hasNext()) {
-						job = iter.next();
-						if (job.getStatus() == StatusEnum.RUNNING) {
-							api.terminateJob(job.getId(), "cancel");
-							break;
-						}
-					}
-				} catch (ApiException e) {
-					System.out.println("Job was cancelled by server application.");
-				}
+//				try {
+//					JobIdsWithStatusOverview jobs = api.getJobs();
+//					List<JobIdWithStatus> list = jobs.getJobs();
+//					Iterator<JobIdWithStatus> iter = list.iterator();
+//					JobIdWithStatus job;
+//					while (iter.hasNext()) {
+//						job = iter.next();
+//						if (job.getStatus() == StatusEnum.RUNNING) {
+//							api.terminateJob(job.getId(), "cancel");
+//							break;
+//						}
+//					}
+//				} catch (ApiException e) {
+//					System.out.println("Job was cancelled by server application.");
+//				}
 			}
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentity(wrapper.getSourceVertex());
@@ -543,17 +543,18 @@ public class WrapperHandler{
 			map.put("vertex", vertex);
 			globalVertices.put(sourceId, map);
 			if (layout) {
-				server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + 
+				System.out.println("sending addvertexserver in wrapperhandler");
+				Server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + 
 				vertex.getY() + ";" + vertex.getLabel() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
 				sentToClientInSubStep = true;
 			} else {
 				if (layoutedVertices.containsKey(vertex.getIdGradoop())) {
 					VertexGVD layoutedVertex = layoutedVertices.get(vertex.getIdGradoop());
-					server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
+					Server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + layoutedVertex.getX() + ";" + layoutedVertex.getY() + ";" 
 							+ vertex.getLabel() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
 					sentToClientInSubStep = true;
 				} else {
-					server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getLabel() + ";" + vertex.getDegree()
+					Server.sendToAll("addVertexServerToBeLayouted;" + vertex.getIdGradoop() + ";" + vertex.getLabel() + ";" + vertex.getDegree()
 						+ ";" + vertex.getZoomLevel());
 					sentToClientInSubStep = true;
 				}
@@ -570,7 +571,7 @@ public class WrapperHandler{
 		if (globalVertices.containsKey(vertex.getIdGradoop())) {
 			newVertices.remove(vertex.getIdGradoop());
 			globalVertices.remove(vertex.getIdGradoop());
-			server.sendToAll("removeObjectServer;" + vertex.getIdGradoop());
+			Server.sendToAll("removeObjectServer;" + vertex.getIdGradoop());
 			Iterator<WrapperGVD> iter = edges.values().iterator();
 			while (iter.hasNext()) {
 				WrapperGVD wrapper = iter.next();
@@ -588,7 +589,7 @@ public class WrapperHandler{
 	private void addEdge(WrapperGVD wrapper) {
 		edges.put(wrapper.getEdgeIdGradoop(), wrapper);
 		edgeCapacity -= 1;
-		server.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + 
+		Server.sendToAll("addEdgeServer;" + wrapper.getEdgeIdGradoop() + ";" + wrapper.getSourceIdGradoop() + ";" + 
 				wrapper.getTargetIdGradoop() + ";" + wrapper.getEdgeLabel());
 		sentToClientInSubStep = true;
 	}
@@ -665,7 +666,7 @@ public class WrapperHandler{
 						(bottom < vertex.getY())) && !hasVisualizedNeighborsInside(vertex)) ||
 							((vertex.getX() >= left) && (right >= vertex.getX()) && (vertex.getY() >= top) && (bottom >= vertex.getY()) 
 									&& !innerVertices.containsKey(vertexId))) {
-					server.sendToAll("removeObjectServer;" + vertexId);
+					Server.sendToAll("removeObjectServer;" + vertexId);
 					Iterator<WrapperGVD> edgesIterator = edges.values().iterator();
 					while (edgesIterator.hasNext()) {
 						WrapperGVD wrapper = edgesIterator.next();
@@ -704,10 +705,10 @@ public class WrapperHandler{
 		for (Map.Entry<String, VertexGVD> entry : innerVertices.entrySet()) visualizedVertices.add(entry.getKey());
 		Set<String> visualizedWrappers = new HashSet<String>();
 		for (Map.Entry<String, WrapperGVD> entry : edges.entrySet()) visualizedWrappers.add(entry.getKey());
-		GraphUtil graphUtil =  server.getFlinkCore().getGraphUtil();
+		GraphUtil graphUtil =  Server.getFlinkCore().getGraphUtil();
 		graphUtil.setVisualizedVertices(visualizedVertices);
 		graphUtil.setVisualizedWrappers(visualizedWrappers);
-		server.sendToAll("enableMouse");
+		Server.sendToAll("enableMouse");
 	}
 	
 	public void setModelPositions(Float topModel, Float rightModel, Float bottomModel, Float leftModel) {

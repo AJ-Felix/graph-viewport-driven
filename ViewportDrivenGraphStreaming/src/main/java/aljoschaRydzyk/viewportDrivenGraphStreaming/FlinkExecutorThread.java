@@ -31,6 +31,7 @@ public class FlinkExecutorThread extends Thread{
 		System.out.println("Flink Streaming Executor Thread with operation '" + operation + "' is running!");
 		if (eval) {
 			synchronized (Server.writeSyn) {
+				Server.sendToAll("test: " + Thread.currentThread().getId());
 				new Evaluator(this.fsEnv, evalSpec).executeStream(operation);
 			}
 		} else {

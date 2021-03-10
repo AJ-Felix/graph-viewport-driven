@@ -13,7 +13,6 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Wra
 public class FlinkResponseHandler extends Thread{
 	private Thread t;
 	private String threadName;
-	
 	private String operation;
 	private boolean layout;
 	private WrapperHandler wrapperHandler;
@@ -51,7 +50,7 @@ public class FlinkResponseHandler extends Thread{
 	}
     
     public void listen() throws IOException {
-    	System.out.println("Executing FlinkResponseHandler.listen()!");
+    	System.out.println("Executing FlinkResponseHandler.listen()! Thread: " + Thread.currentThread().getId());
 		echoSocket = serverSocket.accept();
         System.out.println("Connected to Socket!");
         in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
@@ -59,6 +58,7 @@ public class FlinkResponseHandler extends Thread{
         if (!(operation.startsWith("initial"))) {
         	if (layout) {
         		while((line = in.readLine()) != null)  {
+        			System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapper(parseWrapperString(line));
 	            }
         		synchronized (Server.serverSyn) {
@@ -74,10 +74,11 @@ public class FlinkResponseHandler extends Thread{
         	}	
         } else {
         	if (layout) {
-        		while((line = in.readLine()) != null)  {
-	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
-	            }
         		synchronized (Server.serverSyn) {
+	        		while((line = in.readLine()) != null)  {
+	        			System.out.println("flinkResponseHandler: " + line);
+		            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
+		            }
         			Server.serverSyn.notify();
         		}
         	} else  {
