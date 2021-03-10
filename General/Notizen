@@ -200,7 +200,14 @@ TODO: Funktionen kommentieren
 
 TODO: Edgecapacity in die Theorie einpflegen
 
+TODO: Alle Stellen an denen Jobs gecancelt werden können in der Theorie erläutern
+
 TODO: partitionierung implementieren
+
+NOTE:Identitywrapper werden mit Parallelität 1 eingelesen, Nonidentitywrapper mit max. Parallelität
+
+NOTE: Wenn der Thread welcher für den Undertow Server listener ist, blockiert, kann auch keine andere Undertowserver-Funktionalität (z.B. message senden) verwendet werden, auch nicht von anderen synchronisierten Threads...
+NOTE: Unter gegebener Environment-Initialisierung muss immer derselbe Thread die Flink Jobs definieren, sonst gibt es einen kryptische Nullpointer
 
 Resizing: Es muss ein pan durchgeführt werden, wobei die Richtung links unten ist und die Distanz die Hälfte der Pixelanzahlverkleinerung in der jeweiligen Dimension sein sollte. 
 	Bei Verkleinerung: 

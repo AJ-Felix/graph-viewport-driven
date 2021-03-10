@@ -11,7 +11,7 @@ class Client {
 		this.timeBeforeQuery;
 		this.timeLastResponse;
 		this.evaluationCount = 0;
-		this.evaluationCountThreshold = 1;
+		this.evaluationCountThreshold = 10;
 		this.lastAutomatedOperation = "zoomIn";
 		this.automatedEvaluation = false;
 	}
@@ -53,6 +53,9 @@ class Client {
 					case 'removeObjectServer':
 						if (!this.layout) this.graphVisualizer.layoutBase.delete(dataArray[1]);
 						this.graphVisualizer.cy.remove(this.graphVisualizer.cy.$id(dataArray[1]));
+						break;
+					case 'nextSubStep':
+						this.ws.send("layoutingStreamOperation;" + dataArray[1]);
 						break;
 					case 'zoomAndPan':
 						this.graphVisualizer.zoomLevel = parseFloat(dataArray[1]);
@@ -115,6 +118,7 @@ class Client {
 
 	sendGraphFolderDirectory(){
 		const directory = document.getElementById('graphFolderDirectory').value
+		this.graphName = directory.split("/")[directory.split("/").length - 1];
 		this.ws.send("graphFolderDirectory;" + directory);
 	}
 
@@ -129,7 +133,8 @@ class Client {
 	}
 
 	sendParallelism(){
-		this.ws.send("parallelism;" + document.getElementById('parallelism').value);
+		this.parallelism = document.getElementById('parallelism').value
+		this.ws.send("parallelism;" + this.parallelism);
 	}
 
 	sendSignalGradoop(){
@@ -196,9 +201,10 @@ class Client {
 	finalOperations(){
 		console.log("Final Operations!");
 		this.graphVisualizer.updateVerticesSize();
+		if (eval) this.outputQueryTime();
+		if (this.operation == "initial") this.fitTopView();
 		if (!this.layout){
 			let layoutBaseString = "";
-			console.log("layoutBase size: " + this.graphVisualizer.layoutBase.size);
 			if (this.graphVisualizer.layoutBase.size > 0){
 				console.log("performing layout!");
 				console.log(this.graphVisualizer.layoutWindow);
@@ -223,10 +229,9 @@ class Client {
 				this.graphVisualizer.cy.nodes().lock();
 				this.graphVisualizer.layoutBase = new Set();
 			}	
+			this.initiateEvaluation();
 			this.ws.send("layoutBaseString" + layoutBaseString);
 		}
-		if (eval) this.outputQueryTime();
-		if (this.operation == "initial") this.fitTopView();
 	}
 
 	disableMouseEvents(){
@@ -280,6 +285,7 @@ class Client {
 	initiateEvaluation(){
 		this.timeBeforeQuery = new Date().getTime();
 		this.firstResponse = null;
+		this.timeLastResponse = null;
 	}
 
 	updateResponseTimes(){
@@ -288,8 +294,14 @@ class Client {
 	}
 
 	outputQueryTime(){
+		let firstToLastDuration;
+		if (this.timeLastResponse == null) {
+			this.timeLastResponse = new Date().getTime();
+			firstToLastDuration = "undef";
+		} else {
+			firstToLastDuration = this.timeLastResponse - this.firstResponse; 
+		}
 		const fullQueryDuration = this.timeLastResponse - this.timeBeforeQuery;
-		const firstToLastDuration = this.timeLastResponse - this.firstResponse; 
 		const output = "Operation: " + this.operation + ", operation step: " + this.operationStep + ", full-query-duration: " + fullQueryDuration + 
 			", first-to-last-Response-duration: " + firstToLastDuration;
 		console.info(output);
@@ -300,7 +312,8 @@ class Client {
 			} else {
 				this.outputConcat += output + "\n";
 				if (this.operation == this.lastAutomatedOperation && (this.operationStep == null || this.operationStep == 4)) 
-					download(this.outputConcat, "client_evaluation_automated", "string");
+					download(this.outputConcat, "client_evaluation_be_" + this.backendVariant + "_layout_" + this.layout + "_gN_" + this.graphName
+						+ "_plsm_" + this.parallelism, "string");
 			}
 		} else {
 			download(output, "client_evaluation", "string");

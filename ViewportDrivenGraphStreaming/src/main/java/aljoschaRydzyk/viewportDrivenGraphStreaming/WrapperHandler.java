@@ -38,10 +38,8 @@ public class WrapperHandler{
     private int maxVertices = 100;
     private FlinkApi api;
     public boolean sentToClientInSubStep;
-//	private Server server;
 
     public WrapperHandler () {
-//    	this.server = Server.getInstance();
     	System.out.println("wrapper handler constructor is executed");
     }
 	 
@@ -91,7 +89,6 @@ public class WrapperHandler{
 			while (iter.hasNext()) {
 				Map.Entry<String,VertexGVD> entry = iter.next();
 				VertexGVD vertex = entry.getValue();
-				System.out.println("VertexID: " + vertex.getIdGradoop() + ", VertexX: " + vertex.getX() + ", VertexY: "+ vertex.getY());
 				if ((vertex.getX() < left) || (right < vertex.getX()) || (vertex.getY() < top) || (bottom < vertex.getY())) {
 					iter.remove();
 				}
@@ -192,21 +189,21 @@ public class WrapperHandler{
 			
 			//only applicable if identity wrapper stream  is degree-sorted!
 			else {
-//				try {
-//					JobIdsWithStatusOverview jobs = api.getJobs();
-//					List<JobIdWithStatus> list = jobs.getJobs();
-//					Iterator<JobIdWithStatus> iter = list.iterator();
-//					JobIdWithStatus job;
-//					while (iter.hasNext()) {
-//						job = iter.next();
-//						if (job.getStatus() == StatusEnum.RUNNING) {
-//							api.terminateJob(job.getId(), "cancel");
-//							break;
-//						}
-//					}
-//				} catch (ApiException e) {
-//					System.out.println("job was cancelled by server application.");
-//				}
+				try {
+					JobIdsWithStatusOverview jobs = api.getJobs();
+					List<JobIdWithStatus> list = jobs.getJobs();
+					Iterator<JobIdWithStatus> iter = list.iterator();
+					JobIdWithStatus job;
+					while (iter.hasNext()) {
+						job = iter.next();
+						if (job.getStatus() == StatusEnum.RUNNING) {
+							api.terminateJob(job.getId(), "cancel");
+							break;
+						}
+					}
+				} catch (ApiException e) {
+					System.out.println("job was cancelled by server application.");
+				}
 			}
 		}
 	}
@@ -368,21 +365,21 @@ public class WrapperHandler{
 	public void addWrapperLayout(WrapperGVD wrapper) {
 		//if in zoomIn3 or pan3: cancel flinkjob if still running, close socket and reopen for next step and move to next step!
 			if (vertexCapacity <= 0 && edgeCapacity <= 0) {
-//				try {
-//					JobIdsWithStatusOverview jobs = api.getJobs();
-//					List<JobIdWithStatus> list = jobs.getJobs();
-//					Iterator<JobIdWithStatus> iter = list.iterator();
-//					JobIdWithStatus job;
-//					while (iter.hasNext()) {
-//						job = iter.next();
-//						if (job.getStatus() == StatusEnum.RUNNING) {
-//							api.terminateJob(job.getId(), "cancel");
-//							break;
-//						}
-//					}
-//				} catch (ApiException e) {
-//					System.out.println("Job was cancelled by server application.");
-//				}
+				try {
+					JobIdsWithStatusOverview jobs = api.getJobs();
+					List<JobIdWithStatus> list = jobs.getJobs();
+					Iterator<JobIdWithStatus> iter = list.iterator();
+					JobIdWithStatus job;
+					while (iter.hasNext()) {
+						job = iter.next();
+						if (job.getStatus() == StatusEnum.RUNNING) {
+							api.terminateJob(job.getId(), "cancel");
+							break;
+						}
+					}
+				} catch (ApiException e) {
+					System.out.println("Job was cancelled by server application.");
+				}
 			}
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentity(wrapper.getSourceVertex());
@@ -543,7 +540,6 @@ public class WrapperHandler{
 			map.put("vertex", vertex);
 			globalVertices.put(sourceId, map);
 			if (layout) {
-				System.out.println("sending addvertexserver in wrapperhandler");
 				Server.sendToAll("addVertexServer;" + vertex.getIdGradoop() + ";" + vertex.getX() + ";" + 
 				vertex.getY() + ";" + vertex.getLabel() + ";" + vertex.getDegree() + ";" + vertex.getZoomLevel());
 				sentToClientInSubStep = true;
@@ -770,6 +766,10 @@ public class WrapperHandler{
 
 	public int getCapacity() {
 		return this.vertexCapacity;
+	}
+	
+	public int getEdgeCapacity() {
+		return this.edgeCapacity;
 	}
 	
 	public Map<String,Map<String,Object>> getGlobalVertices(){

@@ -117,7 +117,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "/wrappers"));
 		RowCsvInputFormat wrappersFormat = new RowCsvInputFormat(wrappersFilePath, this.wrapperFormatTypeInfo);
 		wrappersFormat.setFieldDelimiter(";");
-		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "/wrappers").setParallelism(1));
+		this.wrapperStream = this.wrapperStream.union(this.fsEnv.readFile(wrappersFormat, this.inPath + "/wrappers"));
 		this.wrapperTable = fsTableEnv.fromDataStream(this.wrapperStream).as(this.wrapperFields);	
 	}
 	
@@ -128,8 +128,12 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		verticesFormat.setFieldDelimiter(";");
 		this.vertexStream = this.fsEnv.readFile(verticesFormat, this.inPath + "/vertices");
 		
+
 		//initialize wrapper identity stream
-		this.wrapperStream = this.vertexStream.map(new VertexMapIdentityWrapperRow()).returns(new RowTypeInfo(this.wrapperFormatTypeInfo));
+		DataStream<Row> vertexIdentityStream = this.fsEnv.readFile(verticesFormat, this.inPath + "/vertices")
+				.setParallelism(1);
+		this.wrapperStream = vertexIdentityStream.map(new VertexMapIdentityWrapperRow())
+				.returns(new RowTypeInfo(this.wrapperFormatTypeInfo));
 		
 		//initialize wrapper stream
 		Path wrappersFilePath = Path.fromLocalFile(new File(this.inPath + "/wrappers"));
@@ -293,6 +297,7 @@ public class CSVGraphUtilJoin implements GraphUtilStream{
 		 * visualized inside the current model window on the one hand, and neighbour vertices that are not yet layouted on the
 		 * other hand.
 		 */
+		
 		Set<String> layoutedVerticesKeySet = new HashSet<String>(layoutedVertices.keySet());
 		Set<String> unionKeySet = new HashSet<String>(unionMap.keySet());
 		DataStream<Row> visualizedVertices = this.vertexStream.filter(new VertexFilterIsVisualized(unionKeySet));

@@ -16,6 +16,7 @@ public class FlinkResponseHandler extends Thread{
 	private String operation;
 	private boolean layout;
 	private WrapperHandler wrapperHandler;
+	private Server server;
 	private int port = 8898;
     private ServerSocket serverSocket = null;
     private String line;
@@ -42,6 +43,7 @@ public class FlinkResponseHandler extends Thread{
 	public FlinkResponseHandler(WrapperHandler wrapperHandler) {
 		this.wrapperHandler = wrapperHandler;
 		this.threadName = "flinkClusterListener";
+		this.server = Server.getInstance();
         try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
@@ -61,34 +63,26 @@ public class FlinkResponseHandler extends Thread{
         			System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapper(parseWrapperString(line));
 	            }
-        		synchronized (Server.serverSyn) {
-        			Server.serverSyn.notify();
-        		}
+        		server.onIsLayoutedJobTermination();;
         	} else {
         		while((line = in.readLine()) != null)  {
 	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
 	            }
-        		synchronized (Server.serverSyn) {
-        			Server.serverSyn.notify();
-        		}
+        		server.onLayoutingJobTermination();
         	}	
         } else {
         	if (layout) {
-        		synchronized (Server.serverSyn) {
-	        		while((line = in.readLine()) != null)  {
-	        			System.out.println("flinkResponseHandler: " + line);
-		            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
-		            }
-        			Server.serverSyn.notify();
-        		}
+        		while((line = in.readLine()) != null)  {
+        			System.out.println("flinkResponseHandler: " + line);
+	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
+	            }
+        		server.onIsLayoutedJobTermination();
         	} else  {
 
         		while((line = in.readLine()) != null)  {
 	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	            }
-        		synchronized (Server.serverSyn) {
-        			Server.serverSyn.notify();
-        		}
+        		server.onLayoutingJobTermination();
         	}	
         }
     	in.close();

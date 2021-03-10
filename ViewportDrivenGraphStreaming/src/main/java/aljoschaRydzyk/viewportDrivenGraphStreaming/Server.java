@@ -19,7 +19,6 @@ import java.util.List;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
 import org.apache.flink.types.Row;
 import org.json.JSONArray;
@@ -31,7 +30,6 @@ import com.squareup.okhttp.Response;
 
 import aljoschaRydzyk.viewportDrivenGraphStreaming.Eval.Evaluator;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkPrintSink;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinates;
@@ -107,8 +105,8 @@ public class Server implements Serializable {
 					channels.add(channel);
 					channel.getReceiveSetter().set(getListener());
 					channel.resumeReceives();
-//					if (this.automatedEvaluation)
-//						sendToAll("automatedEvaluation");
+					if (this.automatedEvaluation)
+						sendToAll("automatedEvaluation");
 				}))).build();
 		server.start();
 		System.out.println("Server started!");
@@ -169,7 +167,7 @@ public class Server implements Serializable {
 				} else if (messageData.equals("resetVisualization")) {
 					wrapperHandler.initializeGraphRepresentation();
 					wrapperHandler.resetLayoutedVertices();
-//					sendToAll("resetSuccessful");
+					sendToAll("resetSuccessful");
 				} else if (messageData.startsWith("clusterEntryAddress")) {
 					clusterEntryPointAddress = messageData.split(";")[1];
 					wrapperHandler.initializeAPI(clusterEntryPointAddress);
@@ -255,6 +253,8 @@ public class Server implements Serializable {
 					Float rightModel = (leftModel + viewportPixelX / zoomLevel);
 					flinkCore.setModelPositionsOld();
 					setModelPositions(topModel, rightModel, bottomModel, leftModel);
+				} else if (messageData.startsWith("layoutingStreamOperation")){
+					layoutingStreamOperation(Integer.parseInt(messageData.split(";")[1]));
 				} else if (messageData.startsWith("buildTopView")) {
 					if (hdfsEntryPointAddress == null)
 						flinkCore = new FlinkCore(clusterEntryPointAddress, "file://" + graphFilesDirectory,
@@ -372,16 +372,16 @@ public class Server implements Serializable {
 		DataSet<WrapperGVD> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
-			String fileSpec = "gradoop_layout:" + layout + "_graph:" + graphName;
+			String fileSpec = "gradoop_layout:" + layout + "_graph:" + graphName + "_plsm:" + this.parallelism;
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
 		wrapperCollection = executeSet(wrapperSet);
 		wrapperHandler.addWrapperCollectionInitial(wrapperCollection);
 		if (layout)
-			onIsLayoutedSetJobTermination();
+			onIsLayoutedJobTermination();
 		else
-			onLayoutingSetJobTermination();
+			onLayoutingJobTermination();
 	}
 
 	private void buildTopViewCSV() {
@@ -399,27 +399,13 @@ public class Server implements Serializable {
 		}
 		wrapperLine.addSink(new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort,
 				new SimpleStringSchema())).setParallelism(1);
-//		wrapperLine.addSink(new FlinkPrintSink());
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
-			String fileSpec = "tableStream_layout:" + layout + "_graph:" + graphName;
+			String fileSpec = "tableStream_layout:" + layout + "_graph:" + graphName + "_plsm:" + this.parallelism;
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
-		System.out.println("Thread that is starting executor and then waiting: " + Thread.currentThread().getId());
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
-		synchronized (serverSyn) {
-			try {
-				serverSyn.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			System.out.println("Thread woke up");
-		}
-		if (layout)
-			onIsLayoutedStreamJobtermination();
-		else
-			onLayoutingStreamJobTermination();
 	}
 
 	private void buildTopViewAdjacency() {
@@ -440,28 +426,17 @@ public class Server implements Serializable {
 				.setParallelism(1);
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
-			String fileSpec = "adjacencyMatrix_layout:" + layout + "_graph:" + graphName;
+			String fileSpec = "adjacencyMatrix_layout:" + layout + "_graph:" + graphName + "_plsm:" + this.parallelism;
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
-		synchronized (serverSyn) {
-			try {
-				serverSyn.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		if (layout)
-			onIsLayoutedStreamJobtermination();
-		else
-			onLayoutingStreamJobTermination();
 	}
 
 	private void zoomSet() {
 		DataSet<WrapperGVD> wrapperSet = flinkCore.zoomSet();
 		setOperationHelper(wrapperSet);
-		onIsLayoutedSetJobTermination();
+		onIsLayoutedJobTermination();
 	}
 
 	private void zoomStream() {
@@ -472,23 +447,13 @@ public class Server implements Serializable {
 				new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()))
 				.setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
-		System.out.println("Thread that is starting executor and then waiting: " + Thread.currentThread().getId());
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
-		synchronized (serverSyn) {
-			try {
-				serverSyn.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			System.out.println("Thread woke up");
-		}
-		onIsLayoutedStreamJobtermination();
 	}
 
 	private void panSet() {
 		DataSet<WrapperGVD> wrapperSet = flinkCore.panSet();
 		setOperationHelper(wrapperSet);
-		onIsLayoutedSetJobTermination();
+		onIsLayoutedJobTermination();
 	}
 
 	private void panStream() {
@@ -500,14 +465,6 @@ public class Server implements Serializable {
 				.setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
-		synchronized (serverSyn) {
-			try {
-				serverSyn.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		onIsLayoutedStreamJobtermination();
 	}
 
 	private void nextSubStep() {
@@ -521,37 +478,53 @@ public class Server implements Serializable {
 					else
 						layoutingSetOperation(2);
 				} else {
-					if (stream)
-						layoutingStreamOperation(4);
-					else
-						layoutingSetOperation(4);
+					if (wrapperHandler.getEdgeCapacity() == 0) {
+						wrapperHandler.clearOperation();
+					} else {
+						if (stream)
+							layoutingStreamOperation(4);
+						else
+							layoutingSetOperation(4);
+					}
 				}
 			} else if (operationStep == 2) {
-				if (wrapperHandler.getCapacity() > 0) {
+				if (wrapperHandler.getCapacity() > 0 && wrapperHandler.getSentToClientInSubStep()) {
 					if (stream)
 						layoutingStreamOperation(2);
 					else
 						layoutingSetOperation(2);
+				} else {
+					if (wrapperHandler.getEdgeCapacity() == 0) {
+						wrapperHandler.clearOperation();
+					} else {
+						if (stream)
+							layoutingStreamOperation(4);
+						else
+							layoutingSetOperation(4);
+					}
+				}
+			} else if (operationStep == 3) {
+				if (wrapperHandler.getEdgeCapacity() == 0) {
+					wrapperHandler.clearOperation();
 				} else {
 					if (stream)
 						layoutingStreamOperation(4);
 					else
 						layoutingSetOperation(4);
 				}
-			} else if (operationStep == 3) {
-				if (stream)
-					layoutingStreamOperation(4);
-				else
-					layoutingSetOperation(4);
 			} else if (operationStep == 4) {
 				wrapperHandler.clearOperation();
 			}
 		} else if (operation.equals("zoomOut")) {
 			if (operationStep == 1) {
-				if (stream)
-					layoutingStreamOperation(2);
-				else
-					layoutingSetOperation(2);
+				if (wrapperHandler.getCapacity() == 0) {
+					wrapperHandler.clearOperation();
+				} else {
+					if (stream)
+						layoutingStreamOperation(2);
+					else
+						layoutingSetOperation(2);
+				}
 			} else {
 				wrapperHandler.clearOperation();
 			}
@@ -565,33 +538,33 @@ public class Server implements Serializable {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep1Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices());
 				setOperationHelper(wrapperSet);
-				onLayoutingSetJobTermination();
+				onLayoutingJobTermination();
 			} else if (nextOperationStep == 2) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
-				onLayoutingSetJobTermination();
+				onLayoutingJobTermination();
 			} else if (nextOperationStep == 3) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep3Set(wrapperHandler.getLayoutedVertices());
 				setOperationHelper(wrapperSet);
-				onLayoutingSetJobTermination();
+				onLayoutingJobTermination();
 			} else if (nextOperationStep == 4) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep4Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
-				onLayoutingSetJobTermination();
+				onLayoutingJobTermination();
 			}
 		} else if (operation.equals("zoomOut")) {
 			if (nextOperationStep == 1) {
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomOutLayoutStep1Set(wrapperHandler.getLayoutedVertices());
 				setOperationHelper(wrapperSet);
-				onLayoutingSetJobTermination();
+				onLayoutingJobTermination();
 			} else if (nextOperationStep == 2) {
 				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomOutLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
-				onLayoutingSetJobTermination();
+				onLayoutingJobTermination();
 			}
 		}
 	}
@@ -651,22 +624,12 @@ public class Server implements Serializable {
 				.setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
 		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
-		synchronized (serverSyn) {
-			try {
-				serverSyn.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		onLayoutingStreamJobTermination();
 	}
 
 	/**
 	 * sends a message to the all connected web socket clients
 	 */
 	public synchronized static void sendToAll(String message) {
-		System.out.println("in sendToAll method, Thread: " + Thread.currentThread().getId());
-		System.out.println(channels.size());
 		for (WebSocketChannel channel : channels) {
 			WebSockets.sendText(message, channel, null);
 		}
@@ -678,7 +641,6 @@ public class Server implements Serializable {
 		flinkResponseHandler.setOperation(operation);
 		this.operation = operation;
 		sendToAll("operation;" + operation);
-		System.out.println("executing setOperation in server");
 	}
 
 	private void setOperationStep(int step) {
@@ -766,78 +728,12 @@ public class Server implements Serializable {
 		return wrapperCollection;
 	}
 
-	public void onLayoutingSetJobTermination() {
+	public void onLayoutingJobTermination() {
 		if (eval) callForJobDuration();
-		if (wrapperHandler.getSentToClientInSubStep() || operation.equals("initial")) {
-			sendToAll("finalOperations");
-		} else {
-			if (operation.equals("zoomIn") || operation.equals("pan")) {
-				if (operationStep == 1) {
-					if (wrapperHandler.getCapacity() == 0)
-						sendToAll("enableMouse");
-					else
-						layoutingSetOperation(2);
-				} else if (operationStep == 2) {
-					if (wrapperHandler.getCapacity() == 0)
-						layoutingSetOperation(4);
-					else
-						layoutingSetOperation(3);
-				} else if (operationStep == 3) {
-					layoutingSetOperation(4);
-				} else if (operationStep == 4) {
-					sendToAll("finalOperations");
-				}
-			} else if (operation.equals("zoomOut")) {
-				if (operationStep == 1) {
-					sendToAll("enableMouse");
-				} else if (operationStep == 2) {
-					sendToAll("finalOperations");
-				}
-			}
-		}
+		sendToAll("finalOperations");
 	}
 
-	public void onLayoutingStreamJobTermination() {
-		if (eval) callForJobDuration();
-		if (wrapperHandler.getSentToClientInSubStep() || operation.equals("initial")) {
-			sendToAll("finalOperations");
-		} else {
-			if (operation.equals("zoomIn") || operation.equals("pan")) {
-				if (operationStep == 1) {
-					if (wrapperHandler.getCapacity() == 0)
-						sendToAll("enableMouse");
-					else
-						layoutingStreamOperation(2);
-				} else if (operationStep == 2) {
-					if (wrapperHandler.getCapacity() == 0)
-						layoutingStreamOperation(4);
-					else
-						layoutingStreamOperation(3);
-				} else if (operationStep == 3) {
-					layoutingStreamOperation(4);
-				} else if (operationStep == 4) {
-					sendToAll("finalOperations");
-				}
-			} else if (operation.equals("zoomOut")) {
-				if (operationStep == 1) {
-					sendToAll("enableMouse");
-				} else if (operationStep == 2) {
-					sendToAll("finalOperations");
-				}
-			}
-		}
-	}
-
-	public void onIsLayoutedSetJobTermination() {
-		if (eval) callForJobDuration();
-		if (wrapperHandler.getSentToClientInSubStep()) {
-			sendToAll("finalOperations");
-			wrapperHandler.clearOperation();
-		} else
-			sendToAll("enableMouse");
-	}
-
-	public void onIsLayoutedStreamJobtermination() {
+	public void onIsLayoutedJobTermination() {
 		if (eval) callForJobDuration();
 		if (wrapperHandler.getSentToClientInSubStep()) {
 			sendToAll("finalOperations");
