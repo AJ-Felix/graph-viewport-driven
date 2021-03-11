@@ -10,23 +10,23 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Wra
 
 public class Evaluator {
 	private StreamExecutionEnvironment fsEnv;
-	private String fileName;
+	private String fileSpec;
 
 	public Evaluator(StreamExecutionEnvironment fsEnv, String fileName) {
 		this.fsEnv = fsEnv;
-		this.fileName = fileName;
+		this.fileSpec = fileName;
 	}
 	
 	public Evaluator(String fileSpec) {
-		this.fileName = fileSpec;
+		this.fileSpec = fileSpec;
 	}
 	
 	private void writeToFile(String s) throws IOException{
 		BufferedWriter bw;
-		if (this.fileName.equals("default")) {
+		if (this.fileSpec.equals("default")) {
 			bw = new BufferedWriter(new FileWriter("/home/aljoscha/server_evaluation.log", true)); 
 		} else {
-			bw = new BufferedWriter(new FileWriter("/home/aljoscha/server_evaluation_" + fileName + ".log", true));
+			bw = new BufferedWriter(new FileWriter("/home/aljoscha/server_evaluation_" + fileSpec + ".log", true));
 		}
 	    bw.write(s);
 	    bw.close();

@@ -372,7 +372,7 @@ public class Server implements Serializable {
 		DataSet<WrapperGVD> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
-			String fileSpec = "gradoop_layout:" + layout + "_graph:" + graphName + "_plsm:" + this.parallelism;
+			String fileSpec = "gradoop_layout_" + layout + "_graph_" + graphName + "_plsm_" + this.parallelism;
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
@@ -401,7 +401,7 @@ public class Server implements Serializable {
 				new SimpleStringSchema())).setParallelism(1);
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
-			String fileSpec = "tableStream_layout:" + layout + "_graph:" + graphName + "_plsm:" + this.parallelism;
+			String fileSpec = "tableStream_layout_" + layout + "_graph_" + graphName + "_plsm_" + this.parallelism;
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
@@ -426,7 +426,7 @@ public class Server implements Serializable {
 				.setParallelism(1);
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
-			String fileSpec = "adjacencyMatrix_layout:" + layout + "_graph:" + graphName + "_plsm:" + this.parallelism;
+			String fileSpec = "adjacencyMatrix_layout_" + layout + "_graph_" + graphName + "_plsm_" + this.parallelism;
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
