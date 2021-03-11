@@ -11,7 +11,7 @@ class Client {
 		this.timeBeforeQuery;
 		this.timeLastResponse;
 		this.evaluationCount = 0;
-		this.evaluationCountThreshold = 10;
+		this.evaluationCountThreshold = 3;
 		this.lastAutomatedOperation = "zoomIn";
 		this.automatedEvaluation = false;
 	}
@@ -302,8 +302,7 @@ class Client {
 			firstToLastDuration = this.timeLastResponse - this.firstResponse; 
 		}
 		const fullQueryDuration = this.timeLastResponse - this.timeBeforeQuery;
-		const output = "Operation: " + this.operation + ", operation step: " + this.operationStep + ", full-query-duration: " + fullQueryDuration + 
-			", first-to-last-Response-duration: " + firstToLastDuration;
+		const output = this.operation + "," + this.operationStep + "," + fullQueryDuration + "," + firstToLastDuration;
 		console.info(output);
 		if (this.automatedEvaluation){
 			// download(output, "client_evaluation_be_" + this.backendVariant + "_layout_" + this.layout + "_gN_" + this.graphName

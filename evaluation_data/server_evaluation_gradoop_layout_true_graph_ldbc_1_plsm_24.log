@@ -1,7 +1,3 @@
-Operation: initial, call-to-result duration: 118396, Flink-Job-duration: 114215
-Operation: zoomIn, call-to-result duration: 28654, Flink-Job-duration: 26324
-Operation: initial, call-to-result duration: 43874, Flink-Job-duration: 40992
-Operation: zoomIn, call-to-result duration: 18942, Flink-Job-duration: 15991
 Operation: initial, call-to-result duration: 109269, Flink-Job-duration: 104199
 Operation: zoomIn, call-to-result duration: 1179850, Flink-Job-duration: 1176916
 Operation: initial, call-to-result duration: 165392, Flink-Job-duration: 164143

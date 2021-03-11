@@ -767,8 +767,8 @@ public class Server implements Serializable {
 						duration = (int) jobJson.get("duration");
 					}
 				}
-			    if (layout) bw.write(", Flink-Job-duration: " + String.valueOf(duration));
-			    else bw.write(", operationStep: " + this.operationStep + ", Flink-Job-duration: " + String.valueOf(duration));
+			    if (layout) bw.write(",notAvailable," + String.valueOf(duration));
+			    else bw.write("," + this.operationStep + "," + String.valueOf(duration));
 			    bw.newLine();
 			    bw.close();
 			}

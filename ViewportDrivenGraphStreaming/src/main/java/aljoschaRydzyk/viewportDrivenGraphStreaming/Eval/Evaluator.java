@@ -37,14 +37,14 @@ public class Evaluator {
 		String s;
 		try {
 			fsEnv.execute(operation);
-			s = "Operation: " + operation;
+			s = "notAvailable," + operation;
 		} catch (Exception e) {
-			s = "Operation (cancelled): " + operation;
+			s = "Operation (cancelled)," + operation;
 			System.out.println("Job was probably cancelled by server application.");	
 		}
 		Long afterJobCall = System.currentTimeMillis();
 		Long callToResultDuration = afterJobCall - beforeJobCall;
-		s += ", call-to-result duration: " + callToResultDuration;
+		s += "," + callToResultDuration;
 		try {
 			writeToFile(s);
 		} catch (IOException e) {
