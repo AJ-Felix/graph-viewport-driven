@@ -306,12 +306,14 @@ class Client {
 			", first-to-last-Response-duration: " + firstToLastDuration;
 		console.info(output);
 		if (this.automatedEvaluation){
+			// download(output, "client_evaluation_be_" + this.backendVariant + "_layout_" + this.layout + "_gN_" + this.graphName
+			// + "_plsm_" + this.parallelism + "_" + this.evaluationCount, "string");
 			if (this.outputConcat == null) this.outputConcat = "";
 			if (this.evaluationCount < this.evaluationCountThreshold){
 				this.outputConcat += output + "\n";
 			} else {
 				this.outputConcat += output + "\n";
-				if (this.operation == this.lastAutomatedOperation && (this.operationStep == null || this.operationStep == 4)) 
+				if (this.operation == this.lastAutomatedOperation) 
 					download(this.outputConcat, "client_evaluation_be_" + this.backendVariant + "_layout_" + this.layout + "_gN_" + this.graphName
 						+ "_plsm_" + this.parallelism, "string");
 			}
