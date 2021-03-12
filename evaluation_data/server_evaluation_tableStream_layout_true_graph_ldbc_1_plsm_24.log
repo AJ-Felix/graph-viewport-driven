@@ -1,20 +1,20 @@
-Operation: initial, call-to-result duration: 53143, Flink-Job-duration: 50294
-Operation (cancelled): zoomIn, call-to-result duration: 7585, Flink-Job-duration: 6655
-Operation: initial, call-to-result duration: 45429, Flink-Job-duration: 43516
-Operation (cancelled): zoomIn, call-to-result duration: 37396, Flink-Job-duration: 36139
-Operation: initial, call-to-result duration: 71517, Flink-Job-duration: 69689
-Operation (cancelled): zoomIn, call-to-result duration: 5396, Flink-Job-duration: 3561
-Operation: initial, call-to-result duration: 65417, Flink-Job-duration: 63043
-Operation (cancelled): zoomIn, call-to-result duration: 7353, Flink-Job-duration: 5662
-Operation: initial, call-to-result duration: 65368, Flink-Job-duration: 64226
-Operation (cancelled): zoomIn, call-to-result duration: 9334, Flink-Job-duration: 8622
-Operation: initial, call-to-result duration: 65375, Flink-Job-duration: 64345
-Operation (cancelled): zoomIn, call-to-result duration: 11272, Flink-Job-duration: 9725
-Operation: initial, call-to-result duration: 59296, Flink-Job-duration: 57681
-Operation (cancelled): zoomIn, call-to-result duration: 7314, Flink-Job-duration: 6647
-Operation: initial, call-to-result duration: 69346, Flink-Job-duration: 68763
-Operation (cancelled): zoomIn, call-to-result duration: 27374, Flink-Job-duration: 25715
-Operation: initial, call-to-result duration: 41572, Flink-Job-duration: 40618
-Operation (cancelled): zoomIn, call-to-result duration: 9289, Flink-Job-duration: 7863
-Operation: initial, call-to-result duration: 63284, Flink-Job-duration: 62223
-Operation (cancelled): zoomIn, call-to-result duration: 31298, Flink-Job-duration: 28920
+notAvailable,initial,45204,notAvailable,43672
+Operation (cancelled),zoomIn,7407,notAvailable,6640
+notAvailable,initial,41752,notAvailable,41193
+Operation (cancelled),zoomIn,46968,notAvailable,46394
+notAvailable,initial,54574,notAvailable,54002
+Operation (cancelled),zoomIn,6776,notAvailable,6160
+notAvailable,initial,40450,notAvailable,39923
+Operation (cancelled),zoomIn,27994,notAvailable,27463
+notAvailable,initial,72944,notAvailable,72426
+Operation (cancelled),zoomIn,10010,notAvailable,9486
+notAvailable,initial,68125,notAvailable,67609
+Operation (cancelled),zoomIn,5975,notAvailable,5418
+notAvailable,initial,62756,notAvailable,62267
+Operation (cancelled),zoomIn,8471,notAvailable,7895
+notAvailable,initial,65641,notAvailable,65103
+Operation (cancelled),zoomIn,5973,notAvailable,5418
+notAvailable,initial,63068,notAvailable,62438
+Operation (cancelled),zoomIn,6528,notAvailable,5999
+notAvailable,initial,63384,notAvailable,62871
+Operation (cancelled),zoomIn,8311,notAvailable,7779

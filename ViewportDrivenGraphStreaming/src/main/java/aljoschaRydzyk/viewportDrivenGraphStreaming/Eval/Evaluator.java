@@ -11,6 +11,7 @@ import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.Wra
 public class Evaluator {
 	private StreamExecutionEnvironment fsEnv;
 	private String fileSpec;
+	private static Long afterJobCall;
 
 	public Evaluator(StreamExecutionEnvironment fsEnv, String fileName) {
 		this.fsEnv = fsEnv;
@@ -36,13 +37,16 @@ public class Evaluator {
 		Long beforeJobCall = System.currentTimeMillis();
 		String s;
 		try {
+			
 			fsEnv.execute(operation);
 			s = "notAvailable," + operation;
 		} catch (Exception e) {
 			s = "Operation (cancelled)," + operation;
 			System.out.println("Job was probably cancelled by server application.");	
 		}
-		Long afterJobCall = System.currentTimeMillis();
+		Long afterJobCallValue = System.currentTimeMillis();
+		if (afterJobCall == null) setAfterJobCall(afterJobCallValue);
+		else if (afterJobCallValue < afterJobCall) setAfterJobCall(afterJobCallValue);
 		Long callToResultDuration = afterJobCall - beforeJobCall;
 		s += "," + callToResultDuration;
 		try {
@@ -50,6 +54,7 @@ public class Evaluator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		setAfterJobCall(null);
 	}
 	
 	public List<WrapperGVD> executeSet(String operation, DataSet<WrapperGVD> wrapperSet) throws Exception {
@@ -57,8 +62,12 @@ public class Evaluator {
 		List<WrapperGVD> wrapperCollection = wrapperSet.collect();
 		Long afterJobCall = System.currentTimeMillis();
 		Long callToResultDuration = afterJobCall - beforeJobCall;
-		String s = "Operation: " + operation + ", call-to-result duration: " + callToResultDuration;
+		String s = operation + "," + callToResultDuration;
 		writeToFile(s);
 		return wrapperCollection;
+	}
+	
+	public synchronized static void setAfterJobCall(Long afterJobCallValue) {
+		afterJobCall = afterJobCallValue;
 	}
 }

@@ -1,20 +1,20 @@
-Operation: initial, operation step: undefined, full-query-duration: 44541, first-to-last-Response-duration: 35283
-Operation: zoomIn, operation step: undefined, full-query-duration: 10952, first-to-last-Response-duration: 3587
-Operation: initial, operation step: undefined, full-query-duration: 32476, first-to-last-Response-duration: 29765
-Operation: zoomIn, operation step: undefined, full-query-duration: 36935, first-to-last-Response-duration: 8451
-Operation: initial, operation step: undefined, full-query-duration: 57459, first-to-last-Response-duration: 54523
-Operation: zoomIn, operation step: undefined, full-query-duration: 5454, first-to-last-Response-duration: 1714
-Operation: initial, operation step: undefined, full-query-duration: 49088, first-to-last-Response-duration: 47747
-Operation: zoomIn, operation step: undefined, full-query-duration: 7244, first-to-last-Response-duration: 3406
-Operation: initial, operation step: undefined, full-query-duration: 50668, first-to-last-Response-duration: 49404
-Operation: zoomIn, operation step: undefined, full-query-duration: 11827, first-to-last-Response-duration: 4003
-Operation: initial, operation step: undefined, full-query-duration: 51502, first-to-last-Response-duration: 50297
-Operation: zoomIn, operation step: undefined, full-query-duration: 10210, first-to-last-Response-duration: 2623
-Operation: initial, operation step: undefined, full-query-duration: 43127, first-to-last-Response-duration: 23750
-Operation: zoomIn, operation step: undefined, full-query-duration: 7558, first-to-last-Response-duration: 1184
-Operation: initial, operation step: undefined, full-query-duration: 55915, first-to-last-Response-duration: 26010
-Operation: zoomIn, operation step: undefined, full-query-duration: 26814, first-to-last-Response-duration: 22508
-Operation: initial, operation step: undefined, full-query-duration: 28069, first-to-last-Response-duration: 26661
-Operation: zoomIn, operation step: undefined, full-query-duration: 8359, first-to-last-Response-duration: 1719
-Operation: initial, operation step: undefined, full-query-duration: 49075, first-to-last-Response-duration: 26097
-Operation: zoomIn, operation step: undefined, full-query-duration: 29504, first-to-last-Response-duration: 22426
+initial,undefined,51255,42880
+zoomIn,undefined,8321,8304
+initial,undefined,43770,41600
+zoomIn,undefined,47798,47779
+initial,undefined,55754,52212
+zoomIn,undefined,7679,7675
+initial,undefined,41540,39363
+zoomIn,undefined,29623,29444
+initial,undefined,73525,69600
+zoomIn,undefined,11497,11490
+initial,undefined,69652,67958
+zoomIn,undefined,7436,7429
+initial,undefined,63596,62031
+zoomIn,undefined,9449,9445
+initial,undefined,67575,64739
+zoomIn,undefined,7460,7436
+initial,undefined,63714,61944
+zoomIn,undefined,7436,7432
+initial,undefined,65528,63443
+zoomIn,undefined,9397,9394

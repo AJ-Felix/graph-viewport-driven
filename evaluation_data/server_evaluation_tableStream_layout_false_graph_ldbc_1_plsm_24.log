@@ -1,34 +1,34 @@
-Operation: initial, call-to-result duration: 50811, operationStep: 1, Flink-Job-duration: 48209
-Operation: zoomIn, call-to-result duration: 45497, operationStep: 1, Flink-Job-duration: 43832
-Operation (cancelled): zoomIn, call-to-result duration: 107633, operationStep: 2, Flink-Job-duration: 105238
-Operation: initial, call-to-result duration: 43350, operationStep: 1, Flink-Job-duration: 41189
-Operation: zoomIn, call-to-result duration: 93544, operationStep: 1, Flink-Job-duration: 92732
-Operation (cancelled): zoomIn, call-to-result duration: 25340, operationStep: 2, Flink-Job-duration: 24496
-Operation: initial, call-to-result duration: 83382, operationStep: 1, Flink-Job-duration: 82116
-Operation: zoomIn, call-to-result duration: 61282, operationStep: 1, Flink-Job-duration: 59968
-Operation (cancelled): zoomIn, call-to-result duration: 23180, operationStep: 2, Flink-Job-duration: 22057
-Operation: initial, call-to-result duration: 61278, operationStep: 1, Flink-Job-duration: 59914
-Operation: zoomIn, call-to-result duration: 57298, operationStep: 1, Flink-Job-duration: 56074
-Operation (cancelled): zoomIn, call-to-result duration: 57256, operationStep: 2, Flink-Job-duration: 55138
-Operation (cancelled): zoomIn, call-to-result duration: 27202, operationStep: 4, Flink-Job-duration: 24874
-Operation: initial, call-to-result duration: 65327, operationStep: 1, Flink-Job-duration: 63057
-Operation: zoomIn, call-to-result duration: 65344, operationStep: 1, Flink-Job-duration: 64678
-Operation (cancelled): zoomIn, call-to-result duration: 31254, operationStep: 2, Flink-Job-duration: 29463
-Operation (cancelled): zoomIn, call-to-result duration: 21080, operationStep: 4, Flink-Job-duration: 20304
-Operation: initial, call-to-result duration: 63260, operationStep: 1, Flink-Job-duration: 60930
-Operation: zoomIn, call-to-result duration: 65276, operationStep: 1, Flink-Job-duration: 63021
-Operation (cancelled): zoomIn, call-to-result duration: 35221, operationStep: 2, Flink-Job-duration: 33668
-Operation: initial, call-to-result duration: 83232, operationStep: 1, Flink-Job-duration: 80817
-Operation: zoomIn, call-to-result duration: 63231, operationStep: 1, Flink-Job-duration: 61677
-Operation (cancelled): zoomIn, call-to-result duration: 23203, operationStep: 2, Flink-Job-duration: 21727
-Operation: initial, call-to-result duration: 73228, operationStep: 1, Flink-Job-duration: 72465
-Operation: zoomIn, call-to-result duration: 59258, operationStep: 1, Flink-Job-duration: 58441
-Operation (cancelled): zoomIn, call-to-result duration: 71277, operationStep: 2, Flink-Job-duration: 69576
-Operation (cancelled): zoomIn, call-to-result duration: 7074, operationStep: 4, Flink-Job-duration: 5999
-Operation: initial, call-to-result duration: 73268, operationStep: 1, Flink-Job-duration: 71031
-Operation: zoomIn, call-to-result duration: 61392, operationStep: 1, Flink-Job-duration: 59973
-Operation (cancelled): zoomIn, call-to-result duration: 47269, operationStep: 2, Flink-Job-duration: 46229
-Operation: initial, call-to-result duration: 59198, operationStep: 1, Flink-Job-duration: 58470
-Operation: zoomIn, call-to-result duration: 63244, operationStep: 1, Flink-Job-duration: 61587
-Operation (cancelled): zoomIn, call-to-result duration: 41226, operationStep: 2, Flink-Job-duration: 39256
-Operation (cancelled): zoomIn, call-to-result duration: 25139, operationStep: 4, Flink-Job-duration: 24078
+notAvailable,initial,50993,1,49347
+notAvailable,zoomIn,44158,1,43442
+Operation (cancelled),zoomIn,72609,2,72032
+notAvailable,initial,56199,1,55576
+notAvailable,zoomIn,62116,1,61423
+Operation (cancelled),zoomIn,27759,2,27037
+Operation (cancelled),zoomIn,23619,4,22947
+notAvailable,initial,58568,1,57889
+notAvailable,zoomIn,64223,1,63518
+Operation (cancelled),zoomIn,26830,2,26161
+notAvailable,initial,61460,1,60797
+notAvailable,zoomIn,56551,1,55985
+Operation (cancelled),zoomIn,53040,2,52443
+notAvailable,initial,64813,1,64164
+notAvailable,zoomIn,79662,1,79020
+Operation (cancelled),zoomIn,67792,2,67077
+Operation (cancelled),zoomIn,5068,4,4395
+notAvailable,initial,69003,1,68327
+notAvailable,zoomIn,58216,1,57572
+Operation (cancelled),zoomIn,21972,2,21249
+notAvailable,initial,59903,1,59385
+notAvailable,zoomIn,54174,1,53636
+Operation (cancelled),zoomIn,51294,2,50707
+notAvailable,initial,74555,1,73913
+notAvailable,zoomIn,44380,1,43742
+Operation (cancelled),zoomIn,87676,2,87008
+Operation (cancelled),zoomIn,6059,4,5369
+notAvailable,initial,40797,1,40162
+notAvailable,zoomIn,89974,1,89333
+Operation (cancelled),zoomIn,50585,2,50045
+Operation (cancelled),zoomIn,6945,4,6343
+notAvailable,initial,96843,1,96208
+notAvailable,zoomIn,58787,1,58142
+Operation (cancelled),zoomIn,59693,2,59052

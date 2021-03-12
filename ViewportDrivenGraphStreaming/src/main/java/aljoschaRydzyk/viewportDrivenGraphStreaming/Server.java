@@ -735,11 +735,8 @@ public class Server implements Serializable {
 
 	public void onIsLayoutedJobTermination() {
 		if (eval) callForJobDuration();
-		if (wrapperHandler.getSentToClientInSubStep()) {
-			sendToAll("finalOperations");
-			wrapperHandler.clearOperation();
-		} else
-			sendToAll("enableMouse");
+		sendToAll("finalOperations");
+		wrapperHandler.clearOperation();
 	}
 
 	public void callForJobDuration() {

@@ -1,34 +1,34 @@
-Operation: initial, operation step: 1, full-query-duration: 41156, first-to-last-Response-duration: 31733
-Operation: zoomIn, operation step: 1, full-query-duration: 46161, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 106275, first-to-last-Response-duration: 99880
-Operation: initial, operation step: 1, full-query-duration: 28521, first-to-last-Response-duration: 26177
-Operation: zoomIn, operation step: 1, full-query-duration: 93704, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 25563, first-to-last-Response-duration: 22100
-Operation: initial, operation step: 1, full-query-duration: 63940, first-to-last-Response-duration: 61373
-Operation: zoomIn, operation step: 1, full-query-duration: 61450, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 22674, first-to-last-Response-duration: 19134
-Operation: initial, operation step: 1, full-query-duration: 46570, first-to-last-Response-duration: 26095
-Operation: zoomIn, operation step: 1, full-query-duration: 57449, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 55805, first-to-last-Response-duration: 49068
-Operation: zoomIn, operation step: 4, full-query-duration: 21265, first-to-last-Response-duration: 0
-Operation: initial, operation step: 1, full-query-duration: 29842, first-to-last-Response-duration: 27777
-Operation: zoomIn, operation step: 1, full-query-duration: 65427, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 30078, first-to-last-Response-duration: 24437
-Operation: zoomIn, operation step: 4, full-query-duration: 20172, first-to-last-Response-duration: 1
-Operation: initial, operation step: 1, full-query-duration: 29052, first-to-last-Response-duration: 25589
-Operation: zoomIn, operation step: 1, full-query-duration: 65415, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 34096, first-to-last-Response-duration: 25412
-Operation: initial, operation step: 1, full-query-duration: 50245, first-to-last-Response-duration: 28335
-Operation: zoomIn, operation step: 1, full-query-duration: 63362, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 21388, first-to-last-Response-duration: 15087
-Operation: initial, operation step: 1, full-query-duration: 59869, first-to-last-Response-duration: 57779
-Operation: zoomIn, operation step: 1, full-query-duration: 59418, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 70071, first-to-last-Response-duration: 64399
-Operation: zoomIn, operation step: 4, full-query-duration: 5775, first-to-last-Response-duration: 0
-Operation: initial, operation step: 1, full-query-duration: 58059, first-to-last-Response-duration: 56415
-Operation: zoomIn, operation step: 1, full-query-duration: 61647, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 46755, first-to-last-Response-duration: 40234
-Operation: initial, operation step: 1, full-query-duration: 30333, first-to-last-Response-duration: 28010
-Operation: zoomIn, operation step: 1, full-query-duration: 63433, first-to-last-Response-duration: undef
-Operation: zoomIn, operation step: 2, full-query-duration: 39227, first-to-last-Response-duration: 35996
-Operation: zoomIn, operation step: 4, full-query-duration: 20634, first-to-last-Response-duration: 201
+initial,1,55819,47510
+zoomIn,1,46240,46236
+zoomIn,2,74000,68297
+initial,1,57908,54386
+zoomIn,1,63674,63669
+zoomIn,2,29764,22698
+zoomIn,4,25632,4988
+initial,1,59811,58034
+zoomIn,1,65627,65604
+zoomIn,2,27786,24204
+initial,1,63894,60216
+zoomIn,1,57403,57384
+zoomIn,2,53530,26160
+initial,1,65805,62097
+zoomIn,1,81516,81511
+zoomIn,2,69713,66330
+zoomIn,4,5498,2309
+initial,1,69810,67545
+zoomIn,1,59487,59463
+zoomIn,2,23633,17101
+initial,1,61556,41324
+zoomIn,1,55417,55363
+zoomIn,2,53580,25036
+initial,1,75727,73239
+zoomIn,1,45483,45411
+zoomIn,2,89607,83171
+zoomIn,4,7602,2581
+initial,1,41698,39596
+zoomIn,1,91599,91532
+zoomIn,2,51454,45942
+zoomIn,4,7497,1271
+initial,1,97737,77082
+zoomIn,1,59533,59436
+zoomIn,2,61521,55077

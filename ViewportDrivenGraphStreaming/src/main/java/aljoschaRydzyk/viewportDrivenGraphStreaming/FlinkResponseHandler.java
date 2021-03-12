@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.Eval.Evaluator;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.EdgeGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
@@ -63,11 +64,13 @@ public class FlinkResponseHandler extends Thread{
         			System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapper(parseWrapperString(line));
 	            }
+        		Evaluator.setAfterJobCall(System.currentTimeMillis());
         		server.onIsLayoutedJobTermination();;
         	} else {
         		while((line = in.readLine()) != null)  {
 	            	wrapperHandler.addWrapperLayout(parseWrapperStringNoCoordinates(line));
 	            }
+        		Evaluator.setAfterJobCall(System.currentTimeMillis());
         		server.onLayoutingJobTermination();
         	}	
         } else {
@@ -76,12 +79,13 @@ public class FlinkResponseHandler extends Thread{
         			System.out.println("flinkResponseHandler: " + line);
 	            	wrapperHandler.addWrapperInitial(parseWrapperString(line));
 	            }
+        		Evaluator.setAfterJobCall(System.currentTimeMillis());
         		server.onIsLayoutedJobTermination();
         	} else  {
-
         		while((line = in.readLine()) != null)  {
 	            	wrapperHandler.addWrapperInitial(parseWrapperStringNoCoordinates(line));
 	            }
+        		Evaluator.setAfterJobCall(System.currentTimeMillis());
         		server.onLayoutingJobTermination();
         	}	
         }

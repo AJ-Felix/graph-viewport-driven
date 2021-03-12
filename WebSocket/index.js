@@ -53,6 +53,7 @@ class Client {
 					case 'removeObjectServer':
 						if (!this.layout) this.graphVisualizer.layoutBase.delete(dataArray[1]);
 						this.graphVisualizer.cy.remove(this.graphVisualizer.cy.$id(dataArray[1]));
+						if (eval) this.updateResponseTimes();				
 						break;
 					case 'nextSubStep':
 						this.ws.send("layoutingStreamOperation;" + dataArray[1]);
@@ -201,8 +202,8 @@ class Client {
 	finalOperations(){
 		console.log("Final Operations!");
 		this.graphVisualizer.updateVerticesSize();
-		if (eval) this.outputQueryTime();
 		if (this.operation == "initial") this.fitTopView();
+		if (eval) this.outputQueryTime();
 		if (!this.layout){
 			let layoutBaseString = "";
 			if (this.graphVisualizer.layoutBase.size > 0){
@@ -283,6 +284,7 @@ class Client {
 	}
 
 	initiateEvaluation(){
+		console.info("initializing evaluation");
 		this.timeBeforeQuery = new Date().getTime();
 		this.firstResponse = null;
 		this.timeLastResponse = null;
@@ -294,13 +296,8 @@ class Client {
 	}
 
 	outputQueryTime(){
-		let firstToLastDuration;
-		if (this.timeLastResponse == null) {
-			this.timeLastResponse = new Date().getTime();
-			firstToLastDuration = "undef";
-		} else {
-			firstToLastDuration = this.timeLastResponse - this.firstResponse; 
-		}
+		this.updateResponseTimes();
+		const firstToLastDuration = this.timeLastResponse - this.firstResponse; 
 		const fullQueryDuration = this.timeLastResponse - this.timeBeforeQuery;
 		const output = this.operation + "," + this.operationStep + "," + fullQueryDuration + "," + firstToLastDuration;
 		console.info(output);
