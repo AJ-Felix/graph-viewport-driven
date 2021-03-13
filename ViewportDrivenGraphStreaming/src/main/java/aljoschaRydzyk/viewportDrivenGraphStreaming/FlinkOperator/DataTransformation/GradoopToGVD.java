@@ -69,22 +69,22 @@ public class GradoopToGVD {
 		wrapperTupled.writeAsCsv(outPath + "/wrappers", "\n", ";", WriteMode.OVERWRITE).setParallelism(1);
 		
 		//adjacency
-		MapOperator<Row, Tuple3<String, String, String>> idsSourceTargetWrapper = 
-				wrapper.map(new WrapperMapIDsSourceTarget());
-		MapOperator<Row, Tuple3<String, String, String>> idsTargetSourceWrapper = 
-				wrapper.map(new WrapperMapIDsTargetSource());
-		
-		UnionOperator<Tuple3<String, String, String>> idsUnited = idsSourceTargetWrapper
-				.union(idsTargetSourceWrapper);
-		
-		MapOperator<Tuple3<String, String, String>, AdjacencyRow> 
-		adjaRow = idsUnited.map(new IDsMapAdjacencyRow());
-				
-		UnsortedGrouping<AdjacencyRow> adjaRowGrouped = adjaRow.groupBy(new AdjacencyRowGroup());
-		
-		ReduceOperator<AdjacencyRow> adjaRowReduced = adjaRowGrouped.reduce(new AdjacencyRowReduce());
-		
-		MapOperator<AdjacencyRow, String> idsStringified = adjaRowReduced.map(new AdjacencyRowMapString());
+//		MapOperator<Row, Tuple3<String, String, String>> idsSourceTargetWrapper = 
+//				wrapper.map(new WrapperMapIDsSourceTarget());
+//		MapOperator<Row, Tuple3<String, String, String>> idsTargetSourceWrapper = 
+//				wrapper.map(new WrapperMapIDsTargetSource());
+//		
+//		UnionOperator<Tuple3<String, String, String>> idsUnited = idsSourceTargetWrapper
+//				.union(idsTargetSourceWrapper);
+//		
+//		MapOperator<Tuple3<String, String, String>, AdjacencyRow> 
+//		adjaRow = idsUnited.map(new IDsMapAdjacencyRow());
+//				
+//		UnsortedGrouping<AdjacencyRow> adjaRowGrouped = adjaRow.groupBy(new AdjacencyRowGroup());
+//		
+//		ReduceOperator<AdjacencyRow> adjaRowReduced = adjaRowGrouped.reduce(new AdjacencyRowReduce());
+//		
+//		MapOperator<AdjacencyRow, String> idsStringified = adjaRowReduced.map(new AdjacencyRowMapString());
 		 
 //		UnsortedGrouping<Tuple3<String, String, String>> idsGrouped = idsUnited
 //				.groupBy(new UnitedIDsGroup());
@@ -95,6 +95,6 @@ public class GradoopToGVD {
 //		MapOperator<Tuple2<String, List<Tuple2<String, String>>>, String> idsStringified = idsReduced
 //				.map(new ReducedIDsMapString());	
 		
-		idsStringified.writeAsText(outPath + "/adjacency", WriteMode.OVERWRITE).setParallelism(1);
+//		idsStringified.writeAsText(outPath + "/adjacency", WriteMode.OVERWRITE).setParallelism(1);
 	}
 }

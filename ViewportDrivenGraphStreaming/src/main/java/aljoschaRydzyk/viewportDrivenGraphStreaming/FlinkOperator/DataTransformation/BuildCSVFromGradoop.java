@@ -6,7 +6,9 @@ import java.util.List;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.algorithms.gelly.vertexdegrees.DistinctVertexDegrees;
+import org.gradoop.flink.io.api.DataSink;
 import org.gradoop.flink.io.api.DataSource;
+import org.gradoop.flink.io.impl.csv.CSVDataSink;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodSampling;
@@ -29,6 +31,9 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
 	Graph has to be copied manually into 'writePath' directory, there 'vertices.csv' directory 
 	has to be deleted and 'metadata.csv' has to be edited manually according to the new vertex 
 	properties given!!!
+	
+	Sampling: 
+	Input has to be modified gradoop data (including vertex degrees, layout coordinates and layout level)
  * 
  */
 
@@ -68,7 +73,7 @@ public class BuildCSVFromGradoop {
 		LogicalGraph log = source.getGraphCollection().getGraph(id);
 		
 		//sample graph
-		if (operations.contains("sample")) log = new RandomVertexNeighborhoodSampling((float) 0.001, 3, 
+		if (operations.contains("sample")) log = new RandomVertexNeighborhoodSampling((float) 0.01, 3, 
 				Neighborhood.BOTH).sample(log);
 		
 		//calculate degrees
@@ -94,9 +99,15 @@ public class BuildCSVFromGradoop {
 
 		//sink to gradoop format or GVD format
 		if (formatType.equals("gradoop")) {
-			GradoopToGradoop gradoopToGradoop = new GradoopToGradoop(operations, zoomLevelCoefficient);
-			gradoopToGradoop.transform(log, sourcePath, writePath, gradoopGraphId, env);
-			gradoopToGradoop.editMetadata(sourcePath, writePath, env);
+			if (operations.contains("sample")) {
+				System.out.println("sampled!");
+				DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
+				csvDataSink.write(log, true);
+			} else {
+				GradoopToGradoop gradoopToGradoop = new GradoopToGradoop(operations, zoomLevelCoefficient);
+				gradoopToGradoop.transform(log, sourcePath, writePath, gradoopGraphId, env);
+				gradoopToGradoop.editMetadata(sourcePath, writePath, env);
+			}	
 		} else if (formatType.equals("gvd")) {
 			if (!operations.contains("degree")) 
 				System.out.println("Warning: GVD Format assumes that vertex degrees are already calculated!");
