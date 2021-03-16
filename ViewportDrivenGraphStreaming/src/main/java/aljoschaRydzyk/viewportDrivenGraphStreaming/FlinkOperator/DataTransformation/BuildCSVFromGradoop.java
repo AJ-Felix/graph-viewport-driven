@@ -1,8 +1,15 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.DataTransformation;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.flink.algorithms.gelly.vertexdegrees.DistinctVertexDegrees;
@@ -15,15 +22,18 @@ import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodS
 import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.util.GradoopFlinkConfig;
 
+import aljoschaRydzyk.viewportDrivenGraphStreaming.LdbcImporter;
+
 /*
  * To be executed using local flink cluster on port 8081
- * execute with at least 5 arguments in this order:
-			1	sourcePath of gradoop graph data
-			2	writePath of result graph data
-			3 	gradoop graphID
-			4 	one of 'gradoop' or 'gvd' to determine result graph format
-			5 	jar files necessary for flink job execution (ExecutionEnvironment.createRemoteEnvironment())
-			6 	cluster entry point address (default: 'loclahost')
+ * execute with the following arguments:
+			sourcePath of gradoop graph data
+			input format
+			writePath of result graph data
+			gradoop graphID
+			one of 'gradoop' or 'gvd' to determine result graph format
+			jar files necessary for flink job execution (ExecutionEnvironment.createRemoteEnvironment())
+			cluster entry point address (default: 'loclahost')
 			optional:
 				one of 'sample', 'degree', 'layout' or a combination (up to 8 arguments then)
 				
@@ -42,24 +52,45 @@ public class BuildCSVFromGradoop {
 	private static int clusterEntryPointPort = 8081;
 	private static String clusterEntryPointAddress = "localhost";
 	private static int zoomLevelCoefficient = 250;
-//	private static int layoutIterations = 1000;
 	
 	
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		
+		Options options = new Options();
+		Option inputFormatOption = new Option("-if", "--input_format", true, "gradoop or generator");
+		options.addOption(inputFormatOption);
+		Option sourcePathOption = new Option("-i", "--input", true, "path to data source folder");
+		options.addOption(sourcePathOption);
+		Option sinkPathOption = new Option("-o", "--output", true, "path to data sink folder");
+		options.addOption(sinkPathOption);
+		Option gradoopGraphIdOption = new Option("-id", "--gradoopGraphId", true, "gradoop graph ID");
+		options.addOption(gradoopGraphIdOption);
+		Option outputFormatOption = new Option("-of", "--outputFormat", true, "gradoop or gvd");
+		options.addOption(outputFormatOption);
+		Option flinkJarOption = new Option("-j", "--jar", true, "path to flink job jar");
+		options.addOption(flinkJarOption);
+		Option clusterEntryPointAddressOption = new Option("-c", "--clusterEntryPoint", true, "clustern entry point address");
+		options.addOption(clusterEntryPointAddressOption);
+		Option graphOperationsOption = new Option("-c", "--clusterEntryPoint", true, "clustern entry point address");
+		options.addOption(graphOperationsOption);
 		
-		String sourcePath = args[0];
-		String writePath = args[1];
-		String gradoopGraphId = args[2];
-		String formatType = args[3];
-		String flinkJobJarPath = args[4];
-		clusterEntryPointAddress = args[5];
-		List<String> operations = new ArrayList<String>();
-		if (args.length >= 7) operations.add(args[6]);
-		if (args.length >= 8) operations.add(args[7]);
-		if (args.length == 9) operations.add(args[8]);
+		CommandLineParser parser = new DefaultParser();
+		CommandLine cmdLine = null;
 		
+		try {
+			cmdLine = parser.parse(options, args);
+		} catch (ParseException e2) {
+			e2.printStackTrace();
+		}
 		
+		String sourcePath = cmdLine.getOptionValue("i");
+		String writePath = cmdLine.getOptionValue("o");
+		String gradoopGraphId = cmdLine.getOptionValue("id");
+		String outputFormatType = cmdLine.getOptionValue("of");
+		String inputFormatType = cmdLine.getOptionValue("if");
+		String flinkJobJarPath = cmdLine.getOptionValue("j");
+		clusterEntryPointAddress = cmdLine.getOptionValue("c");
+		List<String> remainingArgs = cmdLine.getArgList();
 		
 		//create gradoop Flink configuration
 		ExecutionEnvironment env = ExecutionEnvironment
@@ -68,16 +99,27 @@ public class BuildCSVFromGradoop {
 		GradoopFlinkConfig gra_flink_cfg = GradoopFlinkConfig.createConfig(env);
 		
 		//load graph
-		DataSource source = new CSVDataSource(sourcePath, gra_flink_cfg);
-		GradoopId id = GradoopId.fromString(gradoopGraphId);
-		LogicalGraph log = source.getGraphCollection().getGraph(id);
+		LogicalGraph log = null;
+		if (inputFormatType.equals("gradoop")) {
+			DataSource source = new CSVDataSource(sourcePath, gra_flink_cfg);
+			GradoopId id = GradoopId.fromString(gradoopGraphId);
+			try {
+				log = source.getGraphCollection().getGraph(id);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		} else if (inputFormatType.equals("generator")){
+			LdbcImporter ldbcImporter = new LdbcImporter(sourcePath, env);
+			ldbcImporter.parseToLogicalGraph();
+		}
+
 		
 		//sample graph
-		if (operations.contains("sample")) log = new RandomVertexNeighborhoodSampling((float) 0.01, 3, 
+		if (remainingArgs.contains("sample")) log = new RandomVertexNeighborhoodSampling((float) 0.01, 3, 
 				Neighborhood.BOTH).sample(log);
 		
 		//calculate degrees
-		if (operations.contains("degree")) {
+		if (remainingArgs.contains("degree")) {
 			String propertyKeyDegree = "degree";
 			String propertyKeyInDegree = "inDegree";
 			String propertyKeyOutDegree = "outDegree";
@@ -93,29 +135,45 @@ public class BuildCSVFromGradoop {
 //		}
 		
 		//random layouter
-		if (operations.contains("layout")) {
+		if (remainingArgs.contains("layout")) {
 			log = log.transformVertices(new RandomLayouter());
 		}
 
 		//sink to gradoop format or GVD format
-		if (formatType.equals("gradoop")) {
-			if (operations.contains("sample")) {
+		if (outputFormatType.equals("gradoop")) {
+			if (remainingArgs.contains("sample")) {
 				System.out.println("sampled!");
 				DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
-				csvDataSink.write(log, true);
+				try {
+					csvDataSink.write(log, true);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			} else {
-				GradoopToGradoop gradoopToGradoop = new GradoopToGradoop(operations, zoomLevelCoefficient);
-				gradoopToGradoop.transform(log, sourcePath, writePath, gradoopGraphId, env);
+				GradoopToGradoop gradoopToGradoop = new GradoopToGradoop(remainingArgs, zoomLevelCoefficient);
+				try {
+					gradoopToGradoop.transform(log, sourcePath, writePath, gradoopGraphId, env);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				gradoopToGradoop.editMetadata(sourcePath, writePath, env);
 			}	
-		} else if (formatType.equals("gvd")) {
-			if (!operations.contains("degree")) 
+		} else if (outputFormatType.equals("gvd")) {
+			if (!remainingArgs.contains("degree")) 
 				System.out.println("Warning: GVD Format assumes that vertex degrees are already calculated!");
-			if (!operations.contains("layout"))
+			if (!remainingArgs.contains("layout"))
 				System.out.println("Warning: GVD Format requires layout coordinates for all vertices!");
 			GradoopToGVD gradoopToCSV = new GradoopToGVD(zoomLevelCoefficient);
-			gradoopToCSV.parseGradoopToCSV(log, writePath, gradoopGraphId);
+			try {
+				gradoopToCSV.parseGradoopToCSV(log, writePath, gradoopGraphId);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
-		env.execute("Parse to GVD Format");
+		try {
+			env.execute("Parse Graph");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

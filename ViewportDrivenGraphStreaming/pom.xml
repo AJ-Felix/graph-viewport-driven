@@ -23,17 +23,17 @@
   
   <repositories>
 
-    <!-- <repository>
+    <repository>
         <id>oss.sonatype.org-snapshot</id>
         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         <releases><enabled>false</enabled></releases>
         <snapshots><enabled>true</enabled></snapshots>
-    </repository> -->
+    </repository>
 <!--      <repository>
         <id>maven-central</id>
         <url>http://repo1.maven.org/maven2</url>
     </repository> -->
-       <repository>
+<!--        <repository>
     <id>dbleipzig</id>
     <name>Database Group Leipzig University</name>
     <url>https://wdiserv1.informatik.uni-leipzig.de:443/archiva/repository/dbleipzig/</url>
@@ -43,7 +43,7 @@
     <snapshots>
       <enabled>true</enabled>
     </snapshots>
-   </repository>
+   </repository> -->
   </repositories>
   
  
@@ -157,11 +157,13 @@
 	    <scope>compile</scope>
 	</dependency>
 	
-<!-- 	<dependency>
+ 	<dependency>
 	  <groupId>org.s1ck</groupId>
 	  <artifactId>ldbc-flink-import</artifactId>
 	  <version>0.1</version>
-	</dependency> -->
+	  <scope>system</scope>
+	  <systemPath>/home/aljoscha/ldbc-flink-import/target/ldbc-flink-import-0.2-SNAPSHOT.jar</systemPath>
+	</dependency>
 
 </dependencies>
 
