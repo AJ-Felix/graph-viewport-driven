@@ -57,22 +57,20 @@ public class BuildCSVFromGradoop {
 	public static void main(String[] args) {
 		
 		Options options = new Options();
-		Option inputFormatOption = new Option("-if", "--input_format", true, "gradoop or generator");
+		Option inputFormatOption = new Option("if", "inputFormat", true, "gradoop or generator");
 		options.addOption(inputFormatOption);
-		Option sourcePathOption = new Option("-i", "--input", true, "path to data source folder");
+		Option sourcePathOption = new Option("i", "input", true, "path to data source folder");
 		options.addOption(sourcePathOption);
-		Option sinkPathOption = new Option("-o", "--output", true, "path to data sink folder");
+		Option sinkPathOption = new Option("o", "output", true, "path to data sink folder");
 		options.addOption(sinkPathOption);
-		Option gradoopGraphIdOption = new Option("-id", "--gradoopGraphId", true, "gradoop graph ID");
+		Option gradoopGraphIdOption = new Option("id", "gradoopGraphId", true, "gradoop graph ID");
 		options.addOption(gradoopGraphIdOption);
-		Option outputFormatOption = new Option("-of", "--outputFormat", true, "gradoop or gvd");
+		Option outputFormatOption = new Option("of", "outputFormat", true, "gradoop or gvd");
 		options.addOption(outputFormatOption);
-		Option flinkJarOption = new Option("-j", "--jar", true, "path to flink job jar");
+		Option flinkJarOption = new Option("j", "jar", true, "path to flink job jar");
 		options.addOption(flinkJarOption);
-		Option clusterEntryPointAddressOption = new Option("-c", "--clusterEntryPoint", true, "clustern entry point address");
+		Option clusterEntryPointAddressOption = new Option("c", "clusterEntryPoint", true, "clustern entry point address");
 		options.addOption(clusterEntryPointAddressOption);
-		Option graphOperationsOption = new Option("-c", "--clusterEntryPoint", true, "clustern entry point address");
-		options.addOption(graphOperationsOption);
 		
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmdLine = null;
@@ -85,7 +83,8 @@ public class BuildCSVFromGradoop {
 		
 		String sourcePath = cmdLine.getOptionValue("i");
 		String writePath = cmdLine.getOptionValue("o");
-		String gradoopGraphId = cmdLine.getOptionValue("id");
+		String gradoopGraphId = null;
+		if (cmdLine.hasOption("id")) gradoopGraphId = cmdLine.getOptionValue("id");
 		String outputFormatType = cmdLine.getOptionValue("of");
 		String inputFormatType = cmdLine.getOptionValue("if");
 		String flinkJobJarPath = cmdLine.getOptionValue("j");

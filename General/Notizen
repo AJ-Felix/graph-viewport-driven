@@ -198,11 +198,7 @@ TODO: introduce better layout algorithms --> fcose und cose verändern die Knote
 
 TODO: Funktionen kommentieren
 
-TODO: Edgecapacity in die Theorie einpflegen
-
 TODO: Alle Stellen an denen Jobs gecancelt werden können in der Theorie erläutern
-
-TODO: partitionierung implementieren
 
 NOTE:Identitywrapper werden mit Parallelität 1 eingelesen, Nonidentitywrapper mit max. Parallelität
 
