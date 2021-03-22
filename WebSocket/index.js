@@ -11,7 +11,7 @@ class Client {
 		this.timeBeforeQuery;
 		this.timeLastResponse;
 		this.evaluationCount = 0;
-		this.evaluationCountThreshold = 10;
+		this.evaluationCountThreshold = 3;
 		this.lastAutomatedOperation = "zoomIn";
 		this.automatedEvaluation = false;
 	}
