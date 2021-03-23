@@ -38,6 +38,7 @@ public class WrapperHandler {
 	private int maxVertices = 100;
 	private FlinkApi api;
 	public boolean sentToClientInSubStep;
+	private int operationStep;
 
 	public WrapperHandler() {
 		System.out.println("wrapper handler constructor is executed");
@@ -197,25 +198,27 @@ public class WrapperHandler {
 			}
 
 			// only applicable if identity wrapper stream is degree-sorted!
-			else {
-				if (!(edgeCapacity > 0)) {
-					try {
-						JobIdsWithStatusOverview jobs = api.getJobs();
-						List<JobIdWithStatus> list = jobs.getJobs();
-						Iterator<JobIdWithStatus> iter = list.iterator();
-						JobIdWithStatus job;
-						while (iter.hasNext()) {
-							job = iter.next();
-							if (job.getStatus() == StatusEnum.RUNNING) {
-								api.terminateJob(job.getId(), "cancel");
-								break;
-							}
-						}
-					} catch (ApiException e) {
-						System.out.println("job was cancelled by server application.");
-					}
-				}
-			}
+			// if nonidentityWrapper did not add vertex nor edge, then cancel job
+//			else {
+//				if (!this.addedVertexNonIdentity && !this.addedEdge) {
+//					System.out.println("Cancelling in addIdentityWrapper!");
+//					try {
+//						JobIdsWithStatusOverview jobs = api.getJobs();
+//						List<JobIdWithStatus> list = jobs.getJobs();
+//						Iterator<JobIdWithStatus> iter = list.iterator();
+//						JobIdWithStatus job;
+//						while (iter.hasNext()) {
+//							job = iter.next();
+//							if (job.getStatus() == StatusEnum.RUNNING) {
+//								api.terminateJob(job.getId(), "cancel");
+//								break;
+//							}
+//						}
+//					} catch (ApiException e) {
+//						System.out.println("job was cancelled by server application.");
+//					}
+//				}
+//			}
 		}
 	}
 
@@ -246,6 +249,7 @@ public class WrapperHandler {
 				}
 				if (edgeCapacity > 0)
 					addEdge(wrapper);
+				
 			} else {
 				if (edgeCapacity > 0) {
 					addVertex(sourceVertex);
@@ -381,23 +385,25 @@ public class WrapperHandler {
 	public void addWrapperLayout(WrapperGVD wrapper) {
 		// if in zoomIn3 or pan3: cancel flinkjob if still running, close socket and
 		// reopen for next step and move to next step!
-		if (vertexCapacity <= 0 && edgeCapacity <= 0) {
-			try {
-				JobIdsWithStatusOverview jobs = api.getJobs();
-				List<JobIdWithStatus> list = jobs.getJobs();
-				Iterator<JobIdWithStatus> iter = list.iterator();
-				JobIdWithStatus job;
-				while (iter.hasNext()) {
-					job = iter.next();
-					if (job.getStatus() == StatusEnum.RUNNING) {
-						api.terminateJob(job.getId(), "cancel");
-						break;
+		if ((this.operation.equals("zoomIn") || this.operation.equals("pan")) && this.operationStep == 3) {
+			if (vertexCapacity <= 0 && edgeCapacity <= 0) {
+				try {
+					JobIdsWithStatusOverview jobs = api.getJobs();
+					List<JobIdWithStatus> list = jobs.getJobs();
+					Iterator<JobIdWithStatus> iter = list.iterator();
+					JobIdWithStatus job;
+					while (iter.hasNext()) {
+						job = iter.next();
+						if (job.getStatus() == StatusEnum.RUNNING) {
+							api.terminateJob(job.getId(), "cancel");
+							break;
+						}
 					}
+				} catch (ApiException e) {
+					System.out.println("Job was cancelled by server application.");
 				}
-			} catch (ApiException e) {
-				System.out.println("Job was cancelled by server application.");
 			}
-		}
+		}	
 		if (wrapper.getEdgeLabel().equals("identityEdge")) {
 			addWrapperIdentity(wrapper.getSourceVertex());
 		} else {
@@ -734,5 +740,9 @@ public class WrapperHandler {
 
 	public Map<String, Map<String, Object>> getGlobalVertices() {
 		return this.globalVertices;
+	}
+	
+	public void setOperationStep(int operationStep) {
+		this.operationStep = operationStep;
 	}
 }

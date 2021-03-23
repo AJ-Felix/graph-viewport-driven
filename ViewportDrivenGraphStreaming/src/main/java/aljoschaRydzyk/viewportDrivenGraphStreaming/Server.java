@@ -645,6 +645,7 @@ public class Server implements Serializable {
 
 	private void setOperationStep(int step) {
 		operationStep = step;
+		this.wrapperHandler.setOperationStep(step);
 		sendToAll("operationAndStep;" + operation + ";" + operationStep);
 	}
 
