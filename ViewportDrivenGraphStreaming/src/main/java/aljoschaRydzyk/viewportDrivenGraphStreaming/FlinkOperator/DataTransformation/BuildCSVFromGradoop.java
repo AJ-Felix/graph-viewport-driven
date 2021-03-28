@@ -18,6 +18,7 @@ import org.gradoop.flink.io.api.DataSource;
 import org.gradoop.flink.io.impl.csv.CSVDataSink;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
+import org.gradoop.flink.model.impl.operators.layouting.FRLayouter;
 import org.gradoop.flink.model.impl.operators.sampling.RandomVertexNeighborhoodSampling;
 import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
 import org.gradoop.flink.util.GradoopFlinkConfig;
@@ -128,19 +129,28 @@ public class BuildCSVFromGradoop {
 		}
 		
 		//layout graph
-//		if (operations.contains("layout")) {
-//			int numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
-//			log = new FRLayouter(1000, numberVertices).execute(log);
-//		}
-		
-		//random layouter
 		if (remainingArgs.contains("layout")) {
-			log = log.transformVertices(new RandomLayouter());
+			int numberVertices = 0;
+			try {
+				numberVertices = Integer.parseInt(String.valueOf(log.getVertices().count()));
+			} catch (NumberFormatException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			log = new FRLayouter(1000, numberVertices).execute(log);
 		}
+		
+//		//random layouter
+//		if (remainingArgs.contains("layout")) {
+//			log = log.transformVertices(new RandomLayouter());
+//		}
 
 		//sink to gradoop format or GVD format
 		if (outputFormatType.equals("gradoop")) {
-			if (remainingArgs.contains("sample")) {
+			if (remainingArgs.contains("gradoopSink")) {
 				System.out.println("sampled!");
 				DataSink csvDataSink = new CSVDataSink(writePath, gra_flink_cfg);
 				try {
