@@ -5,16 +5,16 @@ import java.util.Map;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexVDrive;
 
 public class WrapperFilterIsLayoutedInsideReverse implements FilterFunction<Row> {
-	private Map<String,VertexGVD> layoutedVertices;
+	private Map<String,VertexVDrive> layoutedVertices;
 	private Float topModel;
 	private Float rightModel;
 	private Float bottomModel;
 	private Float leftModel;
 	
-	public WrapperFilterIsLayoutedInsideReverse (Map<String,VertexGVD> layoutedVertices, Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
+	public WrapperFilterIsLayoutedInsideReverse (Map<String,VertexVDrive> layoutedVertices, Float topModel, Float rightModel, Float bottomModel, Float leftModel) {
 		this.layoutedVertices = layoutedVertices;
 		this.topModel = topModel;
 		this.rightModel = rightModel;

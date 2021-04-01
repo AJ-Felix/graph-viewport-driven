@@ -5,10 +5,10 @@ import java.util.Map;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.types.Row;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexVDrive;
 
 public class VertexFilterIsLayoutedInnerOldNotNew implements FilterFunction<Row> {
-	private Map<String,VertexGVD> layoutedVertices;
+	private Map<String,VertexVDrive> layoutedVertices;
 	private Float leftNew;
 	private Float rightNew;
 	private Float topNew;
@@ -18,7 +18,7 @@ public class VertexFilterIsLayoutedInnerOldNotNew implements FilterFunction<Row>
 	private Float topOld;
 	private Float bottomOld;
 	
-	public VertexFilterIsLayoutedInnerOldNotNew(Map<String,VertexGVD> layoutedVertices,
+	public VertexFilterIsLayoutedInnerOldNotNew(Map<String,VertexVDrive> layoutedVertices,
 			Float topNew, Float rightNew, Float bottomNew, Float leftNew, Float topOld, Float rightOld, Float bottomOld, 
 			Float leftOld) {
 		this.layoutedVertices = layoutedVertices;

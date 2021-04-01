@@ -10,5 +10,4 @@ public class VertexKeyselectorVertexLabel implements KeySelector<Tuple2<Long, Tu
 	public String getKey(Tuple2<Long, Tuple2<EPGMVertex, Long>> value) throws Exception {
 		return value.f1.f0.getLabel();
 	}
-
 }

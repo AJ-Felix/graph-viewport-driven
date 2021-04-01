@@ -28,11 +28,12 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
-import aljoschaRydzyk.viewportDrivenGraphStreaming.Eval.Evaluator;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.FlinkCore;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperVDrive;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLine;
 import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.Wrapper.WrapperMapLineNoCoordinates;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.Handler.FlinkResponseHandler;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.Handler.WrapperHandler;
 import io.undertow.Undertow;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
@@ -51,7 +52,7 @@ public class Server implements Serializable {
 	private float rightModelBorder = 4000;
 	private float bottomModelBorder = 4000;
 	private float leftModelBorder = 0;
-	private List<WrapperGVD> wrapperCollection;
+	private List<WrapperVDrive> wrapperCollection;
 	private static FlinkCore flinkCore;
 	public static ArrayList<WebSocketChannel> channels = new ArrayList<>();
 	private String webSocketListenPath = "/";
@@ -73,8 +74,6 @@ public class Server implements Serializable {
 	private int parallelism = 4;
 	private OkHttpClient okHttpClient = new OkHttpClient();
 	private static Server INSTANCE;
-
-	public final static Object serverSyn = new Object();
 	public final static Object writeSyn = new Object();
 
 	// evaluation
@@ -83,7 +82,6 @@ public class Server implements Serializable {
 	private String fileSpec = "default";
 
 	public Server() {
-		System.out.println("executing server constructor");
 	}
 
 	public static Server getInstance() {
@@ -139,10 +137,6 @@ public class Server implements Serializable {
 					System.out.println("adress :" + address.getHostAddress().toString());
 				}
 			}
-
-			// debug
-//            localMachinePublicIp4 = "172.22.87.188";
-
 			if (localMachinePublicIp4.equals("localhost"))
 				System.out.println("Server address set to 'localhost' (default).");
 		}
@@ -152,6 +146,9 @@ public class Server implements Serializable {
 		return new AbstractReceiveListener() {
 			@Override
 			protected void onFullTextMessage(WebSocketChannel channel, BufferedTextMessage message) {
+				/*
+				 * Handle messages from GUI.
+				 */
 				final String messageData = message.getData();
 				for (WebSocketChannel session : channel.getPeerConnections()) {
 					System.out.println(messageData);
@@ -272,10 +269,10 @@ public class Server implements Serializable {
 					String[] arrMessageData = messageData.split(";");
 					if (arrMessageData[1].equals("CSV")) {
 						setStreamBool(true);
-						buildTopViewCSV();
+						buildTopViewTableStream();
 					} else if (arrMessageData[1].equals("adjacency")) {
 						setStreamBool(true);
-						buildTopViewAdjacency();
+						buildTopViewAdjacencyMatrix();
 					} else if (arrMessageData[1].equals("gradoop")) {
 						setStreamBool(false);
 						buildTopViewGradoop();
@@ -367,9 +364,12 @@ public class Server implements Serializable {
 	}
 
 	private void buildTopViewGradoop() {
+		/*
+		 * Perform top-view visual operation with Gradoop-based backend
+		 */
 		flinkCore.initializeGradoopGraphUtil();
 		wrapperHandler.initializeGraphRepresentation();
-		DataSet<WrapperGVD> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
+		DataSet<WrapperVDrive> wrapperSet = flinkCore.buildTopViewGradoop(maxVertices);
 		if (automatedEvaluation) {
 			String graphName = graphFilesDirectory.split("/")[graphFilesDirectory.split("/").length - 1];
 			String fileSpec = "gradoop_layout_" + layout + "_graph_" + graphName + "_plsm_" + this.parallelism;
@@ -384,9 +384,12 @@ public class Server implements Serializable {
 			onLayoutingJobTermination();
 	}
 
-	private void buildTopViewCSV() {
-		flinkCore.initializeCSVGraphUtilJoin();
-		DataStream<Row> wrapperStream = flinkCore.buildTopViewCSV(maxVertices);
+	private void buildTopViewTableStream() {
+		/*
+		 * Perform top-view visual operation with table stream backend
+		 */
+		flinkCore.initializeTableStreamGraphUtil();
+		DataStream<Row> wrapperStream = flinkCore.buildTopViewTableStream(maxVertices);
 		wrapperHandler.initializeGraphRepresentation();
 		flinkResponseHandler.setOperation("initialAppend");
 		DataStream<String> wrapperLine;
@@ -405,10 +408,13 @@ public class Server implements Serializable {
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
-		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
+		new FlinkExecutor(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
 	}
 
-	private void buildTopViewAdjacency() {
+	private void buildTopViewAdjacencyMatrix() {
+		/*
+		 * Perform top-view visual operation using adjacency matrix-based backend
+		 */
 		flinkCore.initializeAdjacencyGraphUtil();
 		wrapperHandler.initializeGraphRepresentation();
 		flinkResponseHandler.setOperation("initialAppend");
@@ -430,11 +436,11 @@ public class Server implements Serializable {
 			if (!this.fileSpec.equals(fileSpec))
 				this.fileSpec = fileSpec;
 		}
-		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
+		new FlinkExecutor(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
 	}
 
 	private void zoomSet() {
-		DataSet<WrapperGVD> wrapperSet = flinkCore.zoomSet();
+		DataSet<WrapperVDrive> wrapperSet = flinkCore.zoomSet();
 		setOperationHelper(wrapperSet);
 		onIsLayoutedJobTermination();
 	}
@@ -447,11 +453,11 @@ public class Server implements Serializable {
 				new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()))
 				.setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
-		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
+		new FlinkExecutor(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
 	}
 
 	private void panSet() {
-		DataSet<WrapperGVD> wrapperSet = flinkCore.panSet();
+		DataSet<WrapperVDrive> wrapperSet = flinkCore.panSet();
 		setOperationHelper(wrapperSet);
 		onIsLayoutedJobTermination();
 	}
@@ -464,10 +470,13 @@ public class Server implements Serializable {
 				new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()))
 				.setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
-		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
+		new FlinkExecutor(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
 	}
 
 	private void nextSubStep() {
+		/*
+		 * Initiate next substep of ad-hoc layouting graph visualization.
+		 */
 		if (operation.equals("initial")) {
 			wrapperHandler.clearOperation();
 		} else if (operation.equals("zoomIn") || operation.equals("pan")) {
@@ -535,21 +544,21 @@ public class Server implements Serializable {
 		setOperationStep(nextOperationStep);
 		if (operation.equals("zoomIn") || operation.equals("pan")) {
 			if (nextOperationStep == 1) {
-				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep1Set(wrapperHandler.getLayoutedVertices(),
+				DataSet<WrapperVDrive> wrapperSet = flinkCore.zoomInLayoutStep1Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingJobTermination();
 			} else if (nextOperationStep == 2) {
-				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
+				DataSet<WrapperVDrive> wrapperSet = flinkCore.zoomInLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingJobTermination();
 			} else if (nextOperationStep == 3) {
-				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep3Set(wrapperHandler.getLayoutedVertices());
+				DataSet<WrapperVDrive> wrapperSet = flinkCore.zoomInLayoutStep3Set(wrapperHandler.getLayoutedVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingJobTermination();
 			} else if (nextOperationStep == 4) {
-				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomInLayoutStep4Set(wrapperHandler.getLayoutedVertices(),
+				DataSet<WrapperVDrive> wrapperSet = flinkCore.zoomInLayoutStep4Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getInnerVertices(), wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingJobTermination();
@@ -557,11 +566,11 @@ public class Server implements Serializable {
 		} else if (operation.equals("zoomOut")) {
 			if (nextOperationStep == 1) {
 				flinkResponseHandler.setVerticesHaveCoordinates(false);
-				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomOutLayoutStep1Set(wrapperHandler.getLayoutedVertices());
+				DataSet<WrapperVDrive> wrapperSet = flinkCore.zoomOutLayoutStep1Set(wrapperHandler.getLayoutedVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingJobTermination();
 			} else if (nextOperationStep == 2) {
-				DataSet<WrapperGVD> wrapperSet = flinkCore.zoomOutLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
+				DataSet<WrapperVDrive> wrapperSet = flinkCore.zoomOutLayoutStep2Set(wrapperHandler.getLayoutedVertices(),
 						wrapperHandler.getNewVertices());
 				setOperationHelper(wrapperSet);
 				onLayoutingJobTermination();
@@ -569,7 +578,7 @@ public class Server implements Serializable {
 		}
 	}
 
-	private void setOperationHelper(DataSet<WrapperGVD> wrapperSet) {
+	private void setOperationHelper(DataSet<WrapperVDrive> wrapperSet) {
 		wrapperHandler.setSentToClientInSubStep(false);
 		wrapperCollection = executeSet(wrapperSet);
 		if (layout)
@@ -623,10 +632,10 @@ public class Server implements Serializable {
 				new SocketClientSink<String>(localMachinePublicIp4, flinkResponsePort, new SimpleStringSchema()))
 				.setParallelism(1);
 		wrapperHandler.setSentToClientInSubStep(false);
-		new FlinkExecutorThread(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
+		new FlinkExecutor(operation, flinkCore.getFsEnv(), eval, fileSpec).start();
 	}
 
-	/**
+	/*
 	 * sends a message to the all connected web socket clients
 	 */
 	public synchronized static void sendToAll(String message) {
@@ -668,12 +677,11 @@ public class Server implements Serializable {
 		flinkCore.setStreamBool(stream);
 	}
 
-	public int getMaxVertices() {
-		return maxVertices;
-	}
-
 	private void calculateInitialViewportSettings(float topBorder, float rightBorder, float bottomBorder,
 			float leftBorder) {
+		/*
+		 * Calculate the maximal number of vertices to be visualized from the viewport size.
+		 */
 		float yRange = bottomBorder - topBorder;
 		float xRange = rightBorder - leftBorder;
 		float xRenderPosition;
@@ -716,8 +724,8 @@ public class Server implements Serializable {
 		wrapperHandler.setMaxVertices(maxVertices);
 	}
 
-	private List<WrapperGVD> executeSet(DataSet<WrapperGVD> wrapperSet) {
-		wrapperCollection = new ArrayList<WrapperGVD>();
+	private List<WrapperVDrive> executeSet(DataSet<WrapperVDrive> wrapperSet) {
+		wrapperCollection = new ArrayList<WrapperVDrive>();
 		try {
 			if (eval)
 				wrapperCollection = new Evaluator(fileSpec).executeSet(operation, wrapperSet);
@@ -741,6 +749,9 @@ public class Server implements Serializable {
 	}
 
 	public void callForJobDuration() {
+		/*
+		 * Requests job duration from flink cluster if evaluation mode is enabled.
+		 */
 		Request request = new Request.Builder().url("http://" + this.clusterEntryPointAddress + ":8081/jobs/overview")
 				.build();
 		try {

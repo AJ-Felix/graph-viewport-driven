@@ -1,7 +1,5 @@
 package aljoschaRydzyk.viewportDrivenGraphStreaming;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.net.SocketException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -16,14 +14,9 @@ public class Main {
     private static Server server;
 	
     public static void main(final String[] args) {
-    	
-    	PrintStream fileOut = null;
-		try {
-			fileOut = new PrintStream("/home/aljoscha/out.txt");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		System.setOut(fileOut);
+    	/*
+    	 * option -e with values 'default' or 'automated' for non-automated or automated evaluation
+    	 */
 		
 		//parse command line
 		Options options = new Options();

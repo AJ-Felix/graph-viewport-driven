@@ -12,6 +12,5 @@ public class WrapperMapIDsTargetSource implements MapFunction<Row, Tuple3<String
 				value.getField(8).toString(), 
 				value.getField(1).toString(),
 				value.getField(15).toString());
-
 	}
 }

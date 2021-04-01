@@ -16,14 +16,14 @@ import org.gradoop.flink.io.api.DataSource;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.util.GradoopFlinkConfig;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexGVD;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperGVD;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.AdjacencyGraphUtil;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.CSVGraphUtilJoin;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GradoopGraphUtil;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtil;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilSet;
-import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtils.GraphUtilStream;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.VertexVDrive;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphObject.WrapperVDrive;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtil.AdjacencyMatrixGraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtil.TableStreamGraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtil.GradoopGraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtil.GraphUtil;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtil.GraphUtilSet;
+import aljoschaRydzyk.viewportDrivenGraphStreaming.FlinkOperator.GraphUtil.GraphUtilStream;
 
 public class FlinkCore {
 	  private ExecutionEnvironment env;
@@ -116,13 +116,13 @@ public class FlinkCore {
 		return this.graphUtilSet;
 	}
 	
-	public GraphUtilStream initializeCSVGraphUtilJoin() {
-		this.graphUtilStream = new CSVGraphUtilJoin(this.fsEnv, this.fsTableEnv, this.hdfsFullPath, this.vertexFields, this.wrapperFields);
+	public GraphUtilStream initializeTableStreamGraphUtil() {
+		this.graphUtilStream = new TableStreamGraphUtil(this.fsEnv, this.fsTableEnv, this.hdfsFullPath, this.vertexFields, this.wrapperFields);
 		return this.graphUtilStream;
 	}
 	
 	public GraphUtilStream initializeAdjacencyGraphUtil() {
-		this.graphUtilStream =  new AdjacencyGraphUtil(this.fsEnv, this.env, this.hdfsFullPath);
+		this.graphUtilStream =  new AdjacencyMatrixGraphUtil(this.fsEnv, this.env, this.hdfsFullPath);
 		return this.graphUtilStream;
 	}
 	
@@ -131,7 +131,7 @@ public class FlinkCore {
 		else return this.graphUtilSet;
 	}
 	
-	public DataSet<WrapperGVD> buildTopViewGradoop(int maxVertices){
+	public DataSet<WrapperVDrive> buildTopViewGradoop(int maxVertices){
 		GradoopGraphUtil graphUtil = (GradoopGraphUtil) this.graphUtilSet;
 		try {
 			graphUtil.initializeDataSets();
@@ -141,14 +141,14 @@ public class FlinkCore {
 		return graphUtil.getMaxDegreeSubset(maxVertices);
 	}
 	
-	public DataStream<Row> buildTopViewCSV(int maxVertices){
-		CSVGraphUtilJoin graphUtil = ((CSVGraphUtilJoin) this.graphUtilStream);
+	public DataStream<Row> buildTopViewTableStream(int maxVertices){
+		TableStreamGraphUtil graphUtil = ((TableStreamGraphUtil) this.graphUtilStream);
 		graphUtil.initializeDataSets();
 		return graphUtil.getMaxDegreeSubset(maxVertices);
 	}
 	
 	public DataStream<Row> buildTopViewAdjacency(int maxVertices) {
-		AdjacencyGraphUtil graphUtil = (AdjacencyGraphUtil) this.graphUtilStream;
+		AdjacencyMatrixGraphUtil graphUtil = (AdjacencyMatrixGraphUtil) this.graphUtilStream;
 		graphUtil.initializeDataSets();
 		DataStream<Row> stream = null;
 		try {
@@ -159,7 +159,7 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataSet<WrapperGVD> zoomSet(){
+	public DataSet<WrapperVDrive> zoomSet(){
 		return this.graphUtilSet.zoom(topNew, rightNew, bottomNew, leftNew);
 	}
 	
@@ -173,102 +173,102 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataSet<WrapperGVD> zoomInLayoutStep1Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices){
+	public DataSet<WrapperVDrive> zoomInLayoutStep1Set(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> innerVertices){
 		return this.graphUtilSet.panZoomInLayoutStep1(layoutedVertices, innerVertices, topNew, rightNew, 
 				bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> zoomInLayoutStep1Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices){
+	public DataStream<Row> zoomInLayoutStep1Stream(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> innerVertices){
 		return this.graphUtilStream.panZoomInLayoutStep1(layoutedVertices, innerVertices, topNew, rightNew, 
 				bottomNew, leftNew);
 	}
 	
-	public DataSet<WrapperGVD> zoomInLayoutStep2Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
-			Map<String, VertexGVD> newVertices){
-		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
+	public DataSet<WrapperVDrive> zoomInLayoutStep2Set(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> innerVertices,
+			Map<String, VertexVDrive> newVertices){
+		Map<String,VertexVDrive> unionMap = new HashMap<String,VertexVDrive>(innerVertices);
 		unionMap.putAll(newVertices);
 		return this.graphUtilSet.panZoomInLayoutStep2(layoutedVertices, unionMap);
 	}
 	
-	public DataStream<Row> zoomInLayoutStep2Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
-			Map<String, VertexGVD> newVertices){
-		Map<String,VertexGVD> unionMap = new HashMap<String,VertexGVD>(innerVertices);
+	public DataStream<Row> zoomInLayoutStep2Stream(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> innerVertices,
+			Map<String, VertexVDrive> newVertices){
+		Map<String,VertexVDrive> unionMap = new HashMap<String,VertexVDrive>(innerVertices);
 		unionMap.putAll(newVertices);
 		return this.graphUtilStream.panZoomInLayoutStep2(layoutedVertices, unionMap);
 	}
 	
-	public DataSet<WrapperGVD> zoomInLayoutStep3Set(Map<String, VertexGVD> layoutedVertices){
+	public DataSet<WrapperVDrive> zoomInLayoutStep3Set(Map<String, VertexVDrive> layoutedVertices){
 		return this.graphUtilSet.panZoomInLayoutStep3(layoutedVertices);
 	}
 	
-	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexGVD> layoutedVertices){
+	public DataStream<Row> zoomInLayoutThirdStep(Map<String, VertexVDrive> layoutedVertices){
 		return this.graphUtilStream.panZoomInLayoutStep3(layoutedVertices);
 	}
 
-	public DataSet<WrapperGVD> zoomInLayoutStep4Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
-			Map<String, VertexGVD> newVertices){
+	public DataSet<WrapperVDrive> zoomInLayoutStep4Set(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> innerVertices,
+			Map<String, VertexVDrive> newVertices){
 		return this.graphUtilSet.zoomInLayoutStep4(layoutedVertices, innerVertices, newVertices, 
 				topNew, rightNew, bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> zoomInLayoutStep4Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> innerVertices,
-			Map<String, VertexGVD> newVertices){
+	public DataStream<Row> zoomInLayoutStep4Stream(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> innerVertices,
+			Map<String, VertexVDrive> newVertices){
 		return this.graphUtilStream.zoomInLayoutStep4(layoutedVertices, innerVertices, newVertices, 
 				topNew, rightNew, bottomNew, leftNew);
 	}
 	
-	public DataSet<WrapperGVD> zoomOutLayoutStep1Set(Map<String, VertexGVD> layoutedVertices){
+	public DataSet<WrapperVDrive> zoomOutLayoutStep1Set(Map<String, VertexVDrive> layoutedVertices){
 		return this.graphUtilSet.zoomOutLayoutStep1(layoutedVertices, topNew, rightNew, 
 				bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
-	public DataStream<Row> zoomOutLayoutStep1Stream(Map<String, VertexGVD> layoutedVertices){
+	public DataStream<Row> zoomOutLayoutStep1Stream(Map<String, VertexVDrive> layoutedVertices){
 		return this.graphUtilStream.zoomOutLayoutStep1(layoutedVertices, topNew, rightNew, 
 				bottomNew, leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
-	public DataSet<WrapperGVD> zoomOutLayoutStep2Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataSet<WrapperVDrive> zoomOutLayoutStep2Set(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilSet.zoomOutLayoutStep2(layoutedVertices, newVertices, topNew, 
 				rightNew, bottomNew, leftNew);
 	}
 	
-	public DataStream<Row> zoomOutLayoutStep2Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataStream<Row> zoomOutLayoutStep2Stream(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilStream.zoomOutLayoutStep2(layoutedVertices, newVertices, topNew, 
 				rightNew, bottomNew, leftNew);
 	}
 	
-	public DataSet<WrapperGVD> panLayoutStep1Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataSet<WrapperVDrive> panLayoutStep1Set(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilSet.panZoomInLayoutStep1(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew);
 	}
 	
-	public DataStream<Row> panLayoutStep1Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataStream<Row> panLayoutStep1Stream(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilStream.panZoomInLayoutStep1(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew);
 	}
 	
-	public DataSet<WrapperGVD> panLayoutStep2Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataSet<WrapperVDrive> panLayoutStep2Set(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilSet.panZoomInLayoutStep2(layoutedVertices, newVertices);
 	}
 	
-	public DataStream<Row> panLayoutStep2Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataStream<Row> panLayoutStep2Stream(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilStream.panZoomInLayoutStep2(layoutedVertices, newVertices);
 	}
 	
-	public DataSet<WrapperGVD> panLayoutStep3Set(Map<String, VertexGVD> layoutedVertices){
+	public DataSet<WrapperVDrive> panLayoutStep3Set(Map<String, VertexVDrive> layoutedVertices){
 		return this.graphUtilSet.panZoomInLayoutStep3(layoutedVertices);
 	}
 	
-	public DataStream<Row> panLayoutStep3Stream(Map<String, VertexGVD> layoutedVertices){
+	public DataStream<Row> panLayoutStep3Stream(Map<String, VertexVDrive> layoutedVertices){
 		return this.graphUtilStream.panZoomInLayoutStep3(layoutedVertices);
 	}
 	
-	public DataSet<WrapperGVD> panLayoutStep4Set(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataSet<WrapperVDrive> panLayoutStep4Set(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilSet.panLayoutStep4(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
 	
-	public DataStream<Row> panLayoutStep4Stream(Map<String, VertexGVD> layoutedVertices, Map<String, VertexGVD> newVertices){
+	public DataStream<Row> panLayoutStep4Stream(Map<String, VertexVDrive> layoutedVertices, Map<String, VertexVDrive> newVertices){
 		return this.graphUtilStream.panLayoutStep4(layoutedVertices, newVertices, topNew, rightNew, bottomNew, 
 				leftNew, topOld, rightOld, bottomOld, leftOld);
 	}
@@ -279,8 +279,8 @@ public class FlinkCore {
 		return stream;
 	}
 	
-	public DataSet<WrapperGVD> panSet(){
-		DataSet<WrapperGVD> set = this.graphUtilSet.pan(topNew, rightNew, bottomNew, leftNew, 
+	public DataSet<WrapperVDrive> panSet(){
+		DataSet<WrapperVDrive> set = this.graphUtilSet.pan(topNew, rightNew, bottomNew, leftNew, 
 				topOld, rightOld, bottomOld, leftOld);
 		return set;
 	}
