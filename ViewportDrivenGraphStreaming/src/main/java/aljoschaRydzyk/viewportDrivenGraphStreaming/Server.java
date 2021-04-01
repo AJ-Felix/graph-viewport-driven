@@ -75,6 +75,7 @@ public class Server implements Serializable {
 	private OkHttpClient okHttpClient = new OkHttpClient();
 	private static Server INSTANCE;
 	public final static Object writeSyn = new Object();
+	private String flinkJobJarFilePath;
 
 	// evaluation
 	private boolean eval = false;
@@ -110,12 +111,15 @@ public class Server implements Serializable {
 		System.out.println("Server started!");
 	}
 
-	public void initializeHandlers() {
+	public void initializeHandlers(String flinkJobJarFilePath) {
+		this.flinkJobJarFilePath = flinkJobJarFilePath;
+		
+		//initialize WrapperHandler
 		wrapperHandler = new WrapperHandler();
 		wrapperHandler.initializeGraphRepresentation();
 		wrapperHandler.initializeAPI(clusterEntryPointAddress);
 
-		// initialize FlinkResponseHandler
+		//initialize FlinkResponseHandler
 		flinkResponseHandler = new FlinkResponseHandler(wrapperHandler);
 		flinkResponseHandler.start();
 	}
@@ -254,10 +258,10 @@ public class Server implements Serializable {
 					layoutingStreamOperation(Integer.parseInt(messageData.split(";")[1]));
 				} else if (messageData.startsWith("buildTopView")) {
 					if (hdfsEntryPointAddress == null)
-						flinkCore = new FlinkCore(clusterEntryPointAddress, "file://" + graphFilesDirectory,
+						flinkCore = new FlinkCore(flinkJobJarFilePath, clusterEntryPointAddress, "file://" + graphFilesDirectory,
 								gradoopGraphId, parallelism);
 					else
-						flinkCore = new FlinkCore(
+						flinkCore = new FlinkCore(flinkJobJarFilePath,
 								clusterEntryPointAddress, "hdfs://" + hdfsEntryPointAddress + ":"
 										+ String.valueOf(hdfsEntryPointPort) + graphFilesDirectory,
 								gradoopGraphId, parallelism);

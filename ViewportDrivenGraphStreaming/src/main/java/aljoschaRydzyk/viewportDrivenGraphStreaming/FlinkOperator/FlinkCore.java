@@ -31,10 +31,10 @@ public class FlinkCore {
 	  private EnvironmentSettings fsSettings;
 	  private StreamExecutionEnvironment fsEnv;
 	  private StreamTableEnvironment fsTableEnv;
-	  private String flinkJobJarPath = "/home/aljoscha/remoteEnvJars/combined.jar";
+	  private String flinkJobJarPath;
 	  private int clusterEntryPointPort = 8081;
 	  private String hdfsFullPath;
-	  private String gradoopGraphID = "5ebe6813a7986cc7bd77f9c2";
+	  private String gradoopGraphID;
 	  private Boolean stream = true;
 	  private GraphUtilStream graphUtilStream;
 	  private GraphUtilSet graphUtilSet;
@@ -52,7 +52,8 @@ public class FlinkCore {
 				+ "targetVertexLabel, targetVertexX, targetVertexY, targetVertexDegree, targetZoomLevel, "
 				+ "edgeIdGradoop, edgeLabel";	  
 	  
-	public FlinkCore(String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId, int parallelism) {
+	public FlinkCore(String flinkJobJarFilePath, String clusterEntryPointAddress, String hdfsFullPath, String gradoopGraphId, int parallelism) {
+		this.flinkJobJarPath = flinkJobJarFilePath;
 		this.hdfsFullPath = hdfsFullPath;
 		this.gradoopGraphID = gradoopGraphId;
 		this.env = ExecutionEnvironment.createRemoteEnvironment(clusterEntryPointAddress, clusterEntryPointPort, 

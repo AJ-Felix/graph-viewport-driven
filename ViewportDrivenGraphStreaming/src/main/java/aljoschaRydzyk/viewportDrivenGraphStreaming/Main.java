@@ -20,6 +20,8 @@ public class Main {
 		
 		//parse command line
 		Options options = new Options();
+		Option jarOption = new Option("j", "jar", true, "path to jar file");
+		options.addOption(jarOption);
 		Option evalOption = new Option("e", "evaluation", true, "toggle performance evaluation");
 		options.addOption(evalOption);
 		CommandLineParser parser = new DefaultParser();
@@ -39,7 +41,7 @@ public class Main {
 			e.printStackTrace();
 		}
 		server.initializeServerFunctionality();
-		server.initializeHandlers();
+		server.initializeHandlers(cmd.getOptionValue("j"));
 		if (cmd.hasOption("e"))	{
 			boolean automated;
 			if (cmd.getOptionValue("e").equals("automated")) automated = true;
