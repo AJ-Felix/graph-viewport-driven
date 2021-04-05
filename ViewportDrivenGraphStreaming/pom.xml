@@ -8,9 +8,8 @@
   <artifactId>VDriveGraphVisualization</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
-  <name>Gradoop_Flink_Prototype</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <name>VDriveGraphVisualization</name>
+  <url>https://github.com/AJ-Felix/VDrive-Graph-Visualization</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

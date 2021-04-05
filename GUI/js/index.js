@@ -178,7 +178,6 @@ class Client {
 	}
 
 	resize(){
-		console.log("Resizing viewport!");
 		const boundingClientRect = document.getElementById('cy').getBoundingClientRect();
 		let cyHeightOld = this.cyHeight;
 		let cyWidthOld = this.cyWidth;
@@ -200,29 +199,23 @@ class Client {
 	}
 	
 	finalOperations(){
-		console.log("Final Operations!");
 		this.graphVisualizer.updateVerticesSize();
 		if (this.operation == "initial") this.fitTopView();
 		if (eval) this.outputQueryTime();
 		if (!this.layout){
 			let layoutBaseString = "";
 			if (this.graphVisualizer.layoutBase.size > 0){
-				console.log("performing layout!");
-				console.log(this.graphVisualizer.layoutWindow);
 				let layoutOptions = {};
 				layoutOptions.name = 'random';
 				layoutOptions.randomize = true;
 				layoutOptions.fit = false;
 				layoutOptions.boundingBox = this.graphVisualizer.layoutWindow;
 				let layoutBaseCy = this.graphVisualizer.cy.collection();
-				console.log("layoutBase size" + this.graphVisualizer.layoutBase.size);
 				const cy = this.graphVisualizer.cy;
 				this.graphVisualizer.layoutBase.forEach(function (vertexId){
 					layoutBaseCy = layoutBaseCy.add(cy.$id(vertexId));
 				});
-				// this.graphVisualizer.cy.layout(cose).run();
 				layoutBaseCy.layout(layoutOptions).run();
-				console.log("layout performed");
 				layoutBaseCy.forEach(function(node){
 					let pos = node.position();
 					layoutBaseString += ";" + node.data("id") + "," + pos.x + "," + pos.y + "," + node.data('zoomLevel');
@@ -246,8 +239,6 @@ class Client {
 	}
 
 	enableMouseEvents(){
-		console.log("automated?")
-		console.log(this.automatedEvaluation);
 		if (this.automatedEvaluation && this.evaluationCount < this.evaluationCountThreshold){
 			if (this.operation == "initial"){
 				this.evaluationCount += 1;
@@ -255,7 +246,6 @@ class Client {
 			} else if (this.operation == this.lastAutomatedOperation){
 				this.resetVisualization();
 			}
-			console.log("evalCount: " + this.evaluationCount);
 		} else {
 			$("body").css("cursor", "default");
 			console.log("enabling mouse events");
@@ -300,7 +290,6 @@ class Client {
 		const firstToLastDuration = this.timeLastResponse - this.firstResponse; 
 		const fullQueryDuration = this.timeLastResponse - this.timeBeforeQuery;
 		const output = this.operation + "," + this.operationStep + "," + fullQueryDuration + "," + firstToLastDuration;
-		console.info(output);
 		if (this.automatedEvaluation){
 			// download(output, "client_evaluation_be_" + this.backendVariant + "_layout_" + this.layout + "_gN_" + this.graphName
 			// + "_plsm_" + this.parallelism + "_" + this.evaluationCount, "string");
@@ -326,7 +315,6 @@ $(document).ready(function(){
 		if (!$.isEmptyObject(colorMapping)){
 			createColorMapHeading()
 			for (let [key, value] of Object.entries(colorMapping)) {
-				console.log(key);
 				createColorMapElement(key, value);
 			}
 		}
@@ -343,7 +331,6 @@ $(document).ready(function(){
 	}
 
 	ws.onmessage = function (evt) {
-		console.log(evt.data);
 		const dataArray = evt.data.split(";");
 		client.addMessageToQueue(dataArray);
 	}
@@ -459,7 +446,6 @@ function zoom(delta, cytoX, cytoY){
 		const leftModel = - pan.x / client.graphVisualizer.zoomLevel;
 		const bottomModel = topModel + client.cyHeight / client.graphVisualizer.zoomLevel;
 		const rightModel = leftModel + client.cyWidth / client.graphVisualizer.zoomLevel;
-		console.log("ZoomIn... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
 		client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
 		if (eval) client.initiateEvaluation();
 		client.ws.send("zoomIn;" + pan.x + ";" + pan.y + ";" + client.graphVisualizer.zoomLevel);
@@ -490,8 +476,6 @@ function mouseDown(e){
 		this.yRenderDiff = this.yRenderDiff + e.movementY;
 		const xRenderPos = client.graphVisualizer.cy.pan().x;
 		const yRenderPos = client.graphVisualizer.cy.pan().y;
-		console.log("accumulated movement x: " + this.xRenderDiff.toString());
-		console.log("accumulated movement y: " + this.yRenderDiff.toString());
 		client.graphVisualizer.cy.pan({x:xRenderPos + e.movementX, y:yRenderPos + e.movementY});
 	}
 }
@@ -508,33 +492,8 @@ function mouseUp(e){
 	const leftModel = - xRenderPos / client.graphVisualizer.zoomLevel;
 	const bottomModel = topModel + client.cyHeight / client.graphVisualizer.zoomLevel;
 	const rightModel = leftModel + client.cyWidth / client.graphVisualizer.zoomLevel;
-	console.log("Pan... top , right, bottom, left: " + topModel + " " + rightModel + " " + bottomModel + " " + leftModel);
 	client.graphVisualizer.layoutWindow = client.graphVisualizer.derivelayoutWindow(topModel, rightModel, bottomModel, leftModel);
 	client.graphVisualizer.layoutBase = new Set();
 	if (eval) client.initiateEvaluation();
 	client.ws.send("pan;" + xModelDiff + ";" + yModelDiff + ";" + client.graphVisualizer.zoomLevel);
 }
-
-var cose = {
-	name: "cose",  // called on `layoutready`
-	ready: function () {},  // called on `layoutstop`
-	stop: function () {},  // whether to animate while running the layout
-	animate: true,  // number of iterations between consecutive screen positions update (0 ->
-	// only updated on the end)
-	refresh: 4,  // whether to fit the network view after when done
-	fit: true,  // padding on fit
-	padding: 30,  // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
-	boundingBox: undefined,  // whether to randomize node positions on the beginning
-	randomize: true,  // whether to use the JS console to print debug messages
-	debug: false,  // node repulsion (non overlapping) multiplier
-	nodeRepulsion: 8000000,  // node repulsion (overlapping) multiplier
-	nodeOverlap: 10,  // ideal edge (non nested) length
-	idealEdgeLength: 1,  // divisor to compute edge forces
-	edgeElasticity: 100,  // nesting factor (multiplier) to compute ideal edge length for nested edges
-	nestingFactor: 5,  // gravity force (constant)
-	gravity: 250,  // maximum number of iterations to perform
-	numIter: 100,  // initial temperature (maximum node displacement)
-	initialTemp: 200,  // cooling factor (how the temperature is reduced between consecutive iterations
-	coolingFactor: 0.95,  // lower temperature threshold (below this point the layout will end)
-	minTemp: 1.0,
-  };
